@@ -19,7 +19,6 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 5. [Updating](#updating)
 6. [Troubleshooting](#troubleshooting)
 7. [Changelog](#changelog)
-8. [License](#license)
 
 ## Installation
 
