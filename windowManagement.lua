@@ -1,5 +1,6 @@
 local M = {}
 local log = hs.logger.new('WindowManagement', 'debug')
+local setup = require("setup")
 
 local function moveWindowToPosition(win, x, y, w, h)
     if win then
@@ -242,6 +243,11 @@ function M.setup()
     log.i("Setting up window management")
     ensureLayoutFileExists()
 
+    local config = setup.getConfig()
+
+    -- Set animation duration from config
+    hs.window.animationDuration = config.windowManagement.animationDuration
+
     local opt = {"alt"}
     local optCmd = {"alt", "cmd"}
 
@@ -342,6 +348,7 @@ function M.setup()
         activeWindows[nextIndex]:focus()
         log.d("Focused window: " .. activeWindows[nextIndex]:title())
     end
+
     -- Cycle forward through app windows
     hs.hotkey.bind(opt, "E", function()
         log.d("Cycling forward")

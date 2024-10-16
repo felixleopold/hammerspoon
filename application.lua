@@ -1,8 +1,11 @@
 local M = {}
 local log = hs.logger.new('Applications', 'debug')
+local setup = require("setup")
 
-function M.setup(userPath, sharedConfigPath)
+function M.setup()
     log.i("Setting up application shortcuts")
+
+    local config = setup.getConfig()
 
     -- Helper function to open folders
     local function openFolder(path)
@@ -15,61 +18,76 @@ function M.setup(userPath, sharedConfigPath)
     end
 
     -- Folder shortcuts
-    hs.hotkey.bind({"cmd", "shift"}, "D", function() openFolder(userPath .. "/Desktop") end)
-    hs.hotkey.bind({"cmd", "shift"}, "R", function() openFolder(userPath .. "/Documents/Radboud") end)
+    hs.hotkey.bind({"cmd", "shift"}, "D", function() openFolder(os.getenv("HOME") .. "/Desktop") end)
+    hs.hotkey.bind({"cmd", "shift"}, "R", function() openFolder(config.folders.radboud) end)
     hs.hotkey.bind({"cmd", "shift"}, "A", function() openFolder("/Applications") end)
-    hs.hotkey.bind({"cmd", "shift"}, "L", function() openFolder(userPath .. "/Downloads") end)
-    hs.hotkey.bind({"cmd", "shift"}, "H", function() openFolder(userPath) end)
-    hs.hotkey.bind({"cmd", "shift"}, "O", function()
-        hs.execute([[open "]] .. userPath .. [[/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyBrain"]])
-    end)
-    hs.hotkey.bind({"cmd", "shift"}, "F", function() openFolder(userPath .. "/Documents") end)
+    hs.hotkey.bind({"cmd", "shift"}, "L", function() openFolder(os.getenv("HOME") .. "/Downloads") end)
+    hs.hotkey.bind({"cmd", "shift"}, "H", function() openFolder(os.getenv("HOME")) end)
+    hs.hotkey.bind({"cmd", "shift"}, "O", function() openFolder(config.folders.obsidian) end)
+    hs.hotkey.bind({"cmd", "shift"}, "F", function() openFolder(os.getenv("HOME") .. "/Documents") end)
 
     -- Application shortcuts
     hs.hotkey.bind({"ctrl", "alt", "cmd"}, "P", function() launchOrFocus("System Settings") end)
-    hs.hotkey.bind({"ctrl", "alt", "cmd"}, "A", function() launchOrFocus("Arc") end)
-    hs.hotkey.bind({"ctrl", "alt", "cmd"}, "Z", function() launchOrFocus("Zen Browser") end)
-    hs.hotkey.bind({"ctrl", "alt", "cmd"}, "T", function() launchOrFocus("Warp") end)
+    hs.hotkey.bind({"ctrl", "alt", "cmd"}, "A", function() launchOrFocus(config.applications.secondaryBrowser) end)
+    hs.hotkey.bind({"ctrl", "alt", "cmd"}, "Z", function() launchOrFocus(config.applications.primaryBrowser) end)
+    hs.hotkey.bind({"ctrl", "alt", "cmd"}, "T", function() launchOrFocus(config.applications.terminal) end)
     hs.hotkey.bind({"ctrl", "alt", "cmd"}, "S", function() launchOrFocus("Spotify") end)
     hs.hotkey.bind({"ctrl", "alt", "cmd"}, "M", function() launchOrFocus("Mail") end)
     hs.hotkey.bind({"ctrl", "alt", "cmd"}, "O", function() launchOrFocus("Obsidian") end)
     hs.hotkey.bind({"ctrl", "alt", "cmd"}, "W", function() launchOrFocus("WhatsApp") end)
     hs.hotkey.bind({"ctrl", "alt", "cmd"}, "F", function() launchOrFocus("Finder") end)
-    hs.hotkey.bind({"ctrl", "alt", "cmd"}, "V", function() launchOrFocus("Visual Studio Code") end)
+    hs.hotkey.bind({"ctrl", "alt", "cmd"}, "V", function() launchOrFocus(config.applications.editor) end)
     hs.hotkey.bind({"ctrl", "alt", "cmd"}, "C", function() launchOrFocus("Cursor") end)
-    
-    -- Updated function to copy URL from Zen Browser quickly and silently
-    local function copyZenBrowserURL()
-        local zenBrowser = hs.application.find("Zen Browser")
-        if not zenBrowser then
-            log.w("Zen Browser is not running")
+
+    -- Copy URL function
+    local function copyBrowserURL()
+        local primaryBrowser = hs.application.find(config.applications.primaryBrowser)
+        local secondaryBrowser = hs.application.find(config.applications.secondaryBrowser)
+        local browser = primaryBrowser or secondaryBrowser
+
+        if not browser then
+            log.w("No configured browser is running")
             return
         end
 
-        zenBrowser:activate()
-        hs.timer.usleep(50000) -- Wait for 0.05 seconds
-
-        -- Simulate Cmd+L to focus on the address bar
+        browser:activate()
+        hs.timer.usleep(50000)
         hs.eventtap.keyStroke({"cmd"}, "l")
-        hs.timer.usleep(50000) -- Wait for 0.05 seconds
-
-        -- Simulate Cmd+C to copy the URL
+        hs.timer.usleep(50000)
         hs.eventtap.keyStroke({"cmd"}, "c")
-        hs.timer.usleep(50000) -- Wait for 0.05 seconds
-
-        -- Simulate Esc to close the address bar
+        hs.timer.usleep(50000)
         hs.eventtap.keyStroke({}, "escape")
 
         local url = hs.pasteboard.getContents()
         if url and url:match("^https?://") then
             log.i("Copied URL: " .. url)
         else
-            log.e("Failed to copy URL from Zen Browser")
+            log.e("Failed to copy URL from browser")
         end
     end
 
-    -- Add the new shortcut
-    hs.hotkey.bind({"cmd", "shift"}, "C", copyZenBrowserURL)
+    -- Ensure config.shortcuts.copyUrl is a valid hotkey configuration
+    local copyUrlShortcut = config.shortcuts.copyUrl
+    if type(copyUrlShortcut) ~= "table" or #copyUrlShortcut < 2 then
+        log.w("Invalid copyUrl shortcut configuration, using default")
+        copyUrlShortcut = {"cmd", "shift", "C"}
+    end
+
+    -- Ensure the last element of the shortcut is a string (the key)
+    if type(copyUrlShortcut[#copyUrlShortcut]) ~= "string" then
+        log.w("Invalid key in copyUrl shortcut, using default")
+        copyUrlShortcut[#copyUrlShortcut] = "C"
+    end
+
+    -- Extract modifiers and key
+    local modifiers = {}
+    for i = 1, #copyUrlShortcut - 1 do
+        table.insert(modifiers, copyUrlShortcut[i])
+    end
+    local key = copyUrlShortcut[#copyUrlShortcut]
+
+    -- Bind the copyBrowserURL function to the shortcut
+    hs.hotkey.bind(modifiers, key, copyBrowserURL)
 
     log.i("Application shortcuts setup complete")
 end

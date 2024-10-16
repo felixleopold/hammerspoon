@@ -14,6 +14,8 @@ package.path = package.path .. ";" .. configPath .. "/?.lua"
 local application = require("application")
 local windowManagement = require("windowManagement")
 local fabric = require("fabric")
+local setup = require("setup")
+local version = require("version")  -- Add this line to import the version module
 
 -- Disable animation for window movements
 hs.window.animationDuration = 0
@@ -34,14 +36,18 @@ end
 -- Set up auto-reload of configuration
 local myWatcher = hs.pathwatcher.new(configPath, reloadConfig):start()
 
+-- Load configuration
+local config = setup.getConfig()
+
 -- Set up modules
-application.setup(userPath, configPath)
-windowManagement.setup(userPath, configPath)
-fabric.setup(userPath, configPath)
+application.setup()
+windowManagement.setup()
+fabric.setup()
 
-local CONFIG_VERSION = "1.0.1"
+-- Bind setup wizard
+setup.bindSetupWizard()
 
--- Show a notification when the configuration is loaded, including the version number
-hs.alert.show("Hammerspoon configuration v" .. CONFIG_VERSION .. " loaded")
+-- Show a notification when the configuration is loaded
+hs.alert.show("Hammerspoon configuration v" .. version.current .. " loaded")
 
-log.i("Hammerspoon configuration version " .. CONFIG_VERSION .. " loaded")
+log.i("Hammerspoon configuration version " .. version.current .. " loaded")
