@@ -128,7 +128,7 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 ## Customization
 
 - Modify `init.lua` in `~/.hammerspoon/` to change global settings or add new modules.
-- Edit `application.lua`, `windowManagement.lua`, and `fabric.lua` in the iCloud Drive folder to customize functionality.
+- Edit `application.lua`, `windowManagement.lua`, and `fabric.lua`.
 - Add new patterns to `fabric.lua` to extend Fabric AI integration.
 
 ## Updating
