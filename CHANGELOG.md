@@ -5,6 +5,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2024-10-17
+
+### Fixed
+- Resolved issues with folder shortcuts not working consistently
+- Improved path handling for user home directory and special folders
+
+### Changed
+- Updated `application.lua` to use `hs.fs.pathToAbsolute` for more robust path expansion
+- Enhanced logging in `application.lua` for better troubleshooting
+
+## [1.1.0] - 2024-10-17
+
+### Added
+- Integrated Fabric AI functionality with configurable models and patterns
+- New setup wizard for easier configuration of all settings
+- Persistent configuration saving after each change in the setup wizard
+- Support for custom folder shortcuts
+- Improved application launching with special handling for browsers
+
+### Changed
+- Restructured the codebase for better organization
+- Updated window management shortcuts to be more comprehensive
+- Improved error handling and logging throughout the application
+
+### Fixed
+- Issues with configuration not persisting between Hammerspoon reloads
+- Bugs in the setup wizard navigation and item selection
+
+## [1.0.9] - 2024-10-16
+
+### Added
+- Initial release of the Hammerspoon configuration
+- Basic window management functionality
+- Application launching shortcuts
+
+## [1.0.8] - 2024-10-26
+
+### Changed
+- Removed separate "radboud" shortcut
+- "School" shortcut now leads to the Radboud folder by default (~/Documents/Radboud)
+
+## [1.0.7] - 2024-10-25
+
+### Changed
+- Fixed folder order in setup wizard to match specified order: Applications, Desktop, Documents, Downloads, Home, followed by Obsidian, School, and custom folders
+
+## [1.0.6] - 2024-10-24
+
+### Changed
+- Reordered folder configuration to a specific order: Applications, Desktop, Documents, Downloads, Home, followed by Obsidian, School, and custom folders
+- Capitalized the first letter of each folder name in the configuration
+
+## [1.0.5] - 2024-10-23
+
+### Changed
+- Reordered folder configuration to be alphabetical, with numbered folders at the end
+- Option to modify system folder paths (Desktop, Downloads, Home, Documents, Applications) in the setup wizard
+
+## [1.0.4] - 2024-10-22
+
+### Changed
+- Renamed custom folders to start from folder8
+- Added "school" folder (previously named Radboud)
+- Updated folder shortcuts to reflect new folder names
+
+## [1.0.3] - 2024-10-21
+
+### Added
+- Made all shortcuts fully customizable
+- Improved setup wizard with more interactive options
+- Added ability to customize folder shortcuts
+- Added ability to customize application shortcuts
+
+### Changed
+- Restructured configuration to support more customizable options
+- Updated setup process to provide a more user-friendly interface
+
+### Improved
+- Better error handling and default values for configuration
+
 ## [1.0.2] - 2024-10-20
 
 ### Added

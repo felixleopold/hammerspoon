@@ -1,3 +1,4 @@
 return {
-    current = "1.0.2"
+    current = "1.1.1"
 }
+
