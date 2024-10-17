@@ -2,7 +2,7 @@
 
 **Creator:** Felix Mrak
 
-## Version 1.0.1
+## Version 1.1.1
 
 This repository contains a custom Hammerspoon configuration that enhances productivity on macOS through window management, application shortcuts, and integration with the Fabric AI tool.
 
@@ -28,7 +28,6 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 3. Ensure Fabric is installed and accessible in your PATH.
 4. Reload the Hammerspoon configuration.
 
-
 ## Features
 
 ### Window Management
@@ -41,25 +40,9 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 
 ### Application Shortcuts
 
-- `Cmd + Shift + D`: Open Desktop folder
-- `Cmd + Shift + R`: Open Radboud folder
-- `Cmd + Shift + A`: Open Applications folder
-- `Cmd + Shift + L`: Open Downloads folder
-- `Cmd + Shift + H`: Open Home folder
-- `Cmd + Shift + O`: Open Obsidian vault
-- `Cmd + Shift + F`: Open Documents folder
-- `Cmd + Shift + C`: Copy current URL from Zen Browser
-- `Ctrl + Alt + Cmd + P`: Open System Settings
-- `Ctrl + Alt + Cmd + A`: Open Arc browser
-- `Ctrl + Alt + Cmd + Z`: Open Zen Browser
-- `Ctrl + Alt + Cmd + T`: Open Warp terminal
-- `Ctrl + Alt + Cmd + S`: Open Spotify
-- `Ctrl + Alt + Cmd + M`: Open Mail
-- `Ctrl + Alt + Cmd + O`: Open Obsidian
-- `Ctrl + Alt + Cmd + W`: Open WhatsApp
-- `Ctrl + Alt + Cmd + F`: Open Finder
-- `Ctrl + Alt + Cmd + V`: Open Visual Studio Code
-- `Ctrl + Alt + Cmd + C`: Open Cursor editor
+- Quick launch or focus for commonly used applications
+- Open specific folders with customizable shortcuts
+- Copy current URL from configured browsers
 
 ### Fabric AI Integration
 
@@ -72,7 +55,6 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 - Save and load custom window arrangements
 - Supports multiple applications and screens
 - Hotkeys for quick saving and loading
-- Layouts are stored in `~/.hammerspoon/savedLayouts.json`
 
 ## Usage
 
@@ -100,11 +82,11 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 - `Cmd + Shift + H`: Open Home folder
 - `Cmd + Shift + O`: Open Obsidian vault
 - `Cmd + Shift + F`: Open Documents folder
-- `Cmd + Shift + C`: Copy current URL from Zen Browser
+- `Cmd + Shift + C`: Copy current URL from browser
 - `Ctrl + Alt + Cmd + P`: Open System Settings
 - `Ctrl + Alt + Cmd + A`: Open Arc browser
 - `Ctrl + Alt + Cmd + Z`: Open Zen Browser
-- `Ctrl + Alt + Cmd + T`: Open Warp terminal
+- `Ctrl + Alt + Cmd + T`: Open Terminal
 - `Ctrl + Alt + Cmd + S`: Open Spotify
 - `Ctrl + Alt + Cmd + M`: Open Mail
 - `Ctrl + Alt + Cmd + O`: Open Obsidian
@@ -127,8 +109,8 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 ## Customization
 
 - Modify `init.lua` in `~/.hammerspoon/` to change global settings or add new modules.
-- Edit `application.lua`, `windowManagement.lua`, and `fabric.lua`.
-- Add new patterns to `fabric.lua` to extend Fabric AI integration.
+- Edit `application.lua`, `windowManagement.lua`, and `fabric.lua` to customize specific functionalities.
+- Use the built-in setup wizard (default shortcut: `Ctrl + Alt + Cmd + Shift + S`) to configure settings interactively.
 
 ## Updating
 
@@ -138,6 +120,13 @@ To update to the latest version:
    git pull   ```
 2. Reload Hammerspoon configuration
 
+## Troubleshooting
+
+If you encounter issues:
+1. Check the Hammerspoon console for error messages.
+2. Ensure all required dependencies are installed and properly configured.
+3. Verify that your `user_config.json` file is correctly formatted and contains valid settings.
+
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for version history.
+See [CHANGELOG.md](CHANGELOG.md) for version history and detailed changes.
