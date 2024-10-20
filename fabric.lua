@@ -2,12 +2,9 @@ local M = {}
 local log = hs.logger.new('Fabric', 'debug')
 local setup = require("setup")
 
-function M.setup()
+function M.setup(config)
     log.i("Setting up Fabric integration")
 
-    local config = setup.getConfig()
-
-    -- Helper function to execute Fabric patterns
     local function executeFabricPattern(pattern, model, isYouTube)
         local clipboardContent = hs.pasteboard.getContents()
         if not clipboardContent or clipboardContent == "" then
@@ -51,6 +48,7 @@ function M.setup()
         { text = "LaTeX", subText = "Pattern: latex", command = "latex", model = config.fabric.models.default },
         { text = "LaTeX Plus", subText = "Pattern: latex-plus", command = "latex-plus", model = config.fabric.models.default },
         { text = "Note Name", subText = "Pattern: note_name", command = "note_name", model = config.fabric.models.default },
+        { text = "PDF Name", subText = "Pattern: pdf_name", command = "pdf_name", model = config.fabric.models.default },
         { text = "General", subText = "Pattern: general", command = "general", model = config.fabric.models.default },
         -- YouTube patterns
         { text = "YT 5 Sentence Summary", subText = "Pattern: yt_create_5_sentence_summary", command = "yt_create_5_sentence_summary", model = config.fabric.models.default, isYouTube = true },
@@ -71,6 +69,7 @@ function M.setup()
     hs.hotkey.bind({"ctrl", "alt"}, "P", function() executeFabricPattern("latex-plus", config.fabric.models.default) end)
     hs.hotkey.bind({"ctrl", "alt"}, "G", function() executeFabricPattern("general", config.fabric.models.default) end)
     hs.hotkey.bind({"ctrl", "alt"}, "N", function() executeFabricPattern("note_name", config.fabric.models.default) end)
+    hs.hotkey.bind({"ctrl", "alt"}, "B", function() executeFabricPattern("pdf_name", config.fabric.models.default) end)
 
     -- Add shortcut to show pattern chooser
     hs.hotkey.bind({"cmd", "alt", "shift"}, "P", function()
