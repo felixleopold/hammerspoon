@@ -2,43 +2,14 @@ local M = {}
 local log = hs.logger.new('Applications', 'debug')
 local setup = require("setup")
 
--- Enable Spotlight for name searches to improve application finding
-hs.application.enableSpotlightForNameSearches(true)
-
-function M.setup()
+function M.setup(config)
     log.i("Setting up application shortcuts")
-
-    local config = setup.getConfig()
     log.d("Loaded configuration: " .. hs.inspect(config))
 
     -- Helper function to launch or focus applications
     local function launchOrFocus(appName)
         log.i("Attempting to launch or focus: " .. appName)
-        
-        -- Special handling for browsers
-        if appName == config.applications.primaryBrowser or appName == config.applications.secondaryBrowser then
-            local app = hs.application.get(appName)
-            if app then
-                log.i(appName .. " is already running, focusing it")
-                app:activate()
-            else
-                log.i(appName .. " is not running, launching it")
-                hs.application.open(appName, 0, true)
-            end
-        else
-            -- For other applications, use the standard launchOrFocus
-            hs.application.launchOrFocus(appName)
-        end
-        
-        -- Verify frontmost application after a short delay
-        hs.timer.doAfter(0.5, function()
-            local frontApp = hs.application.frontmostApplication()
-            if frontApp and frontApp:name() == appName then
-                log.i(appName .. " is now the frontmost application")
-            else
-                log.w(appName .. " is not the frontmost application. Current frontmost: " .. (frontApp and frontApp:name() or "None"))
-            end
-        end)
+        hs.application.launchOrFocus(appName)
     end
 
     -- Helper function to bind hotkey
@@ -56,69 +27,65 @@ function M.setup()
         hs.hotkey.bind(modifiers, key, callback)
     end
 
+    -- Set up application shortcuts
+    for name, shortcut in pairs(config.shortcuts.appShortcuts) do
+        local appName = config.applications[name]
+        if appName then
+            log.d("Setting up shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. appName)
+            bindHotkey(shortcut, function() launchOrFocus(appName) end)
+        else
+            log.w("No application defined for shortcut: " .. name .. ". Please check your user_config.json file.")
+        end
+    end
+
     -- Set up folder shortcuts
-    log.i("Setting up folder shortcuts")
-    for name, path in pairs(config.folders) do
-        local shortcutKey = name:lower()  -- Convert folder name to lowercase for matching
-        local shortcut = config.shortcuts.folderShortcuts[shortcutKey]
-        if shortcut then
+    for name, shortcut in pairs(config.shortcuts.folderShortcuts) do
+        local path = config.folders[name:gsub("^%l", string.upper)]
+        if path then
+            -- Expand the path if it starts with "~"
+            if path:sub(1,1) == "~" then
+                path = os.getenv("HOME") .. path:sub(2)
+            end
             log.d("Setting up folder shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to open " .. path)
-            bindHotkey(shortcut, function() 
-                log.i("Attempting to open folder: " .. name .. " at path: " .. path)
-                local expandedPath = hs.fs.pathToAbsolute(path)
-                if not expandedPath then
-                    log.e("Failed to expand path for folder: " .. name .. ". Path: " .. path)
-                    return
-                end
-                local command = string.format('/usr/bin/open "%s"', expandedPath:gsub('"', '\\"'))
-                local output, status, type, rc = hs.execute(command)
-                if status then
-                    log.i("Successfully opened folder: " .. name)
+            bindHotkey(shortcut, function()
+                if hs.fs.attributes(path) then
+                    hs.execute(string.format('/usr/bin/open "%s"', path))
                 else
-                    log.e("Failed to open folder: " .. name .. ". Error: " .. tostring(output) .. " (RC: " .. tostring(rc) .. ")")
+                    log.w("Folder does not exist: " .. path)
+                    hs.alert.show("Folder does not exist: " .. path)
                 end
             end)
         else
-            log.w("No shortcut defined for folder: " .. name .. ". Available shortcuts: " .. hs.inspect(config.shortcuts.folderShortcuts))
+            log.w("No path defined for folder: " .. name .. ". Please check your user_config.json file.")
         end
-    end
-
-    -- Set up application shortcuts
-    log.i("Setting up application shortcuts")
-    for name, shortcut in pairs(config.shortcuts.appShortcuts) do
-        local app
-        if name == "primaryBrowser" or name == "secondaryBrowser" or name == "terminal" or name == "editor" then
-            app = config.applications[name]
-        else
-            app = name:gsub("^%l", string.upper)
-        end
-        log.d("Setting up shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. app)
-        bindHotkey(shortcut, function() launchOrFocus(app) end)
     end
 
     -- Set up URL copying shortcut
-    log.i("Setting up URL copying shortcut")
-    bindHotkey(config.shortcuts.general.copyUrl, function()
-        local browser = hs.application.get(config.applications.primaryBrowser) or 
-                        hs.application.get(config.applications.secondaryBrowser)
-        if not browser then
-            log.w("No configured browser is running")
-            return
-        end
-        browser:activate()
-        hs.timer.usleep(50000)
-        hs.eventtap.keyStroke({"cmd"}, "l")
-        hs.timer.usleep(50000)
-        hs.eventtap.keyStroke({"cmd"}, "c")
-        hs.timer.usleep(50000)
-        hs.eventtap.keyStroke({}, "escape")
-        local url = hs.pasteboard.getContents()
-        if url and url:match("^https?://") then
-            log.i("Copied URL: " .. url)
-        else
+    if config.shortcuts.general and config.shortcuts.general.copyUrl then
+        bindHotkey(config.shortcuts.general.copyUrl, function()
+            local browsers = {config.applications.PrimaryBrowser, config.applications.SecondaryBrowser}
+            for _, browserName in ipairs(browsers) do
+                local browser = hs.application.get(browserName)
+                if browser then
+                    browser:activate()
+                    hs.timer.usleep(50000)
+                    hs.eventtap.keyStroke({"cmd"}, "l")
+                    hs.timer.usleep(50000)
+                    hs.eventtap.keyStroke({"cmd"}, "c")
+                    hs.timer.usleep(50000)
+                    hs.eventtap.keyStroke({}, "escape")
+                    local url = hs.pasteboard.getContents()
+                    if url and url:match("^https?://") then
+                        log.i("Copied URL: " .. url)
+                        return
+                    end
+                end
+            end
             log.e("Failed to copy URL from browser")
-        end
-    end)
+        end)
+    else
+        log.w("No copyUrl shortcut defined in general shortcuts. Please check your user_config.json file.")
+    end
 
     log.i("Application shortcuts setup complete")
 end

@@ -1,8 +1,12 @@
 # Hammerspoon Configuration
 
+<p align="center">
+  <img src="wizzard.gif" alt="Hammerspoon Setup Wizard" width="100">
+</p>
+
 **Creator:** Felix Mrak
 
-## Version 1.1.1
+## Version 1.2.0
 
 This repository contains a custom Hammerspoon configuration that enhances productivity on macOS through window management, application shortcuts, and integration with the Fabric AI tool.
 
@@ -14,11 +18,12 @@ This repository contains a custom Hammerspoon configuration that enhances produc
    - [Application Shortcuts](#application-shortcuts)
    - [Fabric AI Integration](#fabric-ai-integration)
    - [Saved Layouts](#saved-layouts)
-3. [Usage](#usage)
-4. [Customization](#customization)
-5. [Updating](#updating)
-6. [Troubleshooting](#troubleshooting)
-7. [Changelog](#changelog)
+3. [Setup Wizard](#setup-wizard)
+4. [Usage](#usage)
+5. [Customization](#customization)
+6. [Updating](#updating)
+7. [Troubleshooting](#troubleshooting)
+8. [Changelog](#changelog)
 
 ## Installation
 
@@ -55,6 +60,28 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 - Save and load custom window arrangements
 - Supports multiple applications and screens
 - Hotkeys for quick saving and loading
+
+## Setup Wizard
+
+The Setup Wizard is a graphical user interface that allows you to easily configure your Hammerspoon settings. To use the Setup Wizard:
+
+1. Press `Ctrl + Alt + Cmd + Shift + S` to launch the wizard (or your custom shortcut if changed).
+2. The wizard window will open with several tabs:
+   - **Folders**: Configure paths for quick access to important folders.
+   - **Applications**: Set the applications for various shortcuts.
+   - **Shortcuts**: Customize keyboard shortcuts for applications, folders, and window management.
+   - **Fabric**: Configure Fabric AI models and patterns.
+   - **Window Management**: Adjust window management settings.
+
+3. Navigate through the tabs and modify settings as needed.
+4. Click "Save Configuration" to apply your changes.
+5. The wizard will automatically trigger a reload of your Hammerspoon configuration.
+
+Key features of the Setup Wizard:
+- User-friendly interface for easy configuration
+- Ability to reset to default settings
+- Real-time updates to your Hammerspoon configuration
+- Customizable shortcuts for all major functions
 
 ## Usage
 
@@ -108,9 +135,10 @@ This repository contains a custom Hammerspoon configuration that enhances produc
 
 ## Customization
 
-- Modify `init.lua` in `~/.hammerspoon/` to change global settings or add new modules.
-- Edit `application.lua`, `windowManagement.lua`, and `fabric.lua` to customize specific functionalities.
-- Use the built-in setup wizard (default shortcut: `Ctrl + Alt + Cmd + Shift + S`) to configure settings interactively.
+- Use the Setup Wizard (Ctrl + Alt + Cmd + Shift + S) to customize most settings.
+- For advanced customization, you can still modify the Lua files directly:
+  - Edit `init.lua` in `~/.hammerspoon/` to change global settings or add new modules.
+  - Modify `application.lua`, `windowManagement.lua`, and `fabric.lua` for specific functionalities.
 
 ## Updating
 
@@ -118,7 +146,8 @@ To update to the latest version:
 1. Pull the latest changes:   ```
    cd ~/.hammerspoon
    git pull   ```
-2. Reload Hammerspoon configuration
+2. Launch the Setup Wizard to review and adjust any new settings.
+3. Reload Hammerspoon configuration
 
 ## Troubleshooting
 
@@ -126,6 +155,7 @@ If you encounter issues:
 1. Check the Hammerspoon console for error messages.
 2. Ensure all required dependencies are installed and properly configured.
 3. Verify that your `user_config.json` file is correctly formatted and contains valid settings.
+4. Try resetting to default settings using the Setup Wizard.
 
 ## Changelog
 

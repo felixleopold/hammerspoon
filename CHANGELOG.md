@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2024-10-20
+
+### Added
+- New graphical Setup Wizard using PyQt6 for easier configuration
+  - Tabbed interface for organizing different configuration sections
+  - Visual editing of shortcuts, applications, and folder paths
+  - Integration with Fabric AI configuration
+- "Reset to Default" functionality in the Setup Wizard
+- Icon support for the Setup Wizard in the dock
+- JetBrains Mono font support in the Setup Wizard (with Arial as fallback)
+
+### Changed
+- Improved user interface for window management configuration
+- Enhanced Fabric AI integration with configurable models and patterns
+- Updated `windowManagement.lua` to work seamlessly with the new Setup Wizard
+- Refined the process for saving and loading window layouts
+
+### Improved
+- Better error handling and user feedback in the Setup Wizard
+- More intuitive navigation between different configuration sections
+- Enhanced visual styling for better user experience
+
+### Fixed
+- Issues with folder paths not being recognized consistently
+- Inconsistencies in handling shortcuts across different configuration areas
+
 ## [1.1.1] - 2024-10-17
 
 ### Fixed

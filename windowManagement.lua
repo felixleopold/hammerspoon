@@ -15,7 +15,6 @@ local function moveWindowToPosition(win, x, y, w, h)
     end
 end
 
--- Function to ensure the layouts file exists
 local function ensureLayoutFileExists()
     local layoutsFile = os.getenv("HOME") .. "/.hammerspoon/savedLayouts.json"
     if not hs.fs.attributes(layoutsFile) then
@@ -28,7 +27,6 @@ local function ensureLayoutFileExists()
     end
 end
 
--- Function to save the current window layout
 local function saveLayout(name, numWindows)
     log.d("Saving layout: " .. name .. " with " .. numWindows .. " windows")
     local layout = {}
@@ -239,63 +237,120 @@ local function loadLayout(name)
     hs.alert.show("Layout loaded: " .. name)
 end
 
-function M.setup()
+function M.setup(config)
     log.i("Setting up window management")
     ensureLayoutFileExists()
-
-    local config = setup.getConfig()
 
     -- Set animation duration from config
     hs.window.animationDuration = config.windowManagement.animationDuration
 
-    local opt = {"alt"}
-    local optCmd = {"alt", "cmd"}
-
-    -- Move window to left half
-    hs.hotkey.bind(opt, "A", function()
-        moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 0.5, 1)
-    end)
-
-    -- Move window to right half
-    hs.hotkey.bind(opt, "D", function()
-        moveWindowToPosition(hs.window.focusedWindow(), 0.5, 0, 0.5, 1)
-    end)
-
-    -- Move window to top half
-    hs.hotkey.bind(opt, "W", function()
-        moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 1, 0.5)
-    end)
-
-    -- Move window to bottom half
-    hs.hotkey.bind(opt, "S", function()
-        moveWindowToPosition(hs.window.focusedWindow(), 0, 0.5, 1, 0.5)
-    end)
-
-    -- Move window to full screen
-    hs.hotkey.bind(opt, "F", function()
-        moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 1, 1)
-    end)
-
-    -- Center window
-    hs.hotkey.bind(opt, "C", function()
-        hs.window.focusedWindow():centerOnScreen()
-    end)
-
-    -- Move window to left screen
-    hs.hotkey.bind({"ctrl", "alt"}, "A", function()
-        local win = hs.window.focusedWindow()
-        if win then
-            win:moveOneScreenWest()
+    -- Helper function to bind hotkey
+    local function bindHotkey(shortcut, callback)
+        if type(shortcut) ~= "table" or #shortcut < 2 then
+            log.w("Invalid shortcut configuration: " .. hs.inspect(shortcut))
+            return
         end
-    end)
-
-    -- Move window to right screen
-    hs.hotkey.bind({"ctrl", "alt"}, "D", function()
-        local win = hs.window.focusedWindow()
-        if win then
-            win:moveOneScreenEast()
+        local modifiers = {}
+        for i = 1, #shortcut - 1 do
+            table.insert(modifiers, shortcut[i])
         end
-    end)
+        local key = shortcut[#shortcut]
+        log.d("Binding hotkey: " .. hs.inspect(modifiers) .. " + " .. key)
+        hs.hotkey.bind(modifiers, key, callback)
+    end
+
+    -- Set up window management shortcuts
+    for action, shortcut in pairs(config.shortcuts.windowManagement) do
+        if action == "leftHalf" then
+            bindHotkey(shortcut, function()
+                moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 0.5, 1)
+            end)
+        elseif action == "rightHalf" then
+            bindHotkey(shortcut, function()
+                moveWindowToPosition(hs.window.focusedWindow(), 0.5, 0, 0.5, 1)
+            end)
+        elseif action == "topHalf" then
+            bindHotkey(shortcut, function()
+                moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 1, 0.5)
+            end)
+        elseif action == "bottomHalf" then
+            bindHotkey(shortcut, function()
+                moveWindowToPosition(hs.window.focusedWindow(), 0, 0.5, 1, 0.5)
+            end)
+        elseif action == "fullScreen" then
+            bindHotkey(shortcut, function()
+                moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 1, 1)
+            end)
+        elseif action == "center" then
+            bindHotkey(shortcut, function()
+                hs.window.focusedWindow():centerOnScreen()
+            end)
+        elseif action == "leftScreen" then
+            bindHotkey(shortcut, function()
+                local win = hs.window.focusedWindow()
+                if win then win:moveOneScreenWest() end
+            end)
+        elseif action == "rightScreen" then
+            bindHotkey(shortcut, function()
+                local win = hs.window.focusedWindow()
+                if win then win:moveOneScreenEast() end
+            end)
+        elseif action == "saveLayout" then
+            bindHotkey(shortcut, function()
+                local numWindowsChooser = hs.chooser.new(function(choice)
+                    if choice then
+                        local numWindows = tonumber(choice.text)
+                        local button, layoutName = hs.dialog.textPrompt("Name Layout", "Enter a name for this layout:", "", "Save", "Cancel")
+                        if button == "Save" and layoutName and layoutName ~= "" then
+                            saveLayout(layoutName, numWindows)
+                        else
+                            hs.alert.show("Layout save cancelled or empty name provided")
+                        end
+                    else
+                        hs.alert.show("No number of windows selected")
+                    end
+                end)
+        
+                numWindowsChooser:choices({
+                    {text = "1"}, {text = "2"}, {text = "3"}, {text = "4"}, {text = "5"}
+                })
+        
+                numWindowsChooser:show()
+            end)
+        elseif action == "loadLayout" then
+            bindHotkey(shortcut, function()
+                local layoutsFile = os.getenv("HOME") .. "/.hammerspoon/savedLayouts.json"
+                local file = io.open(layoutsFile, "r")
+                if not file then
+                    hs.alert.show("Error: No saved layouts found")
+                    return
+                end
+        
+                local content = file:read("*all")
+                file:close()
+                local savedLayouts = hs.json.decode(content) or {}
+        
+                local layoutNames = {}
+                for name, _ in pairs(savedLayouts) do
+                    table.insert(layoutNames, {text = name})
+                end
+        
+                if #layoutNames == 0 then
+                    hs.alert.show("No saved layouts found")
+                    return
+                end
+        
+                local chooser = hs.chooser.new(function(choice)
+                    if choice then
+                        loadLayout(choice.text)
+                    end
+                end)
+        
+                chooser:choices(layoutNames)
+                chooser:show()
+            end)
+        end
+    end
 
     -- Cycle through windows of the current application
     local function cycleWindowsOfApp(reverse)
@@ -349,72 +404,15 @@ function M.setup()
         log.d("Focused window: " .. activeWindows[nextIndex]:title())
     end
 
-    -- Cycle forward through app windows
-    hs.hotkey.bind(opt, "E", function()
+    -- Bind cycle window shortcuts
+    bindHotkey(config.shortcuts.windowManagement.nextWindow, function()
         log.d("Cycling forward")
         cycleWindowsOfApp(false)
     end)
 
-    -- Cycle backward through app windows
-    hs.hotkey.bind(opt, "Q", function()
+    bindHotkey(config.shortcuts.windowManagement.previousWindow, function()
         log.d("Cycling backward")
         cycleWindowsOfApp(true)
-    end)
-
-    -- Add hotkey for saving layouts
-    hs.hotkey.bind(optCmd, "S", function()
-        local numWindowsChooser = hs.chooser.new(function(choice)
-            if choice then
-                local numWindows = tonumber(choice.text)
-                local button, layoutName = hs.dialog.textPrompt("Name Layout", "Enter a name for this layout:", "", "Save", "Cancel")
-                if button == "Save" and layoutName and layoutName ~= "" then
-                    saveLayout(layoutName, numWindows)
-                else
-                    hs.alert.show("Layout save cancelled or empty name provided")
-                end
-            else
-                hs.alert.show("No number of windows selected")
-            end
-        end)
-
-        numWindowsChooser:choices({
-            {text = "1"}, {text = "2"}, {text = "3"}, {text = "4"}, {text = "5"}
-        })
-
-        numWindowsChooser:show()
-    end)
-
-    -- Add hotkey for loading layouts
-    hs.hotkey.bind({"alt", "cmd"}, "L", function()
-        local layoutsFile = os.getenv("HOME") .. "/.hammerspoon/savedLayouts.json"
-        local file = io.open(layoutsFile, "r")
-        if not file then
-            hs.alert.show("Error: No saved layouts found")
-            return
-        end
-
-        local content = file:read("*all")
-        file:close()
-        local savedLayouts = hs.json.decode(content) or {}
-
-        local layoutNames = {}
-        for name, _ in pairs(savedLayouts) do
-            table.insert(layoutNames, {text = name})
-        end
-
-        if #layoutNames == 0 then
-            hs.alert.show("No saved layouts found")
-            return
-        end
-
-        local chooser = hs.chooser.new(function(choice)
-            if choice then
-                loadLayout(choice.text)
-            end
-        end)
-
-        chooser:choices(layoutNames)
-        chooser:show()
     end)
 
     log.i("Window management setup complete")
