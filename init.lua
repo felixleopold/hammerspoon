@@ -23,7 +23,7 @@ local ALERT_STYLE = {
     fadeInDuration = 0.15,
     fadeOutDuration = 0.15,
     atScreenEdge = 2,  -- 2 = bottom of screen
-    padding = 12,
+    padding = 12,     -- Smaller padding for single line
     strokeColor = { white = 1, alpha = 0.05 },  -- Subtle border
     fillColor = { white = 0.15, alpha = 0.90 },  -- Slightly translucent dark background
     textColor = { white = 1, alpha = 1 },  -- Crisp white text
@@ -31,10 +31,12 @@ local ALERT_STYLE = {
     textStyle = {  -- Center align text
         paragraphStyle = {
             alignment = "center",
+            maximumLineHeight = 13,
+            minimumLineHeight = 13
         }
     },
-    maxWidth = 300,  -- Fixed width in pixels
-    minWidth = 300,  -- Same as maxWidth for consistency
+    fillTopLeft = { x = 150, y = 0 },     -- Fixed size box
+    fillBottomRight = { x = 550, y = 36 }, -- 400px wide, 36px tall
 }
 
 -- Set global alert styling
@@ -53,12 +55,6 @@ function showAlert(message, duration)
     -- Truncate message if too long
     if #message > 50 then
         message = message:sub(1, 47) .. "..."
-    end
-    
-    -- Pad short messages with spaces to maintain minimum width
-    if #message < 20 then
-        local padding = string.rep(" ", math.floor((20 - #message) / 2))
-        message = padding .. message .. padding
     end
     
     -- Show the alert
