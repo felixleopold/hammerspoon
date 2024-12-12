@@ -1,23 +1,97 @@
-2024-12-12 20:24:58: -- Done.
-2024-12-12 20:25:03: 20:25:03     Fabric: Executing fabric pattern: yt_summarize
-2024-12-12 20:25:03: -- Loading extension: pasteboard
-2024-12-12 20:25:03:              Fabric: Found fabric in PATH: not found
-2024-12-12 20:25:03:              Fabric: Found fabric in alternate location: /Users/felixmrak/go/bin/fabric
-2024-12-12 20:25:03:              Fabric: Executing command: /Users/felixmrak/go/bin/fabric -y "https://www.youtube.com/watch?v=raukVy38AXI" --stream --pattern yt_summarize
-2024-12-12 20:25:03:              Fabric: Pattern: yt_summarize
-2024-12-12 20:25:03:              Fabric: Content length: 43
-2024-12-12 20:25:10: 20:25:10     Fabric: Successfully processed text with pattern: yt_summarize
-2024-12-12 20:25:27: 20:25:27     Fabric: Executing fabric pattern: improve
-2024-12-12 20:25:27:              Fabric: Found fabric in PATH: not found
-2024-12-12 20:25:27:              Fabric: Found fabric in alternate location: /Users/felixmrak/go/bin/fabric
-2024-12-12 20:25:27:              Fabric: Executing command: echo "dis is a test" | /Users/felixmrak/go/bin/fabric --pattern improve
-2024-12-12 20:25:27:              Fabric: Pattern: improve
-2024-12-12 20:25:27:              Fabric: Content length: 13
-2024-12-12 20:25:27:              Fabric: Successfully processed text with pattern: improve
-2024-12-12 20:25:40: 20:25:40     Fabric: Executing fabric pattern: correct
-2024-12-12 20:25:40:              Fabric: Found fabric in PATH: not found
-2024-12-12 20:25:40:              Fabric: Found fabric in alternate location: /Users/felixmrak/go/bin/fabric
-2024-12-12 20:25:40:              Fabric: Executing command: echo "dis is a test" | /Users/felixmrak/go/bin/fabric --pattern correct
-2024-12-12 20:25:40:              Fabric: Pattern: correct
-2024-12-12 20:25:40:              Fabric: Content length: 13
-2024-12-12 20:25:40:              Fabric: Successfully processed text with pattern: correct
+}
+2024-12-12 21:28:49:          Applicatio: Attempting to launch or focus: Zen Browser
+2024-12-12 21:28:56: 21:28:56     Fabric: Executing fabric pattern: improve
+2024-12-12 21:28:56: -- Loading extension: pasteboard
+2024-12-12 21:28:56:              Fabric: Found fabric in PATH: not found
+2024-12-12 21:28:56:              Fabric: Found fabric in alternate location: /Users/ferdinandpaar/go/bin/fabric
+2024-12-12 21:28:56:              Fabric: Executing command: echo "this is a dest" | /Users/ferdinandpaar/go/bin/fabric --pattern improve
+2024-12-12 21:28:56:              Fabric: Pattern: improve
+2024-12-12 21:28:56:              Fabric: Content length: 14
+2024-12-12 21:28:56: 21:28:56 ERROR:    Fabric: Error processing text: could not get pattern improve: missing required variable: instruction
+
+2024-12-12 21:28:56: 21:28:56 ERROR:    Fabric: Return code: 1
+2024-12-12 21:28:56: 21:28:56 ERROR:    Fabric: Error type: exit
+2024-12-12 21:28:56: 21:28:56 ERROR:    Fabric: Pattern 'improve' not found. Please check available patterns using 'fabric -l'
+2024-12-12 21:28:58: 21:28:58     Fabric: Executing fabric pattern: improve
+2024-12-12 21:28:59: 21:28:59     Fabric: Found fabric in PATH: not found
+2024-12-12 21:28:59:              Fabric: Found fabric in alternate location: /Users/ferdinandpaar/go/bin/fabric
+2024-12-12 21:28:59:              Fabric: Executing command: echo "this is a dest" | /Users/ferdinandpaar/go/bin/fabric --pattern improve
+2024-12-12 21:28:59:              Fabric: Pattern: improve
+2024-12-12 21:28:59:              Fabric: Content length: 14
+2024-12-12 21:28:59: 21:28:59 ERROR:    Fabric: Error processing text: could not get pattern improve: missing required variable: instruction
+
+2024-12-12 21:28:59: 21:28:59 ERROR:    Fabric: Return code: 1
+2024-12-12 21:28:59: 21:28:59 ERROR:    Fabric: Error type: exit
+2024-12-12 21:28:59: 21:28:59 ERROR:    Fabric: Pattern 'improve' not found. Please check available patterns using 'fabric -l'
+2024-12-12 21:29:00: 21:29:00     Fabric: Executing fabric pattern: improve
+2024-12-12 21:29:00:              Fabric: Found fabric in PATH: not found
+2024-12-12 21:29:00:              Fabric: Found fabric in alternate location: /Users/ferdinandpaar/go/bin/fabric
+2024-12-12 21:29:00:              Fabric: Executing command: echo "this is a dest" | /Users/ferdinandpaar/go/bin/fabric --pattern improve
+2024-12-12 21:29:00:              Fabric: Pattern: improve
+2024-12-12 21:29:00:              Fabric: Content length: 14
+2024-12-12 21:29:00: 21:29:00 ERROR:    Fabric: Error processing text: could not get pattern improve: missing required variable: instruction
+
+2024-12-12 21:29:00: 21:29:00 ERROR:    Fabric: Return code: 1
+2024-12-12 21:29:00: 21:29:00 ERROR:    Fabric: Error type: exit
+2024-12-12 21:29:00: 21:29:00 ERROR:    Fabric: Pattern 'improve' not found. Please check available patterns using 'fabric -l'
+2024-12-12 21:29:06: 21:29:06 Applicatio: Launching kitty via shortcut {
+  key = "T",
+  mods = { "ctrl", "alt", "cmd" }
+}
+2024-12-12 21:29:06:          Applicatio: Attempting to launch or focus: kitty
+2024-12-12 21:29:32: 21:29:32 WindowMana: Triggered: Move window left
+2024-12-12 21:38:46: 21:38:46     Fabric: Executing fabric pattern: improve
+2024-12-12 21:38:46:              Fabric: Found fabric in PATH: not found
+2024-12-12 21:38:46:              Fabric: Found fabric in alternate location: /Users/ferdinandpaar/go/bin/fabric
+2024-12-12 21:38:46:              Fabric: Executing command: echo "dis is a test" | /Users/ferdinandpaar/go/bin/fabric --pattern improve
+2024-12-12 21:38:46:              Fabric: Pattern: improve
+2024-12-12 21:38:46:              Fabric: Content length: 13
+2024-12-12 21:38:46: 21:38:46 ERROR:    Fabric: Error processing text: could not get pattern improve: missing required variable: instruction
+
+2024-12-12 21:38:46: 21:38:46 ERROR:    Fabric: Return code: 1
+2024-12-12 21:38:46: 21:38:46 ERROR:    Fabric: Error type: exit
+2024-12-12 21:38:46: 21:38:46 ERROR:    Fabric: Pattern 'improve' not found. Please check available patterns using 'fabric -l'
+2024-12-12 21:38:51: 21:38:51     Fabric: Executing fabric pattern: improve
+2024-12-12 21:38:51:              Fabric: Found fabric in PATH: not found
+2024-12-12 21:38:51:              Fabric: Found fabric in alternate location: /Users/ferdinandpaar/go/bin/fabric
+2024-12-12 21:38:51:              Fabric: Executing command: echo "dis is a test" | /Users/ferdinandpaar/go/bin/fabric --pattern improve
+2024-12-12 21:38:51:              Fabric: Pattern: improve
+2024-12-12 21:38:51:              Fabric: Content length: 13
+2024-12-12 21:38:51: 21:38:51 ERROR:    Fabric: Error processing text: could not get pattern improve: missing required variable: instruction
+
+2024-12-12 21:38:51: 21:38:51 ERROR:    Fabric: Return code: 1
+2024-12-12 21:38:51: 21:38:51 ERROR:    Fabric: Error type: exit
+2024-12-12 21:38:51: 21:38:51 ERROR:    Fabric: Pattern 'improve' not found. Please check available patterns using 'fabric -l'
+2024-12-12 21:38:53: 21:38:53     Fabric: Executing fabric pattern: improve
+2024-12-12 21:38:53:              Fabric: Found fabric in PATH: not found
+2024-12-12 21:38:53:              Fabric: Found fabric in alternate location: /Users/ferdinandpaar/go/bin/fabric
+2024-12-12 21:38:53:              Fabric: Executing command: echo "dis is a test" | /Users/ferdinandpaar/go/bin/fabric --pattern improve
+2024-12-12 21:38:53:              Fabric: Pattern: improve
+2024-12-12 21:38:53:              Fabric: Content length: 13
+2024-12-12 21:38:54: 21:38:54 ERROR:    Fabric: Error processing text: could not get pattern improve: missing required variable: instruction
+
+2024-12-12 21:38:54: 21:38:54 ERROR:    Fabric: Return code: 1
+2024-12-12 21:38:54: 21:38:54 ERROR:    Fabric: Error type: exit
+2024-12-12 21:38:54: 21:38:54 ERROR:    Fabric: Pattern 'improve' not found. Please check available patterns using 'fabric -l'
+2024-12-12 21:38:56: 21:38:56     Fabric: Executing fabric pattern: improve
+2024-12-12 21:38:56:              Fabric: Found fabric in PATH: not found
+2024-12-12 21:38:56:              Fabric: Found fabric in alternate location: /Users/ferdinandpaar/go/bin/fabric
+2024-12-12 21:38:56:              Fabric: Executing command: echo "dis is a test" | /Users/ferdinandpaar/go/bin/fabric --pattern improve
+2024-12-12 21:38:56:              Fabric: Pattern: improve
+2024-12-12 21:38:56:              Fabric: Content length: 13
+2024-12-12 21:38:56: 21:38:56 ERROR:    Fabric: Error processing text: could not get pattern improve: missing required variable: instruction
+
+2024-12-12 21:38:56: 21:38:56 ERROR:    Fabric: Return code: 1
+2024-12-12 21:38:56: 21:38:56 ERROR:    Fabric: Error type: exit
+2024-12-12 21:38:56: 21:38:56 ERROR:    Fabric: Pattern 'improve' not found. Please check available patterns using 'fabric -l'
+2024-12-12 21:38:57: 21:38:57     Fabric: Executing fabric pattern: improve
+2024-12-12 21:38:57:              Fabric: Found fabric in PATH: not found
+2024-12-12 21:38:57:              Fabric: Found fabric in alternate location: /Users/ferdinandpaar/go/bin/fabric
+2024-12-12 21:38:57:              Fabric: Executing command: echo "dis is a test" | /Users/ferdinandpaar/go/bin/fabric --pattern improve
+2024-12-12 21:38:57:              Fabric: Pattern: improve
+2024-12-12 21:38:57:              Fabric: Content length: 13
+2024-12-12 21:38:57: 21:38:57 ERROR:    Fabric: Error processing text: could not get pattern improve: missing required variable: instruction
+
+2024-12-12 21:38:57: 21:38:57 ERROR:    Fabric: Return code: 1
+2024-12-12 21:38:57: 21:38:57 ERROR:    Fabric: Error type: exit
+2024-12-12 21:38:57: 21:38:57 ERROR:    Fabric: Pattern 'improve' not found. Please check available patterns using 'fabric -l'
