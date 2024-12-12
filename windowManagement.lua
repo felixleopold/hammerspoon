@@ -114,11 +114,20 @@ function M.setup(config)
                 local role = win:role() or ""
                 local subrole = win:subrole() or ""
                 
-                -- Skip the special always-running Finder window (empty title or special role)
-                if appName == "Finder" and (title == "" or role == "AXSystemDialog") then
-                    log.i(string.format("Skipping special Finder window: title='%s', role='%s', subrole='%s', id=%d", 
+                -- Extra logging for Finder windows
+                if appName == "Finder" then
+                    log.i(string.format("Analyzing Finder window: title='%s', role='%s', subrole='%s', id=%d", 
                         title, role, subrole, win:id()))
-                    goto continue
+                    log.i(string.format("Window properties: visible=%s, minimized=%s, standard=%s", 
+                        tostring(win:isVisible()), 
+                        tostring(win:isMinimized()),
+                        tostring(subrole == "AXStandardWindow")))
+                    
+                    -- Skip only completely empty windows or system dialogs
+                    if title == "" and (role == "AXSystemDialog" or subrole == "") then
+                        log.i("Skipping empty or system dialog Finder window")
+                        goto continue
+                    end
                 end
                 
                 if win:isVisible() and not win:isMinimized() then
