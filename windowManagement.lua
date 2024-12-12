@@ -75,14 +75,27 @@ function M.setup(config)
         -- Special handling for Finder
         if app:name() == "Finder" then
             local windows = {}
+            local allWindows = app:allWindows()
+            log.i("Found " .. #allWindows .. " total Finder windows")
+            
             -- Include all Finder windows except Desktop
-            for _, win in ipairs(app:allWindows()) do
+            for _, win in ipairs(allWindows) do
                 local title = win:title()
-                if title and title ~= "" and title ~= "Desktop" then
-                    log.d("Found Finder window: " .. title)
+                local role = win:role()
+                local subrole = win:subrole()
+                local isVisible = win:isVisible()
+                
+                log.i("Window details:")
+                log.i("  - Title: " .. (title or "nil"))
+                log.i("  - Role: " .. (role or "nil"))
+                log.i("  - Subrole: " .. (subrole or "nil"))
+                log.i("  - Visible: " .. tostring(isVisible))
+                
+                if title and title ~= "" and title ~= "Desktop" and isVisible then
+                    log.i("Including window: " .. title)
                     table.insert(windows, win)
                 else
-                    log.d("Skipping Finder window with title: " .. (title or "nil"))
+                    log.i("Skipping window: " .. (title or "nil") .. " (empty title or Desktop)")
                 end
             end
             
@@ -95,6 +108,12 @@ function M.setup(config)
             table.sort(windows, function(a, b) return a:id() < b:id() end)
             
             local focusedWindow = hs.window.focusedWindow()
+            if focusedWindow then
+                log.i("Current focused window: " .. (focusedWindow:title() or "nil"))
+            else
+                log.w("No focused window found")
+            end
+            
             local currentIndex
             
             -- Find current window index
