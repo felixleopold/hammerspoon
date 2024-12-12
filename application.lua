@@ -135,9 +135,10 @@ function M.setup(config)
                     local finder = hs.application.get("Finder")
                     if finder then
                         local closedCount = 0
-                        for _, win in ipairs(finder:allWindows()) do
+                        local windows = finder:allWindows()
+                        for _, win in ipairs(windows) do
                             -- Only close standard Finder windows (not desktop, etc)
-                            if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" then
+                            if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" and win:isVisible() then
                                 win:close()
                                 closedCount = closedCount + 1
                             end
@@ -148,13 +149,14 @@ function M.setup(config)
                     local frontApp = hs.application.frontmostApplication()
                     if frontApp and frontApp:name() == config.applications.Browser then
                         -- Sequence: cmd+L to select URL, cmd+C to copy, ESC to deselect
-                        hs.timer.usleep(50000)  -- Small delay before starting
                         hs.eventtap.keyStroke({"cmd"}, "l")
-                        hs.timer.usleep(50000)  -- Wait for URL bar to be selected
-                        hs.eventtap.keyStroke({"cmd"}, "c")
-                        hs.timer.usleep(50000)  -- Wait for copy
-                        hs.eventtap.keyStroke({}, "escape")
-                        log.i("Copied URL from Zen Browser")
+                        hs.timer.doAfter(0.1, function()
+                            hs.eventtap.keyStroke({"cmd"}, "c")
+                            hs.timer.doAfter(0.1, function()
+                                hs.eventtap.keyStroke({}, "escape")
+                                log.i("Copied URL from Zen Browser")
+                            end)
+                        end)
                     end
                 end
             end)

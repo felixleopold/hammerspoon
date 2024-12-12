@@ -72,7 +72,7 @@ function M.setup(config)
             local windows = {}
             -- Only include standard Finder windows (exclude desktop, etc)
             for _, win in ipairs(app:allWindows()) do
-                if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" then
+                if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" and win:isVisible() then
                     table.insert(windows, win)
                 end
             end
@@ -92,7 +92,11 @@ function M.setup(config)
                 end
             end
             
-            if not currentIndex then return end
+            if not currentIndex then
+                -- If current window not found in list, focus the first one
+                windows[1]:focus()
+                return
+            end
             
             -- Calculate next window index
             local nextIndex
