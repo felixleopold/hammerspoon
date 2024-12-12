@@ -1,14 +1,14 @@
 --[[
- (\.   \      ,/)
-  \(   |\     )/
-  //\  | \   /\\
- (/ /\_#oo#_/\ \)
-  \/\  ####  /\/
-       `##'
+                                (\.   \      ,/)
+                                \(   |\     )/
+                                //\  | \   /\\
+                                (/ /\_#oo#_/\ \)
+                                \/\  ####  /\/
+                                    `##'
 
-=====================================
-Hammerspoon Configuration
-=====================================
+===================================================================================
+                        Hammerspoon Configuration
+===================================================================================
 
 This is the main configuration file for Hammerspoon. It defines all your shortcuts,
 applications, and window management settings.
@@ -26,7 +26,10 @@ Shortcut Modifiers:
 ]]--
 
 local config = {
-    -- Common modifier combinations
+    --[[-----------------------------------------
+    Common Modifier Combinations
+    Used throughout the configuration for consistent shortcuts
+    ------------------------------------------]]
     triggers = {
         app = {"ctrl", "alt", "cmd"},     -- For launching applications (⌘⌃⌥)
         folder = {"cmd", "shift"},        -- For opening folders (⌘⇧)
@@ -35,7 +38,10 @@ local config = {
         pattern = {"ctrl", "alt"},        -- For fabric patterns (⌃⌥)
     },
 
-    -- Applications to control
+    --[[-----------------------------------------
+    Applications
+    Define paths to your commonly used applications
+    ------------------------------------------]]
     applications = {
         Browser = "Zen Browser",      -- Primary browser
         Browser2 = "Microsoft Edge",  -- Secondary browser
@@ -50,7 +56,10 @@ local config = {
         UTM = "UTM",                  -- Virtual machines
     },
 
-    -- Common folders
+    --[[-----------------------------------------
+    Folders
+    Define paths to your commonly accessed folders
+    ------------------------------------------]]
     folders = {
         home = "~",                    -- Home directory
         desktop = "~/Desktop",         -- Desktop folder
@@ -63,7 +72,10 @@ local config = {
         projects = "~/Documents/Projects", -- Programming projects
     },
 
-    -- Keyboard shortcuts
+    --[[-----------------------------------------
+    Keyboard Shortcuts
+    Define all keyboard shortcuts for different functions
+    ------------------------------------------]]
     shortcuts = {
         -- Application shortcuts (ctrl + alt + cmd + key)
         apps = {
@@ -93,7 +105,7 @@ local config = {
             { path = "projects", key = "R" },    -- Projects
         },
 
-        -- Window management
+        -- Window management shortcuts
         windows = {
             -- Basic window movements (alt + key)
             left = { trigger = "window", key = "A" },      -- Left half
@@ -119,10 +131,18 @@ local config = {
         },
     },
 
-    -- Window animation duration (0 for instant)
-    windowAnimation = 0,
+    --[[-----------------------------------------
+    Window Management Settings
+    Configure window behavior and animations
+    ------------------------------------------]]
+    windowManagement = {
+        animationDuration = 0,  -- Set to 0 for instant window movements
+    },
 
-    -- Fabric AI Integration
+    --[[-----------------------------------------
+    Fabric AI Integration
+    Configure AI patterns and shortcuts
+    ------------------------------------------]]
     fabric = {
         -- Default settings
         defaultModel = "gpt-4",
@@ -167,21 +187,21 @@ local config = {
                 id = "write_essay",
                 name = "Write Essay",
                 desc = "Generate an essay from an idea",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "E",
             },
             {
                 id = "create_social",
                 name = "Create Social Post",
                 desc = "Create social media content",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "S",
             },
             {
                 id = "art_prompt",
                 name = "Generate Art Prompt",
                 desc = "Create AI art prompt",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "A",
             },
 
@@ -191,7 +211,7 @@ local config = {
                 name = "YouTube Summary",
                 desc = "Summarize video content",
                 command = "extract_wisdom",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "Y",
                 youtube = true,
             },
@@ -200,7 +220,7 @@ local config = {
                 name = "YouTube Key Points",
                 desc = "Extract main points",
                 command = "extract_key_points",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "K",
                 youtube = true,
             },
@@ -209,7 +229,7 @@ local config = {
                 name = "YouTube Lecture Notes",
                 desc = "Create lecture notes",
                 command = "create_lecture_notes",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "L",
                 youtube = true,
             },
@@ -219,7 +239,7 @@ local config = {
                 id = "explain_code",
                 name = "Explain Code",
                 desc = "Get a detailed code explanation",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "C",
                 model = "gpt-4",
             },
@@ -227,7 +247,7 @@ local config = {
                 id = "improve_code",
                 name = "Improve Code",
                 desc = "Get code improvement suggestions",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "I",
                 model = "gpt-4",
             },
@@ -235,59 +255,9 @@ local config = {
                 id = "document_code",
                 name = "Document Code",
                 desc = "Generate code documentation",
-                trigger = "advanced",
+                trigger = "pattern",
                 key = "D",
                 model = "gpt-4",
-            },
-
-            -- Research Patterns
-            {
-                id = "research_deep",
-                name = "Deep Research",
-                desc = "In-depth analysis of a topic",
-                trigger = "research",
-                key = "R",
-                model = "gpt-4",
-            },
-            {
-                id = "academic_summary",
-                name = "Academic Summary",
-                desc = "Summarize academic papers",
-                trigger = "research",
-                key = "A",
-                model = "gpt-4",
-            },
-            {
-                id = "extract_references",
-                name = "Extract References",
-                desc = "Extract and format references",
-                trigger = "research",
-                key = "E",
-            },
-        },
-
-        -- Pattern categories for the chooser menu
-        categories = {
-            {
-                name = "Text Analysis",
-                patterns = { "summarize", "extract_wisdom", 
-                           "improve_writing", "find_action_items" }
-            },
-            {
-                name = "Content Creation",
-                patterns = { "write_essay", "create_social", "art_prompt" }
-            },
-            {
-                name = "YouTube",
-                patterns = { "youtube_summary", "youtube_key_points", "youtube_lecture" }
-            },
-            {
-                name = "Code",
-                patterns = { "explain_code", "improve_code", "document_code" }
-            },
-            {
-                name = "Research",
-                patterns = { "research_deep", "academic_summary", "extract_references" }
             },
         },
     },
