@@ -1,162 +1,144 @@
 # Hammerspoon Configuration
 
-<p align="center">
-  <img src="wizzard.gif" alt="Hammerspoon Setup Wizard" width="100">
-</p>
-
-**Creator:** Felix Mrak
-
-## Version 1.2.0
-
-This repository contains a custom Hammerspoon configuration that enhances productivity on macOS through window management, application shortcuts, and integration with the Fabric AI tool.
-
-## Table of Contents
-
-1. [Installation](#installation)
-2. [Features](#features)
-   - [Window Management](#window-management)
-   - [Application Shortcuts](#application-shortcuts)
-   - [Fabric AI Integration](#fabric-ai-integration)
-   - [Saved Layouts](#saved-layouts)
-3. [Setup Wizard](#setup-wizard)
-4. [Usage](#usage)
-5. [Customization](#customization)
-6. [Updating](#updating)
-7. [Troubleshooting](#troubleshooting)
-8. [Changelog](#changelog)
-
-## Installation
-
-1. Install [Hammerspoon](https://www.hammerspoon.org/) on your macOS system.
-2. Clone this repository:   ```
-   git clone https://github.com/felixleopold/hammerspoon-config.git ~/.hammerspoon   ```
-3. Ensure Fabric is installed and accessible in your PATH.
-4. Reload the Hammerspoon configuration.
+A powerful and customizable configuration for Hammerspoon, featuring window management, application shortcuts, folder navigation, and Fabric AI integration.
 
 ## Features
 
 ### Window Management
-
-- Move windows to different positions on the screen (left half, right half, top half, bottom half, etc.)
+- Move windows to different positions (left half, right half, top half, bottom half, etc.)
 - Move windows between multiple screens
 - Resize windows to various preset sizes
-- Save and load custom window layouts
-- Cycle through windows of the current application
+- Cycle through application windows
+- Special handling for Finder windows
 
 ### Application Shortcuts
-
 - Quick launch or focus for commonly used applications
 - Open specific folders with customizable shortcuts
-- Copy current URL from configured browsers
+- Copy current URL from Zen Browser
+- Close all Finder windows with a single shortcut
 
 ### Fabric AI Integration
-
 - Execute various Fabric patterns directly from Hammerspoon
 - Process clipboard content using Fabric AI
 - Summarize YouTube videos and perform other text-related tasks
 
-### Saved Layouts
-
-- Save and load custom window arrangements
-- Supports multiple applications and screens
-- Hotkeys for quick saving and loading
-
-## Setup Wizard
-
-The Setup Wizard is a graphical user interface that allows you to easily configure your Hammerspoon settings. To use the Setup Wizard:
-
-1. Press `Ctrl + Alt + Cmd + Shift + S` to launch the wizard (or your custom shortcut if changed).
-2. The wizard window will open with several tabs:
-   - **Folders**: Configure paths for quick access to important folders.
-   - **Applications**: Set the applications for various shortcuts.
-   - **Shortcuts**: Customize keyboard shortcuts for applications, folders, and window management.
-   - **Fabric**: Configure Fabric AI models and patterns.
-   - **Window Management**: Adjust window management settings.
-
-3. Navigate through the tabs and modify settings as needed.
-4. Click "Save Configuration" to apply your changes.
-5. The wizard will automatically trigger a reload of your Hammerspoon configuration.
-
-Key features of the Setup Wizard:
-- User-friendly interface for easy configuration
-- Ability to reset to default settings
-- Real-time updates to your Hammerspoon configuration
-- Customizable shortcuts for all major functions
-
-## Usage
+## Shortcuts
 
 ### Window Management
-
-- `Alt + A`: Move window to left half of the screen
-- `Alt + D`: Move window to right half of the screen
-- `Alt + W`: Move window to top half of the screen
-- `Alt + S`: Move window to bottom half of the screen
-- `Alt + F`: Fullscreen
+- `Alt + A`: Move window to left half
+- `Alt + D`: Move window to right half
+- `Alt + W`: Move window to top half
+- `Alt + H`: Move window to bottom half
 - `Alt + C`: Center window
-- `Ctrl + Alt + A`: Move window to left screen
-- `Ctrl + Alt + D`: Move window to right screen
+- `Alt + F`: Full screen
+- `Cmd + Alt + A`: Move window to previous screen
+- `Cmd + Alt + D`: Move window to next screen
 - `Alt + E`: Cycle forward through app windows
 - `Alt + Q`: Cycle backward through app windows
-- `Alt + Cmd + S`: Save current window layout
-- `Alt + Cmd + L`: Load a saved window layout
 
-### Application Shortcuts
+### Application Shortcuts (Ctrl + Alt + Cmd)
+- `Z`: Launch Zen Browser
+- `A`: Launch Microsoft Edge
+- `V`: Launch VS Code
+- `T`: Launch Terminal
+- `O`: Launch Obsidian
+- `M`: Launch Mail
+- `S`: Launch Spotify
+- `F`: Launch Finder
+- `W`: Launch WhatsApp
+- `P`: Launch System Settings
+- `U`: Launch UTM
 
-- `Cmd + Shift + D`: Open Desktop folder
-- `Cmd + Shift + R`: Open Radboud folder
-- `Cmd + Shift + A`: Open Applications folder
-- `Cmd + Shift + L`: Open Downloads folder
-- `Cmd + Shift + H`: Open Home folder
-- `Cmd + Shift + O`: Open Obsidian vault
-- `Cmd + Shift + F`: Open Documents folder
-- `Cmd + Shift + C`: Copy current URL from browser
-- `Ctrl + Alt + Cmd + P`: Open System Settings
-- `Ctrl + Alt + Cmd + A`: Open Arc browser
-- `Ctrl + Alt + Cmd + Z`: Open Zen Browser
-- `Ctrl + Alt + Cmd + T`: Open Terminal
-- `Ctrl + Alt + Cmd + S`: Open Spotify
-- `Ctrl + Alt + Cmd + M`: Open Mail
-- `Ctrl + Alt + Cmd + O`: Open Obsidian
-- `Ctrl + Alt + Cmd + W`: Open WhatsApp
-- `Ctrl + Alt + Cmd + F`: Open Finder
-- `Ctrl + Alt + Cmd + V`: Open Visual Studio Code
-- `Ctrl + Alt + Cmd + C`: Open Cursor editor
+### Folder Shortcuts (Cmd + Shift)
+- `H`: Open Home folder
+- `D`: Open Desktop folder
+- `L`: Open Downloads folder
+- `F`: Open Documents folder
+- `P`: Open Pictures folder
+- `M`: Open Music folder
+- `V`: Open Movies folder
+- `A`: Open Applications folder
+- `O`: Open Obsidian vault
+- `S`: Open School folder
+- `R`: Open Projects folder
+
+### Utility Shortcuts
+- `Cmd + Shift + X`: Close all Finder windows
+- `Ctrl + C`: Copy URL from Zen Browser (when focused)
 
 ### Fabric AI Integration
+Basic patterns (Ctrl + Alt):
+- `S`: Summarize text
+- `W`: Extract wisdom
+- `I`: Improve writing
+- `F`: Find action items
 
-- `Ctrl + Alt + I`: Correct Text
-- `Ctrl + Alt + O`: Improve Text
-- `Ctrl + Alt + E`: Translate
-- `Ctrl + Alt + L`: LaTeX
-- `Ctrl + Alt + P`: LaTeX Plus
-- `Ctrl + Alt + G`: General Pattern
-- `Ctrl + Alt + N`: Note Name
-- `Cmd + Alt + Shift + P`: Show Pattern Chooser
+Advanced patterns (Ctrl + Alt + Shift):
+- `E`: Write essay
+- `S`: Create social post
+- `A`: Generate art prompt
+- `Y`: YouTube summary
+- `K`: YouTube key points
+- `L`: YouTube lecture notes
+- `C`: Explain code
+- `I`: Improve code
+- `D`: Document code
 
-## Customization
+Research patterns (Ctrl + Alt + Cmd):
+- `R`: Deep research
+- `A`: Academic summary
+- `E`: Extract references
 
-- Use the Setup Wizard (Ctrl + Alt + Cmd + Shift + S) to customize most settings.
-- For advanced customization, you can still modify the Lua files directly:
-  - Edit `init.lua` in `~/.hammerspoon/` to change global settings or add new modules.
-  - Modify `application.lua`, `windowManagement.lua`, and `fabric.lua` for specific functionalities.
+Pattern chooser:
+- `Cmd + Alt + Shift + P`: Show pattern chooser
 
-## Updating
+## Installation
 
-To update to the latest version:
-1. Pull the latest changes:   ```
-   cd ~/.hammerspoon
-   git pull   ```
-2. Launch the Setup Wizard to review and adjust any new settings.
-3. Reload Hammerspoon configuration
+1. Install [Hammerspoon](https://www.hammerspoon.org/)
+2. Clone this repository to `~/.hammerspoon/`:
+   ```bash
+   git clone https://github.com/yourusername/hammerspoon.git ~/.hammerspoon
+   ```
+3. Launch Hammerspoon or reload your configuration
 
-## Troubleshooting
+## Configuration
 
-If you encounter issues:
-1. Check the Hammerspoon console for error messages.
-2. Ensure all required dependencies are installed and properly configured.
-3. Verify that your `user_config.json` file is correctly formatted and contains valid settings.
-4. Try resetting to default settings using the Setup Wizard.
+The configuration is split into several files for better organization:
+- `init.lua`: Main initialization file
+- `config.lua`: User configuration (applications, shortcuts, etc.)
+- `application.lua`: Application management
+- `windowManagement.lua`: Window management features
+- `fabric.lua`: Fabric AI integration
 
-## Changelog
+## Logging
 
-See [CHANGELOG.md](CHANGELOG.md) for version history and detailed changes.
+The configuration includes detailed logging for troubleshooting:
+- Window management operations
+- Application launching
+- Folder operations
+- Fabric pattern execution
+
+Logs can be viewed in the Hammerspoon Console (click the Hammerspoon menubar icon and select "Console").
+
+## Version History
+
+### 1.3.0
+- Added utility shortcuts for Finder and Zen Browser
+- Improved window cycling with better Finder support
+- Added detailed logging throughout
+- Fixed various window management issues
+
+### 1.2.0
+- Added Fabric AI integration
+- Improved window management
+- Added support for multiple screens
+
+### 1.1.0
+- Added folder shortcuts
+- Improved application management
+- Added window cycling
+
+### 1.0.0
+- Initial release
+- Basic window management
+- Application shortcuts
