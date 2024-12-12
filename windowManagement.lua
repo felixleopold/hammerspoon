@@ -73,20 +73,55 @@ function M.setup(config)
         local appName = app:name()
         log.i("Cycling windows for app: " .. appName .. " in direction: " .. direction)
         
-        -- Get all windows for the app
-        local allWindows = app:allWindows()
+        -- Get windows using both methods for better compatibility
         local windows = {}
+        local seenIds = {}
         
-        -- Filter windows
-        for _, win in ipairs(allWindows) do
-            if win:isVisible() and not win:isMinimized() then
+        -- Method 1: Get windows from application
+        local appWindows = app:allWindows()
+        for _, win in ipairs(appWindows) do
+            if win and win:isVisible() and not win:isMinimized() then
                 local title = win:title() or ""
-                -- Only include windows with titles
-                if title ~= "" then
+                local role = win:role() or ""
+                local subrole = win:subrole() or ""
+                
+                log.i(string.format("Found window via app:allWindows(): title='%s', role='%s', subrole='%s'", 
+                    title, role, subrole))
+                
+                -- Only include standard windows with titles
+                if title ~= "" and role == "AXWindow" then
                     table.insert(windows, win)
+                    seenIds[win:id()] = true
                     log.i(string.format("Including window: '%s'", title))
                 else
-                    log.i("Skipping window with empty title")
+                    log.i(string.format("Skipping non-standard window: '%s'", title))
+                end
+            end
+        end
+        
+        -- Method 2: Get windows from window filter
+        local wf = hs.window.filter.new(false)
+        wf:setAppFilter(appName, {
+            allowRoles = {'AXWindow'},
+            visible = true,
+            currentSpace = true,
+            fullscreen = true
+        })
+        local filterWindows = wf:getWindows()
+        
+        for _, win in ipairs(filterWindows) do
+            if win and not seenIds[win:id()] and win:isVisible() and not win:isMinimized() then
+                local title = win:title() or ""
+                local role = win:role() or ""
+                local subrole = win:subrole() or ""
+                
+                log.i(string.format("Found window via filter: title='%s', role='%s', subrole='%s'", 
+                    title, role, subrole))
+                
+                if title ~= "" and role == "AXWindow" then
+                    table.insert(windows, win)
+                    seenIds[win:id()] = true
+                    log.i(string.format("Including additional window: '%s'", title))
                 end
             end
         end
