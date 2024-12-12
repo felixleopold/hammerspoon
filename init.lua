@@ -22,21 +22,43 @@ local ALERT_STYLE = {
     textSize = 13,  -- Standard system size
     fadeInDuration = 0.15,
     fadeOutDuration = 0.15,
-    atScreenEdge = 2,
+    atScreenEdge = 2,  -- 2 = bottom of screen
     padding = 12,
     strokeColor = { white = 1, alpha = 0.05 },  -- Subtle border
     fillColor = { white = 0.15, alpha = 0.90 },  -- Slightly translucent dark background
     textColor = { white = 1, alpha = 1 },  -- Crisp white text
     backgroundStyle = "dark",  -- Ensures proper contrast
+    textStyle = {  -- Center align text
+        paragraphStyle = {
+            alignment = "center",
+        }
+    },
+    maxWidth = 400,  -- Maximum width in pixels
 }
 
 -- Set global alert styling
 hs.alert.defaultStyle = ALERT_STYLE
 
+-- Current active alert
+local currentAlert = nil
+
 -- Helper function for consistent alerts
 function showAlert(message, duration)
-    duration = duration or 2  -- Default duration
-    hs.alert.show(message, ALERT_STYLE, duration)
+    -- Clear any existing alert
+    if currentAlert then
+        hs.alert.closeSpecific(currentAlert)
+    end
+    
+    -- Truncate message if too long
+    if #message > 50 then
+        message = message:sub(1, 47) .. "..."
+    end
+    
+    -- Show the alert
+    duration = duration or 1.5  -- Default duration
+    currentAlert = hs.alert.show(message, ALERT_STYLE, duration)
+    
+    return currentAlert
 end
 
 -- Function to reload the Hammerspoon configuration
