@@ -64,19 +64,6 @@ function M.setup(config)
 
     -- Window cycling functions
     local function cycleWindows(direction)
-        -- Log system information
-        log.i("System Information:")
-        log.i("  OS Version: " .. hs.host.operatingSystemVersion())
-        log.i("  Hostname: " .. hs.host.localizedName())
-        log.i("  Hammerspoon Version: " .. hs.processInfo.version)
-        
-        -- Check if we have accessibility permissions
-        if not hs.accessibilityState() then
-            log.e("Accessibility permissions not granted. Please enable Hammerspoon in System Settings > Privacy & Security > Accessibility")
-            hs.alert.show("Accessibility permissions required")
-            return
-        end
-
         local app = hs.application.frontmostApplication()
         if not app then 
             log.w("No frontmost application found")
@@ -86,88 +73,22 @@ function M.setup(config)
         local appName = app:name()
         log.i("Cycling windows for app: " .. appName .. " in direction: " .. direction)
         
-        -- Get windows directly from the application
+        -- Get all windows for the app
         local allWindows = app:allWindows()
-        if not allWindows then
-            log.e("Failed to get application windows")
-            return
-        end
-        log.d("Total windows found for " .. appName .. ": " .. #allWindows)
-        
-        -- Log all windows for debugging
-        for i, win in ipairs(allWindows) do
-            if win then
-                local title = win:title() or ""
-                local role = win:role() or ""
-                local subrole = win:subrole() or ""
-                local frame = win:frame()
-                log.d(string.format("Window %d: title='%s', role='%s', subrole='%s', id=%d, visible=%s, minimized=%s", 
-                    i, title, role, subrole, win:id(),
-                    tostring(win:isVisible()), tostring(win:isMinimized())))
-                log.d(string.format("  Frame: x=%d, y=%d, w=%d, h=%d", 
-                    frame.x, frame.y, frame.w, frame.h))
-                
-                -- Try to get window AXAttributes
-                local axapp = hs.axuielement.applicationElement(app)
-                if axapp then
-                    local axwin = hs.axuielement.windowElement(win)
-                    if axwin then
-                        local attrs = axwin:allAttributeValues()
-                        log.d("  AX Attributes: " .. hs.inspect(attrs))
-                    end
-                end
-            end
-        end
-        
         local windows = {}
         
         -- Filter windows
         for _, win in ipairs(allWindows) do
-            if not win then
-                log.w("Found nil window")
-                goto continue
-            end
-            
-            local title = win:title() or ""
-            local role = win:role() or ""
-            local subrole = win:subrole() or ""
-            
-            -- Extra logging for Finder windows
-            if appName == "Finder" then
-                log.i(string.format("Analyzing Finder window: title='%s', role='%s', subrole='%s', id=%d", 
-                    title, role, subrole, win:id()))
-                log.i(string.format("Window properties: visible=%s, minimized=%s, standard=%s", 
-                    tostring(win:isVisible()), 
-                    tostring(win:isMinimized()),
-                    tostring(subrole == "AXStandardWindow")))
-                
-                -- For Finder, include any window that:
-                -- 1. Has a title, OR
-                -- 2. Is a standard window
-                if title ~= "" or subrole == "AXStandardWindow" then
-                    if win:isVisible() and not win:isMinimized() then
-                        table.insert(windows, win)
-                        log.i(string.format("Including Finder window: '%s'", title))
-                    else
-                        log.i(string.format("Skipping invisible/minimized Finder window: '%s'", title))
-                    end
-                else
-                    log.i(string.format("Skipping special Finder window: '%s'", title))
-                end
-            else
-                -- For other apps, just check visibility
-                if win:isVisible() and not win:isMinimized() then
+            if win:isVisible() and not win:isMinimized() then
+                -- For Finder, skip Desktop window
+                if appName ~= "Finder" or win:title() ~= "Desktop" then
                     table.insert(windows, win)
-                    log.i(string.format("Including window: title='%s', role='%s', subrole='%s', id=%d", 
-                        title, role, subrole, win:id()))
-                else
-                    log.i(string.format("Skipping invisible/minimized window: '%s'", title))
+                    log.i(string.format("Including window: '%s'", win:title() or ""))
                 end
             end
-            ::continue::
         end
         
-        log.i("Found " .. #windows .. " usable windows for " .. appName)
+        log.i("Found " .. #windows .. " windows for " .. appName)
         
         if #windows <= 1 then
             log.i("Not enough windows to cycle")
@@ -188,18 +109,15 @@ function M.setup(config)
         for i, win in ipairs(windows) do
             if win:id() == focusedWindow:id() then
                 currentIndex = i
-                log.i(string.format("Current window %d of %d: '%s' (id=%d)", 
-                    i, #windows, win:title() or "", win:id()))
+                log.i(string.format("Current window %d of %d: '%s'", 
+                    i, #windows, win:title() or ""))
                 break
             end
         end
         
         if not currentIndex then
             log.i("Current window not in cycle list, focusing first window")
-            if not windows[1]:focus() then
-                log.e("Failed to focus first window")
-                return
-            end
+            windows[1]:focus()
             return
         end
         
@@ -211,14 +129,11 @@ function M.setup(config)
             nextIndex = (currentIndex - 2) % #windows + 1
         end
         
-        log.i(string.format("Moving from window %d ('%s', id=%d) to %d ('%s', id=%d)", 
-            currentIndex, windows[currentIndex]:title() or "", windows[currentIndex]:id(),
-            nextIndex, windows[nextIndex]:title() or "", windows[nextIndex]:id()))
+        log.i(string.format("Moving from window %d ('%s') to %d ('%s')", 
+            currentIndex, windows[currentIndex]:title() or "",
+            nextIndex, windows[nextIndex]:title() or ""))
             
-        if not windows[nextIndex]:focus() then
-            log.e("Failed to focus next window")
-            return
-        end
+        windows[nextIndex]:focus()
     end
 
     -- Bind window management shortcuts
