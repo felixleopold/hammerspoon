@@ -121,9 +121,12 @@ function M.setup(config)
         -- Calculate next window index
         local nextIndex
         if direction == "next" then
-            nextIndex = currentIndex % #windows + 1
+            nextIndex = (currentIndex % #windows) + 1
         else
-            nextIndex = (currentIndex - 2) % #windows + 1
+            nextIndex = currentIndex - 1
+            if nextIndex < 1 then
+                nextIndex = #windows
+            end
         end
         
         log.i(string.format("Moving from window %d ('%s') to %d ('%s')", 
