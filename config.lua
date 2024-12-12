@@ -155,7 +155,6 @@ local config = {
     ------------------------------------------]]
     fabric = {
         -- Default settings
-        defaultModel = "gpt-4",
         fabricPath = "~/go/bin/fabric",  -- Path to fabric executable
         chooserTrigger = {"cmd", "alt", "shift"},  -- Global trigger for pattern chooser
         chooserKey = "P",                          -- Key for pattern chooser
@@ -169,7 +168,6 @@ local config = {
                 desc = "Create a concise summary",
                 trigger = "pattern",
                 key = "S",
-                model = "gpt-4",
             },
             {
                 id = "extract_wisdom",
@@ -252,7 +250,6 @@ local config = {
                 desc = "Get a detailed code explanation",
                 trigger = "pattern",
                 key = "C",
-                model = "gpt-4",
             },
             {
                 id = "improve_code",
@@ -260,7 +257,6 @@ local config = {
                 desc = "Get code improvement suggestions",
                 trigger = "pattern",
                 key = "I",
-                model = "gpt-4",
             },
             {
                 id = "document_code",
@@ -268,7 +264,6 @@ local config = {
                 desc = "Generate code documentation",
                 trigger = "pattern",
                 key = "D",
-                model = "gpt-4",
             },
         },
     },

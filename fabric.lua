@@ -79,67 +79,34 @@ Default installation path is: ~/go/bin/fabric
         end
         
         -- Build the fabric command
-        local command
-        if pattern.youtube then
-            -- For YouTube patterns, check if the URL is from a browser
-            local browserApps = {
-                config.applications.Browser,     -- Primary browser (Zen)
-                config.applications.Browser2,    -- Secondary browser (Edge)
-            }
-            local url = clipboardContent
-            local foundUrl = false
-
-            for _, browserName in ipairs(browserApps) do
-                local browser = hs.application.get(browserName)
-                if browser then
-                    -- Try to get URL from browser
-                    browser:activate()
-                    hs.timer.usleep(50000)
-                    hs.eventtap.keyStroke({"cmd"}, "l")
-                    hs.timer.usleep(50000)
-                    hs.eventtap.keyStroke({"cmd"}, "c")
-                    hs.timer.usleep(50000)
-                    hs.eventtap.keyStroke({}, "escape")
-                    local browserUrl = hs.pasteboard.getContents()
-                    if browserUrl and browserUrl:match("^https?://") then
-                        url = browserUrl
-                        foundUrl = true
-                        break
-                    end
-                end
-            end
-
-            if not foundUrl then
-                -- If no URL found in browsers, use clipboard content
-                url = clipboardContent
-            end
-
-            -- Escape the URL for shell
-            url = url:gsub('"', '\\"')
-            command = string.format('echo "%s" | %s -y --pattern %s --model=%s', 
-                url, fabricPath, commandToUse, modelToUse)
-        else
-            -- Escape the content for shell
-            local escapedContent = clipboardContent:gsub('"', '\\"')
-            command = string.format('echo "%s" | %s --pattern %s --model=%s',
-                escapedContent, fabricPath, commandToUse, modelToUse)
-        end
-
+        local command = string.format('echo "%s" | %s --pattern %s',
+            clipboardContent:gsub('"', '\\"'),  -- Escape quotes in content
+            fabricPath,
+            commandToUse)
+        
         log.i("Executing command: " .. command)
-        log.i("Pattern: " .. pattern.id)
-        log.i("Model: " .. modelToUse)
+        log.i("Pattern: " .. commandToUse)
         log.i("Content length: " .. #clipboardContent)
-        hs.task.new("/bin/bash", function(exitCode, stdOut, stdErr)
-            if exitCode == 0 then
-                hs.pasteboard.setContents(stdOut)
-                hs.timer.doAfter(0.1, function()
-                    hs.eventtap.keyStroke({"cmd"}, "v")
-                    log.i(pattern.name .. " completed")
-                end)
+
+        -- Execute the command and capture both stdout and stderr
+        local output, status, type, rc = hs.execute(command)
+        
+        if status then
+            if output and output ~= "" then
+                -- Success with output
+                hs.pasteboard.setContents(output)
+                log.i("Successfully processed text")
             else
-                log.e("Error processing text: " .. (stdErr or "Unknown error"))
+                -- Success but no output
+                log.e("No output received from fabric command")
             end
-        end, {"-c", command}):start()
+        else
+            -- Command failed
+            local errorMsg = output or "Unknown error"
+            log.e("Error processing text: " .. errorMsg)
+            log.e("Return code: " .. tostring(rc))
+            log.e("Error type: " .. tostring(type))
+        end
     end
 
     -- Bind shortcuts for all patterns
