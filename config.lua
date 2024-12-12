@@ -1,10 +1,10 @@
 --[[
-                                (\.   \      ,/)
-                                \(   |\     )/
-                                //\  | \   /\\
-                                (/ /\_#oo#_/\ \)
-                                \/\  ####  /\/
-                                    `##'
+                            (\.   \      ,/)
+                            \(   |\     )/
+                            //\  | \   /\\
+                            (/ /\_#oo#_/\ \)
+                            \/\  ####  /\/
+                                `##'
 
 ===================================================================================
                         Hammerspoon Configuration
@@ -192,10 +192,13 @@ local config = {
             },
             {
                 id = "general",
-                name = "General",
-                desc = "General purpose AI interaction",
+                name = "General AI",
+                desc = "Custom AI instruction",
                 trigger = "pattern",
                 key = "G",
+                variables = {
+                    instruction = ""  -- Will be filled by user input
+                }
             },
             {
                 id = "translate",
@@ -203,6 +206,13 @@ local config = {
                 desc = "Translate text",
                 trigger = "pattern",
                 key = "T",
+            },
+            {
+                id = "note_name",
+                name = "Note Name",
+                desc = "Generate a note name",
+                trigger = "pattern",
+                key = "N",
             },
         },
     },

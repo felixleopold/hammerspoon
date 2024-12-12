@@ -14,6 +14,31 @@ local version = require("version")
 -- Disable animation for window movements
 hs.window.animationDuration = 0
 
+-- Custom alert styling
+local ALERT_STYLE = {
+    strokeWidth = 1,
+    radius = 9,  -- macOS-style rounded corners
+    textFont = ".AppleSystemUIFont",
+    textSize = 13,  -- Standard system size
+    fadeInDuration = 0.15,
+    fadeOutDuration = 0.15,
+    atScreenEdge = 2,
+    padding = 12,
+    strokeColor = { white = 1, alpha = 0.05 },  -- Subtle border
+    fillColor = { white = 0.15, alpha = 0.90 },  -- Slightly translucent dark background
+    textColor = { white = 1, alpha = 1 },  -- Crisp white text
+    backgroundStyle = "dark",  -- Ensures proper contrast
+}
+
+-- Set global alert styling
+hs.alert.defaultStyle = ALERT_STYLE
+
+-- Helper function for consistent alerts
+function showAlert(message, duration)
+    duration = duration or 2  -- Default duration
+    hs.alert.show(message, ALERT_STYLE, duration)
+end
+
 -- Function to reload the Hammerspoon configuration
 function reloadConfig(files)
     local doReload = false

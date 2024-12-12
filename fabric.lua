@@ -80,8 +80,34 @@ Default installation path is: ~/go/bin/fabric
         
         -- Build the fabric command
         local command
-        if pattern.youtube then
-            -- For YouTube patterns, get URL from clipboard
+        if pattern.id == "general" then
+            -- For general pattern, prompt for instructions
+            hs.focus()  -- Bring Hammerspoon to front for the dialog
+            local button, instruction = hs.dialog.textPrompt(
+                "AI Instructions",
+                "Enter your instructions for the AI:",
+                "",  -- Default text
+                "OK",
+                "Cancel"
+            )
+            
+            if button == "Cancel" then
+                showAlert("❌ Cancelled")
+                return
+            end
+            
+            if instruction and instruction ~= "" then
+                -- Add the instruction as a variable
+                command = string.format('echo "%s" | %s --pattern general --variable "instruction=%s"',
+                    clipboardContent:gsub('"', '\\"'),
+                    fabricPath,
+                    instruction:gsub('"', '\\"'))
+            else
+                showAlert("❌ No instruction provided")
+                return
+            end
+        elseif pattern.youtube then
+            -- For YouTube patterns
             command = string.format('%s -y "%s" --stream --pattern %s',
                 fabricPath,
                 clipboardContent:gsub('"', '\\"'),  -- Escape quotes in URL
@@ -94,9 +120,21 @@ Default installation path is: ~/go/bin/fabric
                 commandToUse)
         end
         
+        -- Helper function to truncate messages
+        local function truncateMessage(msg, limit)
+            limit = limit or 100  -- Default to 100 characters
+            if #msg > limit then
+                return msg:sub(1, limit-3) .. "..."
+            end
+            return msg
+        end
+        
         log.i("Executing command: " .. command)
         log.i("Pattern: " .. commandToUse)
         log.i("Content length: " .. #clipboardContent)
+
+        -- Show processing alert
+        showAlert("Processing with " .. pattern.name .. "...", 10)  -- Longer duration for processing
 
         -- Execute the command and capture both stdout and stderr
         local output, status, type, rc = hs.execute(command)
@@ -106,8 +144,23 @@ Default installation path is: ~/go/bin/fabric
                 -- Success with output
                 hs.pasteboard.setContents(output)
                 log.i("Successfully processed text with pattern: " .. commandToUse)
+                
+                -- Clear processing alert and show success
+                hs.alert.closeAll()
+                showAlert("✓ " .. pattern.name .. " completed")
+                
+                -- Automatically paste the result
+                hs.timer.doAfter(0.1, function()
+                    hs.eventtap.keyStroke({"cmd"}, "v")
+                    -- Show paste confirmation after a short delay
+                    hs.timer.doAfter(0.2, function()
+                        showAlert("Content pasted")
+                    end)
+                end)
             else
                 -- Success but no output
+                hs.alert.closeAll()
+                showAlert("⚠️ No output received")
                 log.e("No output received from fabric command for pattern: " .. commandToUse)
             end
         else
@@ -116,6 +169,11 @@ Default installation path is: ~/go/bin/fabric
             log.e("Error processing text: " .. errorMsg)
             log.e("Return code: " .. tostring(rc))
             log.e("Error type: " .. tostring(type))
+            
+            -- Clear processing alert and show truncated error
+            hs.alert.closeAll()
+            local shortError = errorMsg:match("^[^\n]+") or "Unknown error"  -- Get first line only
+            showAlert("❌ Error: " .. truncateMessage(shortError, 80))
             
             -- Additional pattern-specific error info
             if errorMsg:match("could not get pattern") then
