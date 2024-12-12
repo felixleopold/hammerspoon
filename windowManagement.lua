@@ -72,61 +72,76 @@ function M.setup(config)
         
         local appName = app:name()
         log.i("Cycling windows for app: " .. appName .. " in direction: " .. direction)
+        log.i("System info:")
+        log.i("  OS Version: " .. hs.host.operatingSystemVersion())
+        log.i("  Device: " .. hs.host.hardwareModel())
+        log.i("  Hostname: " .. hs.host.localizedName())
         
-        -- Get windows using both methods for better compatibility
+        -- Get windows using application method
         local windows = {}
         local seenIds = {}
         
-        -- Method 1: Get windows from application
         local appWindows = app:allWindows()
-        for _, win in ipairs(appWindows) do
-            if win and win:isVisible() and not win:isMinimized() then
+        log.i("Raw window count: " .. #appWindows)
+        
+        -- Detailed window inspection
+        for i, win in ipairs(appWindows) do
+            if win then
                 local title = win:title() or ""
                 local role = win:role() or ""
                 local subrole = win:subrole() or ""
+                local frame = win:frame()
                 
-                log.i(string.format("Found window via app:allWindows(): title='%s', role='%s', subrole='%s'", 
-                    title, role, subrole))
+                log.i(string.format("\nWindow %d Details:", i))
+                log.i("  Title: '" .. title .. "'")
+                log.i("  ID: " .. win:id())
+                log.i("  Role: " .. role)
+                log.i("  Subrole: " .. subrole)
+                log.i("  Visible: " .. tostring(win:isVisible()))
+                log.i("  Minimized: " .. tostring(win:isMinimized()))
+                log.i("  Standard: " .. tostring(subrole == "AXStandardWindow"))
+                log.i("  Frame: x=" .. frame.x .. ", y=" .. frame.y .. ", w=" .. frame.w .. ", h=" .. frame.h)
                 
-                -- Only include standard windows with titles
-                if title ~= "" and role == "AXWindow" then
-                    table.insert(windows, win)
-                    seenIds[win:id()] = true
-                    log.i(string.format("Including window: '%s'", title))
+                -- Try to get all possible properties
+                local axwin = hs.axuielement.windowElement(win)
+                if axwin then
+                    local attrs = axwin:allAttributeValues()
+                    log.i("  AX Attributes: " .. hs.inspect(attrs))
+                end
+                
+                if win:isVisible() and not win:isMinimized() then
+                    if appName == "Finder" then
+                        -- For Finder, try multiple detection methods
+                        local isStandardWindow = (
+                            subrole == "AXStandardWindow" or
+                            role == "AXWindow" or
+                            (title ~= "" and title ~= "Desktop")
+                        )
+                        
+                        if isStandardWindow then
+                            table.insert(windows, win)
+                            seenIds[win:id()] = true
+                            log.i("  Status: Including Finder window")
+                        else
+                            log.i("  Status: Skipping non-standard Finder window")
+                        end
+                    else
+                        -- For other apps, use normal criteria
+                        if title ~= "" and role == "AXWindow" then
+                            table.insert(windows, win)
+                            seenIds[win:id()] = true
+                            log.i("  Status: Including window")
+                        else
+                            log.i("  Status: Skipping non-standard window")
+                        end
+                    end
                 else
-                    log.i(string.format("Skipping non-standard window: '%s'", title))
+                    log.i("  Status: Skipping invisible/minimized window")
                 end
             end
         end
         
-        -- Method 2: Get windows from window filter
-        local wf = hs.window.filter.new(false)
-        wf:setAppFilter(appName, {
-            allowRoles = {'AXWindow'},
-            visible = true,
-            currentSpace = true,
-            fullscreen = true
-        })
-        local filterWindows = wf:getWindows()
-        
-        for _, win in ipairs(filterWindows) do
-            if win and not seenIds[win:id()] and win:isVisible() and not win:isMinimized() then
-                local title = win:title() or ""
-                local role = win:role() or ""
-                local subrole = win:subrole() or ""
-                
-                log.i(string.format("Found window via filter: title='%s', role='%s', subrole='%s'", 
-                    title, role, subrole))
-                
-                if title ~= "" and role == "AXWindow" then
-                    table.insert(windows, win)
-                    seenIds[win:id()] = true
-                    log.i(string.format("Including additional window: '%s'", title))
-                end
-            end
-        end
-        
-        log.i("Found " .. #windows .. " windows for " .. appName)
+        log.i("\nFinal window count: " .. #windows)
         
         if #windows <= 1 then
             log.i("Not enough windows to cycle")
