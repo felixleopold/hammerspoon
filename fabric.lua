@@ -94,7 +94,9 @@ function M.setup(config)
     -- Bind shortcuts for all patterns
     for _, pattern in ipairs(config.fabric.patterns) do
         if pattern.shortcut then
+            log.i("Setting up fabric pattern shortcut: " .. pattern.id .. " with " .. hs.inspect(pattern.shortcut))
             hs.hotkey.bind(pattern.shortcut.mods, pattern.shortcut.key, function()
+                log.i("Executing fabric pattern: " .. pattern.id)
                 executeFabricPattern(pattern.id)
             end)
         end

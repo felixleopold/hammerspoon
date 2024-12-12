@@ -28,13 +28,13 @@ Shortcut Modifiers:
 local config = {
     -- Common modifier combinations
     triggers = {
-        app = {"ctrl", "alt", "cmd"},     -- For launching applications
-        folder = {"cmd", "shift"},        -- For opening folders
-        window = {"alt"},                 -- For window management
-        screen = {"ctrl", "alt"},         -- For screen management
-        pattern = {"ctrl", "alt"},        -- For basic fabric patterns
-        advanced = {"ctrl", "alt", "shift"}, -- For advanced fabric patterns
-        research = {"ctrl", "alt", "cmd"}, -- For research-related patterns
+        app = {"ctrl", "alt", "cmd"},     -- For launching applications (⌘⌃⌥)
+        folder = {"cmd", "shift"},        -- For opening folders (⌘⇧)
+        window = {"alt"},                 -- For window management (⌥)
+        screen = {"cmd", "alt"},          -- For screen management (⌘⌥)
+        pattern = {"ctrl", "alt"},        -- For basic fabric patterns (⌃⌥)
+        advanced = {"ctrl", "alt", "shift"}, -- For advanced fabric patterns (⌃⌥⇧)
+        research = {"ctrl", "alt", "cmd"}, -- For research-related patterns (⌘⌃⌥)
     },
 
     -- Applications to control
@@ -109,7 +109,7 @@ local config = {
             center = { trigger = "window", key = "C" },    -- Center
             full = { trigger = "window", key = "F" },      -- Full screen
 
-            -- Screen management (ctrl + alt + key)
+            -- Screen management (cmd + alt + key)
             nextScreen = { trigger = "screen", key = "D" }, -- Move to next screen
             prevScreen = { trigger = "screen", key = "A" }, -- Move to previous screen
 
