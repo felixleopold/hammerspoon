@@ -98,10 +98,23 @@ function M.setup(config)
         windows[nextIndex]:focus()
     end
 
-    -- Bind window movement shortcuts
-    for name, shortcut in pairs(config.keys.windows) do
-        local mods = shortcut.mods
-        local key = shortcut.key
+    -- Helper function to convert shortcut string to modifiers and key
+    local function parseShortcut(shortcutStr)
+        local mods = {}
+        local parts = {}
+        for part in shortcutStr:gmatch("[^+]+") do
+            table.insert(parts, part:lower())
+        end
+        local key = parts[#parts]
+        for i = 1, #parts - 1 do
+            table.insert(mods, parts[i])
+        end
+        return mods, key:upper()
+    end
+
+    -- Bind window management shortcuts
+    for name, shortcut in pairs(config.windows) do
+        local mods, key = parseShortcut(shortcut)
         
         if name == "left" then
             hs.hotkey.bind(mods, key, function() moveWindow("left") end)

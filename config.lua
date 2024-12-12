@@ -116,21 +116,21 @@ local config = {
 
         -- Window Management
         windows = {
-            -- Basic window movements (alt + key)
-            left = { mods = {"alt"}, key = "A" },      -- Left half
-            right = { mods = {"alt"}, key = "D" },     -- Right half
-            top = { mods = {"alt"}, key = "W" },       -- Top half
-            bottom = { mods = {"alt"}, key = "H" },    -- Bottom half
-            center = { mods = {"alt"}, key = "C" },    -- Center
-            full = { mods = {"alt"}, key = "F" },      -- Full screen
+            -- Basic window movements
+            left = "alt+a",      -- Left half
+            right = "alt+d",     -- Right half
+            top = "alt+w",       -- Top half
+            bottom = "alt+h",    -- Bottom half
+            center = "alt+c",    -- Center on screen
+            full = "alt+f",      -- Full screen
 
-            -- Screen management (ctrl + alt + key)
-            nextScreen = { mods = {"ctrl", "alt"}, key = "D" }, -- Move to next screen
-            prevScreen = { mods = {"ctrl", "alt"}, key = "A" }, -- Move to previous screen
+            -- Screen management
+            nextScreen = "ctrl+alt+d", -- Move to next screen
+            prevScreen = "ctrl+alt+a", -- Move to previous screen
 
-            -- Window cycling (alt + key)
-            nextWindow = { mods = {"alt"}, key = "E" }, -- Next window in app
-            prevWindow = { mods = {"alt"}, key = "Q" }, -- Previous window in app
+            -- Window cycling
+            nextWindow = "alt+e", -- Next window in app
+            prevWindow = "alt+q", -- Previous window in app
         },
 
         -- URL Management
@@ -139,10 +139,30 @@ local config = {
 
     --[[
     =====================================
-    Window Animation
+    Window Management
     =====================================
-    Set to 0 for instant window movements, or add a value (in seconds) for smooth animations
+    Configure window movement, screen management, and window cycling.
+    All shortcuts use the same string format: "modifier1+modifier2+key"
     ]]--
+    windows = {
+        -- Basic window movements
+        left = "alt+a",      -- Left half
+        right = "alt+d",     -- Right half
+        top = "alt+w",       -- Top half
+        bottom = "alt+h",    -- Bottom half
+        center = "alt+c",    -- Center on screen
+        full = "alt+f",      -- Full screen
+
+        -- Screen management
+        nextScreen = "ctrl+alt+d", -- Move to next screen
+        prevScreen = "ctrl+alt+a", -- Move to previous screen
+
+        -- Window cycling
+        nextWindow = "alt+e", -- Next window in app
+        prevWindow = "alt+q", -- Previous window in app
+    },
+
+    -- Window animation duration (0 for instant)
     windowAnimation = 0,
 
     --[[
