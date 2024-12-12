@@ -124,47 +124,41 @@ function M.setup(config)
         log.w("No copyUrl shortcut defined in general shortcuts. Please check your configuration.")
     end
 
-    -- Set up close Finder windows shortcut
-    if config.shortcuts.general and config.shortcuts.general.closeFinderWindows then
-        local shortcut = config.shortcuts.general.closeFinderWindows
-        bindHotkey({
-            mods = config.triggers[shortcut.trigger],
-            key = shortcut.key
-        }, function()
-            local finder = hs.application.get("Finder")
-            if finder then
-                local closedCount = 0
-                for _, win in ipairs(finder:allWindows()) do
-                    -- Only close standard Finder windows (not desktop, etc)
-                    if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" then
-                        win:close()
-                        closedCount = closedCount + 1
+    -- Set up utility shortcuts
+    if config.shortcuts.utils then
+        for _, shortcut in ipairs(config.shortcuts.utils) do
+            bindHotkey({
+                mods = config.triggers[shortcut.trigger],
+                key = shortcut.key
+            }, function()
+                if shortcut.action == "closeFinderWindows" then
+                    local finder = hs.application.get("Finder")
+                    if finder then
+                        local closedCount = 0
+                        for _, win in ipairs(finder:allWindows()) do
+                            -- Only close standard Finder windows (not desktop, etc)
+                            if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" then
+                                win:close()
+                                closedCount = closedCount + 1
+                            end
+                        end
+                        log.i("Closed " .. closedCount .. " Finder windows")
+                    end
+                elseif shortcut.action == "copyBrowserUrl" then
+                    local frontApp = hs.application.frontmostApplication()
+                    if frontApp and frontApp:name() == config.applications.Browser then
+                        -- Sequence: cmd+L to select URL, cmd+C to copy, ESC to deselect
+                        hs.timer.usleep(50000)  -- Small delay before starting
+                        hs.eventtap.keyStroke({"cmd"}, "l")
+                        hs.timer.usleep(50000)  -- Wait for URL bar to be selected
+                        hs.eventtap.keyStroke({"cmd"}, "c")
+                        hs.timer.usleep(50000)  -- Wait for copy
+                        hs.eventtap.keyStroke({}, "escape")
+                        log.i("Copied URL from Zen Browser")
                     end
                 end
-                log.i("Closed " .. closedCount .. " Finder windows")
-            end
-        end)
-    end
-
-    -- Set up browser URL copy shortcut
-    if config.shortcuts.general and config.shortcuts.general.copyBrowserUrl then
-        local shortcut = config.shortcuts.general.copyBrowserUrl
-        bindHotkey({
-            mods = config.triggers[shortcut.trigger],
-            key = shortcut.key
-        }, function()
-            local frontApp = hs.application.frontmostApplication()
-            if frontApp and frontApp:name() == config.applications.Browser then
-                -- Sequence: cmd+L to select URL, cmd+C to copy, ESC to deselect
-                hs.timer.usleep(50000)  -- Small delay before starting
-                hs.eventtap.keyStroke({"cmd"}, "l")
-                hs.timer.usleep(50000)  -- Wait for URL bar to be selected
-                hs.eventtap.keyStroke({"cmd"}, "c")
-                hs.timer.usleep(50000)  -- Wait for copy
-                hs.eventtap.keyStroke({}, "escape")
-                log.i("Copied URL from Zen Browser")
-            end
-        end)
+            end)
+        end
     end
 
     log.i("Application shortcuts setup complete")

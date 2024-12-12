@@ -120,10 +120,10 @@ local config = {
             prevWindow = { trigger = "window", key = "Q" }, -- Previous window in app
         },
 
-        -- General shortcuts
-        general = {
-            closeFinderWindows = { trigger = "general", key = "X" }, -- Close all Finder windows
-            copyBrowserUrl = { trigger = "copy", key = "C" }, -- Copy URL from browser
+        -- Utility shortcuts
+        utils = {
+            { trigger = "general", key = "X", action = "closeFinderWindows" },  -- Close all Finder windows (cmd+shift+X)
+            { trigger = "copy", key = "C", action = "copyBrowserUrl" },         -- Copy URL from browser (ctrl+C)
         },
     },
 
