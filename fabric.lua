@@ -79,10 +79,20 @@ Default installation path is: ~/go/bin/fabric
         end
         
         -- Build the fabric command
-        local command = string.format('echo "%s" | %s --pattern %s',
-            clipboardContent:gsub('"', '\\"'),  -- Escape quotes in content
-            fabricPath,
-            commandToUse)
+        local command
+        if pattern.youtube then
+            -- For YouTube patterns, get URL from clipboard
+            command = string.format('%s -y "%s" --stream --pattern %s',
+                fabricPath,
+                clipboardContent:gsub('"', '\\"'),  -- Escape quotes in URL
+                commandToUse)
+        else
+            -- For regular patterns
+            command = string.format('echo "%s" | %s --pattern %s',
+                clipboardContent:gsub('"', '\\"'),
+                fabricPath,
+                commandToUse)
+        end
         
         log.i("Executing command: " .. command)
         log.i("Pattern: " .. commandToUse)
@@ -95,10 +105,10 @@ Default installation path is: ~/go/bin/fabric
             if output and output ~= "" then
                 -- Success with output
                 hs.pasteboard.setContents(output)
-                log.i("Successfully processed text")
+                log.i("Successfully processed text with pattern: " .. commandToUse)
             else
                 -- Success but no output
-                log.e("No output received from fabric command")
+                log.e("No output received from fabric command for pattern: " .. commandToUse)
             end
         else
             -- Command failed
@@ -106,6 +116,11 @@ Default installation path is: ~/go/bin/fabric
             log.e("Error processing text: " .. errorMsg)
             log.e("Return code: " .. tostring(rc))
             log.e("Error type: " .. tostring(type))
+            
+            -- Additional pattern-specific error info
+            if errorMsg:match("could not get pattern") then
+                log.e("Pattern '" .. commandToUse .. "' not found. Please check available patterns using 'fabric -l'")
+            end
         end
     end
 
