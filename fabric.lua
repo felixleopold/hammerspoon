@@ -2,22 +2,22 @@ local M = {}
 local log = hs.logger.new('Fabric', 'debug')
 local setup = require("setup")
 
+-- Helper function to convert shortcut string to modifiers and key
+local function parseShortcut(shortcutStr)
+    local mods = {}
+    local parts = {}
+    for part in shortcutStr:gmatch("[^+]+") do
+        table.insert(parts, part:lower())
+    end
+    local key = parts[#parts]
+    for i = 1, #parts - 1 do
+        table.insert(mods, parts[i])
+    end
+    return mods, key:upper()
+end
+
 function M.setup(config)
     log.i("Setting up Fabric integration")
-
-    -- Helper function to convert shortcut string to modifiers and key
-    local function parseShortcut(shortcutStr)
-        local mods = {}
-        local parts = {}
-        for part in shortcutStr:gmatch("[^+]+") do
-            table.insert(parts, part:lower())
-        end
-        local key = parts[#parts]
-        for i = 1, #parts - 1 do
-            table.insert(mods, parts[i])
-        end
-        return mods, key:upper()
-    end
 
     -- Create pattern lookup table for faster access
     local patternLookup = {}
@@ -75,8 +75,7 @@ function M.setup(config)
     -- Bind shortcuts for all patterns
     for _, pattern in ipairs(config.fabric.patterns) do
         if pattern.shortcut then
-            local mods, key = parseShortcut(pattern.shortcut)
-            hs.hotkey.bind(mods, key, function()
+            hs.hotkey.bind(pattern.shortcut.mods, pattern.shortcut.key, function()
                 executeFabricPattern(pattern.id)
             end)
         end

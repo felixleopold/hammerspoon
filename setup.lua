@@ -13,6 +13,20 @@ function M.getConfig()
     end
 end
 
+-- Helper function to convert shortcut string to modifiers and key
+local function parseShortcut(shortcutStr)
+    local mods = {}
+    local parts = {}
+    for part in shortcutStr:gmatch("[^+]+") do
+        table.insert(parts, part:lower())
+    end
+    local key = parts[#parts]
+    for i = 1, #parts - 1 do
+        table.insert(mods, parts[i])
+    end
+    return mods, key:upper()
+end
+
 -- Expand the simplified config into the format expected by the modules
 function M.expandConfig(config)
     local expanded = {
@@ -26,7 +40,9 @@ function M.expandConfig(config)
         },
         windowManagement = {
             animationDuration = config.windowAnimation or 0
-        }
+        },
+        -- Include fabric configuration directly
+        fabric = config.fabric
     }
 
     -- Expand applications
@@ -50,15 +66,23 @@ function M.expandConfig(config)
     end
 
     -- Expand window management shortcuts
-    for name, shortcut in pairs(config.keys.windows) do
-        expanded.shortcuts.windowManagement[name] = shortcut.mods or {}
-        table.insert(expanded.shortcuts.windowManagement[name], shortcut.key)
+    for name, shortcutStr in pairs(config.windows) do
+        local mods, key = parseShortcut(shortcutStr)
+        expanded.shortcuts.windowManagement[name] = mods
+        table.insert(expanded.shortcuts.windowManagement[name], key)
     end
 
-    -- Add URL copying shortcut
-    if config.keys.copyUrl then
-        expanded.shortcuts.general.copyUrl = config.keys.copyUrl.mods or {}
-        table.insert(expanded.shortcuts.general.copyUrl, config.keys.copyUrl.key)
+    -- Convert fabric shortcuts to the expanded format
+    if expanded.fabric and expanded.fabric.patterns then
+        for _, pattern in ipairs(expanded.fabric.patterns) do
+            if pattern.shortcut then
+                local mods, key = parseShortcut(pattern.shortcut)
+                pattern.shortcut = {
+                    mods = mods,
+                    key = key
+                }
+            end
+        end
     end
 
     return expanded
