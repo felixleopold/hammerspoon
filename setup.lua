@@ -17,23 +17,24 @@ function M.expandConfig(config)
     local expanded = {
         applications = config.applications,
         folders = config.folders,
-        shortcuts = {
-            appShortcuts = {},
-            folderShortcuts = {},
-            general = {},
-            windowManagement = {},
-        },
-        windowManagement = {
-            animationDuration = config.windowAnimation or 0
-        },
+        triggers = config.triggers,
+        windowManagement = config.windowManagement,
         fabric = {
             defaultModel = config.fabric.defaultModel,
             patterns = {},
-            categories = config.fabric.categories,
+            chooserShortcut = nil,
+            categories = config.fabric.categories
+        },
+        shortcuts = {
+            appShortcuts = {},
+            folderShortcuts = {},
+            windowManagement = {},
+            utils = {},
+            general = {}
         }
     }
 
-    -- Expand app shortcuts
+    -- Expand application shortcuts
     for _, shortcut in ipairs(config.shortcuts.apps) do
         expanded.shortcuts.appShortcuts[shortcut.app] = {
             mods = config.triggers.app,
@@ -57,6 +58,17 @@ function M.expandConfig(config)
         }
     end
 
+    -- Expand utility shortcuts
+    if config.shortcuts.utils then
+        for _, shortcut in ipairs(config.shortcuts.utils) do
+            table.insert(expanded.shortcuts.utils, {
+                mods = shortcut.mods,
+                key = shortcut.key,
+                action = shortcut.action
+            })
+        end
+    end
+
     -- Expand fabric patterns
     for _, pattern in ipairs(config.fabric.patterns) do
         local expandedPattern = {
@@ -66,19 +78,21 @@ function M.expandConfig(config)
             command = pattern.command,
             model = pattern.model,
             youtube = pattern.youtube,
-            shortcut = {
+            shortcut = pattern.trigger and {
                 mods = config.triggers[pattern.trigger],
                 key = pattern.key
-            }
+            } or nil
         }
         table.insert(expanded.fabric.patterns, expandedPattern)
     end
 
     -- Add fabric chooser shortcut
-    expanded.fabric.chooserShortcut = {
-        mods = config.fabric.chooserTrigger,
-        key = config.fabric.chooserKey
-    }
+    if config.fabric.chooserTrigger then
+        expanded.fabric.chooserShortcut = {
+            mods = config.fabric.chooserTrigger,
+            key = config.fabric.chooserKey
+        }
+    end
 
     return expanded
 end

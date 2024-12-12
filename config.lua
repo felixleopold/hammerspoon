@@ -32,11 +32,7 @@ local config = {
         folder = {"cmd", "shift"},        -- For opening folders (⌘⇧)
         window = {"alt"},                 -- For window management (⌥)
         screen = {"cmd", "alt"},          -- For screen management (⌘⌥)
-        pattern = {"ctrl", "alt"},        -- For basic fabric patterns (⌃⌥)
-        advanced = {"ctrl", "alt", "shift"}, -- For advanced fabric patterns (⌃⌥⇧)
-        research = {"ctrl", "alt", "cmd"}, -- For research-related patterns (⌘⌃⌥)
-        general = {"cmd", "shift"},       -- For general shortcuts (⌘⇧)
-        copy = {"ctrl"},                  -- For copy shortcuts (⌃)
+        pattern = {"ctrl", "alt"},        -- For fabric patterns (⌃⌥)
     },
 
     -- Applications to control
@@ -122,8 +118,8 @@ local config = {
 
         -- Utility shortcuts
         utils = {
-            { trigger = "general", key = "X", action = "closeFinderWindows" },  -- Close all Finder windows (cmd+shift+X)
-            { trigger = "copy", key = "C", action = "copyBrowserUrl" },         -- Copy URL from browser (ctrl+C)
+            { mods = {"cmd", "shift"}, key = "X", action = "closeFinderWindows" },  -- Close all Finder windows (cmd+shift+X)
+            { mods = {"ctrl"}, key = "C", action = "copyBrowserUrl" },         -- Copy URL from browser (ctrl+C)
         },
     },
 

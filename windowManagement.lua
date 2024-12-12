@@ -70,100 +70,71 @@ function M.setup(config)
             return 
         end
         
-        log.i("Cycling windows for app: " .. app:name() .. " in direction: " .. direction)
+        local appName = app:name()
+        log.i("Cycling windows for app: " .. appName .. " in direction: " .. direction)
         
-        -- Special handling for Finder
-        if app:name() == "Finder" then
-            local windows = {}
-            local allWindows = app:allWindows()
-            log.i("Found " .. #allWindows .. " total Finder windows")
-            
-            -- Include all Finder windows except Desktop
-            for _, win in ipairs(allWindows) do
-                local title = win:title()
-                local role = win:role()
-                local subrole = win:subrole()
-                local isVisible = win:isVisible()
+        -- Get all visible windows in z-order
+        local allWindows = hs.window.orderedWindows()
+        local windows = {}
+        
+        -- Filter windows
+        for _, win in ipairs(allWindows) do
+            local winApp = win:application()
+            if winApp and winApp:name() == appName then
+                local title = win:title() or ""
+                local role = win:role() or ""
+                local subrole = win:subrole() or ""
                 
-                log.i("Window details:")
-                log.i("  - Title: " .. (title or "nil"))
-                log.i("  - Role: " .. (role or "nil"))
-                log.i("  - Subrole: " .. (subrole or "nil"))
-                log.i("  - Visible: " .. tostring(isVisible))
+                -- Skip the special always-running Finder window (empty title or special role)
+                if appName == "Finder" and (title == "" or role == "AXSystemDialog") then
+                    log.i(string.format("Skipping special Finder window: title='%s', role='%s', subrole='%s', id=%d", 
+                        title, role, subrole, win:id()))
+                    goto continue
+                end
                 
-                if title and title ~= "" and title ~= "Desktop" and isVisible then
-                    log.i("Including window: " .. title)
+                if win:isVisible() and not win:isMinimized() then
                     table.insert(windows, win)
+                    log.i(string.format("Including window: title='%s', role='%s', subrole='%s', id=%d", 
+                        title, role, subrole, win:id()))
                 else
-                    log.i("Skipping window: " .. (title or "nil") .. " (empty title or Desktop)")
+                    log.i(string.format("Skipping invisible/minimized window: '%s'", title))
                 end
             end
-            
-            if #windows <= 1 then 
-                log.i("Not enough Finder windows to cycle (" .. #windows .. " windows)")
-                return 
-            end
-            
-            -- Sort windows by ID to maintain consistent order
-            table.sort(windows, function(a, b) return a:id() < b:id() end)
-            
-            local focusedWindow = hs.window.focusedWindow()
-            if focusedWindow then
-                log.i("Current focused window: " .. (focusedWindow:title() or "nil"))
-            else
-                log.w("No focused window found")
-            end
-            
-            local currentIndex
-            
-            -- Find current window index
-            for i, win in ipairs(windows) do
-                if win:id() == focusedWindow:id() then
-                    currentIndex = i
-                    log.d("Current window index: " .. i .. " of " .. #windows)
-                    break
-                end
-            end
-            
-            if not currentIndex then
-                log.i("Current window not found in list, focusing first window")
-                windows[1]:focus()
-                return
-            end
-            
-            -- Calculate next window index
-            local nextIndex
-            if direction == "next" then
-                nextIndex = currentIndex % #windows + 1
-            else
-                nextIndex = (currentIndex - 2) % #windows + 1
-            end
-            
-            log.i("Moving from window " .. currentIndex .. " to " .. nextIndex)
-            -- Focus next window
-            windows[nextIndex]:focus()
-            return
+            ::continue::
         end
         
-        -- Normal handling for other applications
-        local windows = app:visibleWindows()
-        if #windows <= 1 then return end
+        log.i("Found " .. #windows .. " windows for " .. appName)
+        
+        if #windows <= 1 then
+            log.i("Not enough windows to cycle")
+            return
+        end
         
         -- Sort windows by ID to maintain consistent order
         table.sort(windows, function(a, b) return a:id() < b:id() end)
         
         local focusedWindow = hs.window.focusedWindow()
-        local currentIndex
+        if not focusedWindow then
+            log.w("No focused window")
+            return
+        end
         
         -- Find current window index
+        local currentIndex
         for i, win in ipairs(windows) do
             if win:id() == focusedWindow:id() then
                 currentIndex = i
+                log.i(string.format("Current window %d of %d: '%s' (id=%d)", 
+                    i, #windows, win:title() or "", win:id()))
                 break
             end
         end
         
-        if not currentIndex then return end
+        if not currentIndex then
+            log.i("Current window not in cycle list, focusing first window")
+            windows[1]:focus()
+            return
+        end
         
         -- Calculate next window index
         local nextIndex
@@ -173,7 +144,10 @@ function M.setup(config)
             nextIndex = (currentIndex - 2) % #windows + 1
         end
         
-        -- Focus next window
+        log.i(string.format("Moving from window %d ('%s', id=%d) to %d ('%s', id=%d)", 
+            currentIndex, windows[currentIndex]:title() or "", windows[currentIndex]:id(),
+            nextIndex, windows[nextIndex]:title() or "", windows[nextIndex]:id()))
+            
         windows[nextIndex]:focus()
     end
 

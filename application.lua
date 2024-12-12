@@ -18,6 +18,10 @@ function M.setup(config)
             log.w("Invalid shortcut configuration: " .. hs.inspect(shortcut))
             return
         end
+        if #shortcut.mods == 0 then
+            log.w("Skipping shortcut with no modifiers: " .. shortcut.key)
+            return
+        end
         log.d("Binding hotkey: " .. hs.inspect(shortcut.mods) .. " + " .. shortcut.key)
         hs.hotkey.bind(shortcut.mods, shortcut.key, callback)
     end
@@ -67,23 +71,38 @@ function M.setup(config)
                     local visibleWindows = {}
                     if finder then
                         for _, win in ipairs(finder:allWindows()) do
-                            if win:isVisible() then
-                                visibleWindows[win:id()] = true
+                            if win:isVisible() and not win:isMinimized() then
+                                local title = win:title() or ""
+                                local role = win:role() or ""
+                                -- Skip special windows
+                                if title ~= "" and role ~= "AXSystemDialog" then
+                                    visibleWindows[win:id()] = {
+                                        title = title,
+                                        frame = win:frame()
+                                    }
+                                end
                             end
                         end
                     end
 
                     -- Open the folder
+                    log.i("Opening folder: " .. path)
                     hs.execute(string.format('/usr/bin/open "%s"', path))
 
                     -- Wait a bit for the window to open
                     hs.timer.doAfter(0.1, function()
-                        -- Only allow previously visible windows to stay visible
+                        -- Restore previously visible windows
                         if finder then
                             for _, win in ipairs(finder:allWindows()) do
-                                if not visibleWindows[win:id()] and win:isVisible() then
-                                    -- This is a previously hidden window that became visible
-                                    win:sendToBack()
+                                if win:isVisible() and not win:isMinimized() then
+                                    local title = win:title() or ""
+                                    local role = win:role() or ""
+                                    -- If this is a new window (not in our list)
+                                    if not visibleWindows[win:id()] and title ~= "" and role ~= "AXSystemDialog" then
+                                        log.i("Found new window: " .. title)
+                                        -- This is our newly opened window, bring it to front
+                                        win:focus()
+                                    end
                                 end
                             end
                         end
@@ -127,10 +146,10 @@ function M.setup(config)
     -- Set up utility shortcuts
     if config.shortcuts.utils then
         for _, shortcut in ipairs(config.shortcuts.utils) do
-            bindHotkey({
-                mods = config.triggers[shortcut.trigger],
-                key = shortcut.key
-            }, function()
+            log.i(string.format("Setting up utility shortcut: %s (%s + %s)", 
+                shortcut.action, table.concat(shortcut.mods, "+"), shortcut.key))
+            
+            bindHotkey(shortcut, function()
                 if shortcut.action == "closeFinderWindows" then
                     local finder = hs.application.get("Finder")
                     if finder then
@@ -139,14 +158,26 @@ function M.setup(config)
                         local windows = finder:allWindows()
                         log.d("Found " .. #windows .. " total Finder windows")
                         for _, win in ipairs(windows) do
-                            -- Only close standard Finder windows (not desktop, etc)
-                            if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" and win:isVisible() then
-                                log.d("Closing window: " .. win:title())
+                            local title = win:title() or ""
+                            local role = win:role() or ""
+                            local subrole = win:subrole() or ""
+                            
+                            -- Skip the special always-running Finder window
+                            if title == "" or role == "AXSystemDialog" then
+                                log.d(string.format("Skipping special Finder window: title='%s', role='%s', subrole='%s'", 
+                                    title, role, subrole))
+                                goto continue
+                            end
+                            
+                            if win:isVisible() and not win:isMinimized() then
+                                log.d(string.format("Closing window: title='%s', role='%s', subrole='%s'", 
+                                    title, role, subrole))
                                 win:close()
                                 closedCount = closedCount + 1
                             else
-                                log.d("Skipping window: " .. win:title() .. " (role: " .. win:role() .. ", subrole: " .. (win:subrole() or "nil") .. ", visible: " .. tostring(win:isVisible()) .. ")")
+                                log.d(string.format("Skipping invisible/minimized window: '%s'", title))
                             end
+                            ::continue::
                         end
                         log.i("Closed " .. closedCount .. " Finder windows")
                     else

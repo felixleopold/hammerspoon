@@ -122,6 +122,13 @@ Logs can be viewed in the Hammerspoon Console (click the Hammerspoon menubar ico
 
 ## Version History
 
+### 1.3.1
+- Fixed window cycling issues with folder opening
+- Fixed shortcuts triggering without modifiers
+- Improved Finder window handling
+- Added better logging throughout
+- Simplified trigger configuration
+
 ### 1.3.0
 - Added utility shortcuts for Finder and Zen Browser
 - Improved window cycling with better Finder support

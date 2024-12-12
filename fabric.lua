@@ -121,27 +121,40 @@ function M.setup(config)
 
     -- Bind shortcuts for all patterns
     for _, pattern in ipairs(config.fabric.patterns) do
-        if pattern.shortcut then
+        if pattern.shortcut and pattern.shortcut.mods and #pattern.shortcut.mods > 0 then
             log.i("Setting up fabric pattern shortcut: " .. pattern.id .. " with " .. hs.inspect(pattern.shortcut))
             hs.hotkey.bind(pattern.shortcut.mods, pattern.shortcut.key, function()
                 log.i("Executing fabric pattern: " .. pattern.id)
                 executeFabricPattern(pattern.id)
             end)
+        else
+            log.d("Skipping pattern shortcut for " .. pattern.id .. " (no modifiers defined)")
         end
     end
 
     -- Create choices for the chooser
     local choices = {}
-    for _, category in ipairs(config.fabric.categories) do
-        for _, patternId in ipairs(category.patterns) do
-            local pattern = patternLookup[patternId]
-            if pattern then
-                table.insert(choices, {
-                    text = pattern.name,
-                    subText = pattern.desc .. " (" .. category.name .. ")",
-                    patternId = pattern.id
-                })
+    if config.fabric.categories then
+        for _, category in ipairs(config.fabric.categories) do
+            for _, patternId in ipairs(category.patterns) do
+                local pattern = patternLookup[patternId]
+                if pattern then
+                    table.insert(choices, {
+                        text = pattern.name,
+                        subText = pattern.desc .. " (" .. category.name .. ")",
+                        patternId = pattern.id
+                    })
+                end
             end
+        end
+    else
+        -- If no categories defined, just add all patterns
+        for _, pattern in ipairs(config.fabric.patterns) do
+            table.insert(choices, {
+                text = pattern.name,
+                subText = pattern.desc,
+                patternId = pattern.id
+            })
         end
     end
 
