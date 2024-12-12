@@ -14,17 +14,30 @@ function M.setup(config)
 
     -- Helper function to bind hotkey
     local function bindHotkey(shortcut, callback)
-        if type(shortcut) ~= "table" or #shortcut < 2 then
+        if type(shortcut) ~= "table" or not shortcut.mods or not shortcut.key then
             log.w("Invalid shortcut configuration: " .. hs.inspect(shortcut))
             return
         end
-        local modifiers = {}
-        for i = 1, #shortcut - 1 do
-            table.insert(modifiers, shortcut[i])
+        log.d("Binding hotkey: " .. hs.inspect(shortcut.mods) .. " + " .. shortcut.key)
+        hs.hotkey.bind(shortcut.mods, shortcut.key, callback)
+    end
+
+    -- Helper function to expand path
+    local function expandPath(path)
+        if not path then return nil end
+        
+        -- Replace ~ with HOME environment variable
+        if path:sub(1,1) == "~" then
+            path = os.getenv("HOME") .. path:sub(2)
         end
-        local key = shortcut[#shortcut]
-        log.d("Binding hotkey: " .. hs.inspect(modifiers) .. " + " .. key)
-        hs.hotkey.bind(modifiers, key, callback)
+        
+        -- Convert to absolute path
+        local absolutePath = hs.fs.pathToAbsolute(path)
+        if not absolutePath then
+            log.w("Could not resolve path: " .. path)
+            return path
+        end
+        return absolutePath
     end
 
     -- Set up application shortcuts
@@ -34,18 +47,15 @@ function M.setup(config)
             log.d("Setting up shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. appName)
             bindHotkey(shortcut, function() launchOrFocus(appName) end)
         else
-            log.w("No application defined for shortcut: " .. name .. ". Please check your user_config.json file.")
+            log.w("No application defined for shortcut: " .. name .. ". Please check your configuration.")
         end
     end
 
     -- Set up folder shortcuts
     for name, shortcut in pairs(config.shortcuts.folderShortcuts) do
-        local path = config.folders[name:gsub("^%l", string.upper)]
+        local path = config.folders[name]
         if path then
-            -- Expand the path if it starts with "~"
-            if path:sub(1,1) == "~" then
-                path = os.getenv("HOME") .. path:sub(2)
-            end
+            path = expandPath(path)
             log.d("Setting up folder shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to open " .. path)
             bindHotkey(shortcut, function()
                 if hs.fs.attributes(path) then
@@ -56,7 +66,7 @@ function M.setup(config)
                 end
             end)
         else
-            log.w("No path defined for folder: " .. name .. ". Please check your user_config.json file.")
+            log.w("No path defined for folder: " .. name .. ". Please check your configuration.")
         end
     end
 

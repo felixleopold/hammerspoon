@@ -36,20 +36,26 @@ function M.expandConfig(config)
 
     -- Expand app shortcuts
     for _, shortcut in ipairs(config.shortcuts.apps) do
-        expanded.shortcuts.appShortcuts[shortcut.app] = config.triggers.app
-        table.insert(expanded.shortcuts.appShortcuts[shortcut.app], shortcut.key)
+        expanded.shortcuts.appShortcuts[shortcut.app] = {
+            mods = config.triggers.app,
+            key = shortcut.key
+        }
     end
 
     -- Expand folder shortcuts
     for _, shortcut in ipairs(config.shortcuts.folders) do
-        expanded.shortcuts.folderShortcuts[shortcut.path] = config.triggers.folder
-        table.insert(expanded.shortcuts.folderShortcuts[shortcut.path], shortcut.key)
+        expanded.shortcuts.folderShortcuts[shortcut.path] = {
+            mods = config.triggers.folder,
+            key = shortcut.key
+        }
     end
 
     -- Expand window management shortcuts
     for name, shortcut in pairs(config.shortcuts.windows) do
-        expanded.shortcuts.windowManagement[name] = config.triggers[shortcut.trigger]
-        table.insert(expanded.shortcuts.windowManagement[name], shortcut.key)
+        expanded.shortcuts.windowManagement[name] = {
+            mods = config.triggers[shortcut.trigger],
+            key = shortcut.key
+        }
     end
 
     -- Expand fabric patterns

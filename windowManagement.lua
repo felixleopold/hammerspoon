@@ -100,29 +100,26 @@ function M.setup(config)
 
     -- Bind window management shortcuts
     for name, shortcut in pairs(config.shortcuts.windowManagement) do
-        local mods = shortcut
-        local key = table.remove(mods)
-        
         if name == "left" then
-            hs.hotkey.bind(mods, key, function() moveWindow("left") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("left") end)
         elseif name == "right" then
-            hs.hotkey.bind(mods, key, function() moveWindow("right") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("right") end)
         elseif name == "top" then
-            hs.hotkey.bind(mods, key, function() moveWindow("top") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("top") end)
         elseif name == "bottom" then
-            hs.hotkey.bind(mods, key, function() moveWindow("bottom") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("bottom") end)
         elseif name == "center" then
-            hs.hotkey.bind(mods, key, function() moveWindow("center") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("center") end)
         elseif name == "full" then
-            hs.hotkey.bind(mods, key, function() moveWindow("full") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("full") end)
         elseif name == "nextScreen" then
-            hs.hotkey.bind(mods, key, function() moveToScreen("next") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveToScreen("next") end)
         elseif name == "prevScreen" then
-            hs.hotkey.bind(mods, key, function() moveToScreen("prev") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveToScreen("prev") end)
         elseif name == "nextWindow" then
-            hs.hotkey.bind(mods, key, function() cycleWindows("next") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() cycleWindows("next") end)
         elseif name == "prevWindow" then
-            hs.hotkey.bind(mods, key, function() cycleWindows("prev") end)
+            hs.hotkey.bind(shortcut.mods, shortcut.key, function() cycleWindows("prev") end)
         end
     end
 
