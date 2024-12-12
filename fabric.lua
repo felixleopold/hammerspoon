@@ -5,25 +5,58 @@ local setup = require("setup")
 function M.setup(config)
     log.i("Setting up Fabric integration")
 
-    local function executeFabricPattern(pattern, model, isYouTube)
+    -- Helper function to convert shortcut string to modifiers and key
+    local function parseShortcut(shortcutStr)
+        local mods = {}
+        local parts = {}
+        for part in shortcutStr:gmatch("[^+]+") do
+            table.insert(parts, part:lower())
+        end
+        local key = parts[#parts]
+        for i = 1, #parts - 1 do
+            table.insert(mods, parts[i])
+        end
+        return mods, key:upper()
+    end
+
+    -- Create pattern lookup table for faster access
+    local patternLookup = {}
+    for _, pattern in ipairs(config.fabric.patterns) do
+        patternLookup[pattern.id] = pattern
+    end
+
+    local function executeFabricPattern(patternId)
         local clipboardContent = hs.pasteboard.getContents()
         if not clipboardContent or clipboardContent == "" then
             hs.alert.show("Error: Clipboard is empty")
             return
         end
 
-        -- Get the assigned model for the pattern, or use the specified model
-        local assignedModel = config.fabric.patternModels[pattern] or model
-        local modelToUse = config.fabric.models[assignedModel] or assignedModel
+        -- Get pattern configuration
+        local pattern = patternLookup[patternId]
+        if not pattern then
+            log.e("Pattern not found: " .. patternId)
+            hs.alert.show("Error: Pattern not found")
+            return
+        end
 
-        local command
-        if isYouTube then
-            command = string.format('%s/go/bin/fabric -y "%s" --stream --pattern %s --model=%s', 
-                                    os.getenv("HOME"), clipboardContent, pattern, modelToUse)
+        -- Get the model to use (pattern-specific, or default)
+        local modelToUse = pattern.model or config.fabric.defaultModel or "gpt-4"
+
+        -- Get the command to use (some patterns might use a different command)
+        local commandToUse = pattern.command or pattern.id
+
+        -- Build the fabric command
+        local command = string.format('fabric --stream --pattern %s --model=%s', commandToUse, modelToUse)
+        
+        -- Add YouTube flag if it's a YouTube pattern
+        if pattern.youtube then
+            command = string.format('fabric -y "%s" --stream --pattern %s --model=%s', 
+                clipboardContent, commandToUse, modelToUse)
         else
+            -- Escape the content for shell
             local escapedContent = clipboardContent:gsub("'", "'\\''")
-            command = string.format('%s/go/bin/fabric --stream --pattern %s --model=%s <<EOF\n%s\nEOF', 
-                                    os.getenv("HOME"), pattern, modelToUse, escapedContent)
+            command = string.format('%s <<EOF\n%s\nEOF', command, escapedContent)
         end
 
         hs.task.new("/bin/bash", function(exitCode, stdOut, stdErr)
@@ -31,7 +64,7 @@ function M.setup(config)
                 hs.pasteboard.setContents(stdOut)
                 hs.timer.doAfter(0.1, function()
                     hs.eventtap.keyStroke({"cmd"}, "v")
-                    hs.alert.show("Text processed and pasted")
+                    hs.alert.show(pattern.name .. " completed")
                 end)
             else
                 hs.alert.show("Error processing text: " .. (stdErr or "Unknown error"))
@@ -39,47 +72,41 @@ function M.setup(config)
         end, {"-c", command}):start()
     end
 
-    -- Define Fabric patterns
-    local patterns = {
-        { text = "Correct Text", subText = "Pattern: correct", command = "correct", model = config.fabric.models.default },
-        { text = "Improve Text", subText = "Pattern: improve", command = "improve", model = config.fabric.models.default },
-        { text = "Translate", subText = "Pattern: translate", command = "translate", model = config.fabric.models.default },
-        { text = "Overview", subText = "Pattern: overview", command = "overview", model = config.fabric.models.default },
-        { text = "LaTeX", subText = "Pattern: latex", command = "latex", model = config.fabric.models.default },
-        { text = "LaTeX Plus", subText = "Pattern: latex-plus", command = "latex-plus", model = config.fabric.models.default },
-        { text = "Note Name", subText = "Pattern: note_name", command = "note_name", model = config.fabric.models.default },
-        { text = "PDF Name", subText = "Pattern: pdf_name", command = "pdf_name", model = config.fabric.models.default },
-        { text = "General", subText = "Pattern: general", command = "general", model = config.fabric.models.default },
-        -- YouTube patterns
-        { text = "YT 5 Sentence Summary", subText = "Pattern: yt_create_5_sentence_summary", command = "yt_create_5_sentence_summary", model = config.fabric.models.default, isYouTube = true },
-        { text = "YT Extract Wisdom", subText = "Pattern: yt_extract_wisdom", command = "yt_extract_wisdom", model = config.fabric.models.default, isYouTube = true },
-        { text = "YT Summarize Lecture", subText = "Pattern: yt_summarize_lecture", command = "yt_summarize_lecture", model = config.fabric.models.default, isYouTube = true },
-        { text = "YT Summarize Debate", subText = "Pattern: yt_summarize_debate", command = "yt_summarize_debate", model = config.fabric.models.default, isYouTube = true },
-        { text = "YT Summarize", subText = "Pattern: yt_summarize", command = "yt_summarize", model = config.fabric.models.default, isYouTube = true },
-        { text = "YT Extract Main Idea", subText = "Pattern: yt_extract_main_idea", command = "yt_extract_main_idea", model = config.fabric.models.default, isYouTube = true },
-        { text = "YT Create Summary", subText = "Pattern: yt_create_summary", command = "yt_create_summary", model = config.fabric.models.default, isYouTube = true },
-        { text = "YT Create Micro Summary", subText = "Pattern: yt_create_micro_summary", command = "yt_create_micro_summary", model = config.fabric.models.default, isYouTube = true },
-    }
+    -- Bind shortcuts for all patterns
+    for _, pattern in ipairs(config.fabric.patterns) do
+        if pattern.shortcut then
+            local mods, key = parseShortcut(pattern.shortcut)
+            hs.hotkey.bind(mods, key, function()
+                executeFabricPattern(pattern.id)
+            end)
+        end
+    end
 
-    -- Bind hotkeys for Fabric patterns
-    hs.hotkey.bind({"ctrl", "alt"}, "I", function() executeFabricPattern("correct", config.fabric.models.default) end)
-    hs.hotkey.bind({"ctrl", "alt"}, "O", function() executeFabricPattern("improve", config.fabric.models.default) end)
-    hs.hotkey.bind({"ctrl", "alt"}, "E", function() executeFabricPattern("translate", config.fabric.models.default) end)
-    hs.hotkey.bind({"ctrl", "alt"}, "L", function() executeFabricPattern("latex", config.fabric.models.default) end)
-    hs.hotkey.bind({"ctrl", "alt"}, "P", function() executeFabricPattern("latex-plus", config.fabric.models.default) end)
-    hs.hotkey.bind({"ctrl", "alt"}, "G", function() executeFabricPattern("general", config.fabric.models.default) end)
-    hs.hotkey.bind({"ctrl", "alt"}, "N", function() executeFabricPattern("note_name", config.fabric.models.default) end)
-    hs.hotkey.bind({"ctrl", "alt"}, "B", function() executeFabricPattern("pdf_name", config.fabric.models.default) end)
+    -- Create choices for the chooser
+    local choices = {}
+    for _, category in ipairs(config.fabric.categories) do
+        for _, patternId in ipairs(category.patterns) do
+            local pattern = patternLookup[patternId]
+            if pattern then
+                table.insert(choices, {
+                    text = pattern.name,
+                    subText = pattern.desc .. " (" .. category.name .. ")",
+                    patternId = pattern.id
+                })
+            end
+        end
+    end
 
     -- Add shortcut to show pattern chooser
-    hs.hotkey.bind({"cmd", "alt", "shift"}, "P", function()
+    local chooserMods, chooserKey = parseShortcut(config.fabric.chooserShortcut)
+    hs.hotkey.bind(chooserMods, chooserKey, function()
         local chooser = hs.chooser.new(function(choice)
             if choice then
-                executeFabricPattern(choice.command, choice.model, choice.isYouTube)
+                executeFabricPattern(choice.patternId)
             end
         end)
 
-        chooser:choices(patterns)
+        chooser:choices(choices)
         chooser:show()
     end)
 

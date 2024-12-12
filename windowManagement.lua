@@ -1,419 +1,130 @@
 local M = {}
 local log = hs.logger.new('WindowManagement', 'debug')
-local setup = require("setup")
-
-local function moveWindowToPosition(win, x, y, w, h)
-    if win then
-        local screen = win:screen()
-        local max = screen:frame()
-        win:setFrame({
-            x = max.x + (max.w * x),
-            y = max.y + (max.h * y),
-            w = max.w * w,
-            h = max.h * h
-        })
-    end
-end
-
-local function ensureLayoutFileExists()
-    local layoutsFile = os.getenv("HOME") .. "/.hammerspoon/savedLayouts.json"
-    if not hs.fs.attributes(layoutsFile) then
-        hs.fs.mkdir(os.getenv("HOME") .. "/.hammerspoon")
-        local file = io.open(layoutsFile, "w")
-        if file then
-            file:write("{}")
-            file:close()
-        end
-    end
-end
-
-local function saveLayout(name, numWindows)
-    log.d("Saving layout: " .. name .. " with " .. numWindows .. " windows")
-    local layout = {}
-    local appBundleIDs = {}
-    local windowInfo = {}
-    
-    local allWindows = hs.window.orderedWindows()
-    local selectedWindows = {}
-    
-    -- Select the last numWindows windows, prioritizing visible windows
-    for i = 1, #allWindows do
-        local win = allWindows[i]
-        if win:isVisible() and not win:isMinimized() then
-            table.insert(selectedWindows, 1, win)
-            if #selectedWindows == numWindows then
-                break
-            end
-        end
-    end
-    
-    -- If we don't have enough visible windows, add minimized windows
-    if #selectedWindows < numWindows then
-        for i = 1, #allWindows do
-            local win = allWindows[i]
-            if win:isMinimized() and not hs.fnutils.contains(selectedWindows, win) then
-                table.insert(selectedWindows, 1, win)
-                if #selectedWindows == numWindows then
-                    break
-                end
-            end
-        end
-    end
-    
-    for i, win in ipairs(selectedWindows) do
-        local app = win:application()
-        local screen = win:screen()
-        local winFrame = win:frame()
-        local screenFrame = screen:frame()
-        
-        if app and screen and winFrame and screenFrame then
-            table.insert(layout, {
-                x = (winFrame.x - screenFrame.x) / screenFrame.w,
-                y = (winFrame.y - screenFrame.y) / screenFrame.h,
-                w = winFrame.w / screenFrame.w,
-                h = winFrame.h / screenFrame.h,
-                screen = screen:getUUID()
-            })
-            table.insert(appBundleIDs, app:bundleID())
-            
-            local info = {
-                bundleID = app:bundleID(),
-                title = win:title()
-            }
-            if app:bundleID() == "com.apple.finder" then
-                local ok, path = hs.osascript.applescript(string.format([[
-                    tell application "Finder"
-                        set win to window "%s"
-                        if win exists then
-                            return POSIX path of (target of win as alias)
-                        end if
-                    end tell
-                ]], win:title()))
-                if ok then
-                    info.path = path
-                end
-            end
-            table.insert(windowInfo, info)
-        end
-    end
-
-    local layoutData = {
-        layout = layout,
-        appBundleIDs = appBundleIDs,
-        windowInfo = windowInfo
-    }
-
-    local layoutsFile = os.getenv("HOME") .. "/.hammerspoon/savedLayouts.json"
-    local file = io.open(layoutsFile, "r")
-    local savedLayouts = {}
-    if file then
-        local content = file:read("*all")
-        file:close()
-        savedLayouts = hs.json.decode(content) or {}
-    end
-
-    savedLayouts[name] = layoutData
-
-    file = io.open(layoutsFile, "w")
-    if file then
-        file:write(hs.json.encode(savedLayouts))
-        file:close()
-        log.i("Layout saved successfully: " .. name)
-        hs.alert.show("Layout saved: " .. name)
-    else
-        log.e("Error saving layout: Unable to open file for writing")
-        hs.alert.show("Error saving layout")
-    end
-end
-
-local function loadLayout(name)
-    log.d("Loading layout: " .. name)
-    local layoutsFile = os.getenv("HOME") .. "/.hammerspoon/savedLayouts.json"
-    local file = io.open(layoutsFile, "r")
-    if not file then
-        log.e("Error: Unable to read saved layouts")
-        hs.alert.show("Error: Unable to read saved layouts")
-        return
-    end
-
-    local content = file:read("*all")
-    file:close()
-    local savedLayouts = hs.json.decode(content) or {}
-
-    local layoutData = savedLayouts[name]
-    if not layoutData then
-        log.e("Error: Layout not found")
-        hs.alert.show("Error: Layout not found")
-        return
-    end
-
-    log.d("Layout data: " .. hs.inspect(layoutData))
-
-    -- Close Finder windows only if Finder is part of the layout
-    local closeFinder = false
-    for _, bundleID in ipairs(layoutData.appBundleIDs) do
-        if bundleID == "com.apple.finder" then
-            closeFinder = true
-            break
-        end
-    end
-
-    if closeFinder then
-        hs.osascript.applescript([[
-            tell application "Finder"
-                close every window
-            end tell
-        ]])
-    end
-
-    for i, winData in ipairs(layoutData.layout) do
-        local bundleID = layoutData.appBundleIDs[i]
-        local app = hs.application.get(bundleID)
-        
-        if not app then
-            log.d("Opening application: " .. bundleID)
-            app = hs.application.open(bundleID, 5, true)
-        end
-
-        if app then
-            local screen = hs.screen.find(winData.screen)
-            if not screen then
-                log.d("Screen not found, using primary screen")
-                screen = hs.screen.primaryScreen()
-            end
-            local screenFrame = screen:frame()
-
-            app:activate()
-            hs.timer.usleep(500000) -- Wait for 0.5 seconds
-
-            local win
-            if bundleID == "com.apple.finder" then
-                local path = layoutData.windowInfo[i].path or "~"
-                local script = string.format([[
-                    tell application "Finder"
-                        set targetFolder to POSIX file "%s" as alias
-                        make new Finder window to targetFolder
-                    end tell
-                ]], path)
-                hs.osascript.applescript(script)
-                win = app:focusedWindow()
-            else
-                -- Retry mechanism to ensure the window is properly opened and focused
-                for attempt = 1, 3 do
-                    win = app:focusedWindow() or app:mainWindow()
-                    if not win then
-                        app:selectMenuItem({"File", "New Window"})
-                        hs.timer.usleep(500000) -- Wait for 0.5 seconds
-                    else
-                        break
-                    end
-                end
-            end
-
-            if win then
-                if win:isMinimized() then
-                    win:unminimize()
-                    hs.timer.usleep(500000) -- Wait for 0.5 seconds
-                end
-                local newFrame = hs.geometry.rect(
-                    screenFrame.x + screenFrame.w * winData.x,
-                    screenFrame.y + screenFrame.h * winData.y,
-                    screenFrame.w * winData.w,
-                    screenFrame.h * winData.h
-                )
-                win:setFrame(newFrame)
-                log.d("Positioned window for " .. app:name())
-            else
-                log.e("Failed to get window for " .. app:name())
-            end
-        else
-            log.e("Failed to open application: " .. bundleID)
-        end
-        
-        hs.timer.usleep(500000) -- Wait for 0.5 seconds between each window
-    end
-
-    log.i("Layout loaded: " .. name)
-    hs.alert.show("Layout loaded: " .. name)
-end
 
 function M.setup(config)
     log.i("Setting up window management")
-    ensureLayoutFileExists()
 
-    -- Set animation duration from config
-    hs.window.animationDuration = config.windowManagement.animationDuration
-
-    -- Helper function to bind hotkey
-    local function bindHotkey(shortcut, callback)
-        if type(shortcut) ~= "table" or #shortcut < 2 then
-            log.w("Invalid shortcut configuration: " .. hs.inspect(shortcut))
-            return
+    -- Window movement functions
+    local function moveWindow(direction)
+        local win = hs.window.focusedWindow()
+        if not win then return end
+        
+        local screen = win:screen()
+        local frame = screen:frame()
+        local winFrame = win:frame()
+        
+        if direction == "left" then
+            winFrame.x = frame.x
+            winFrame.y = frame.y
+            winFrame.w = frame.w / 2
+            winFrame.h = frame.h
+        elseif direction == "right" then
+            winFrame.x = frame.x + (frame.w / 2)
+            winFrame.y = frame.y
+            winFrame.w = frame.w / 2
+            winFrame.h = frame.h
+        elseif direction == "top" then
+            winFrame.x = frame.x
+            winFrame.y = frame.y
+            winFrame.w = frame.w
+            winFrame.h = frame.h / 2
+        elseif direction == "bottom" then
+            winFrame.x = frame.x
+            winFrame.y = frame.y + (frame.h / 2)
+            winFrame.w = frame.w
+            winFrame.h = frame.h / 2
+        elseif direction == "center" then
+            winFrame.x = frame.x + (frame.w * 0.125)
+            winFrame.y = frame.y + (frame.h * 0.125)
+            winFrame.w = frame.w * 0.75
+            winFrame.h = frame.h * 0.75
+        elseif direction == "full" then
+            winFrame = frame
         end
-        local modifiers = {}
-        for i = 1, #shortcut - 1 do
-            table.insert(modifiers, shortcut[i])
-        end
-        local key = shortcut[#shortcut]
-        log.d("Binding hotkey: " .. hs.inspect(modifiers) .. " + " .. key)
-        hs.hotkey.bind(modifiers, key, callback)
+        
+        win:setFrame(winFrame, config.windowAnimation)
     end
 
-    -- Set up window management shortcuts
-    for action, shortcut in pairs(config.shortcuts.windowManagement) do
-        if action == "leftHalf" then
-            bindHotkey(shortcut, function()
-                moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 0.5, 1)
-            end)
-        elseif action == "rightHalf" then
-            bindHotkey(shortcut, function()
-                moveWindowToPosition(hs.window.focusedWindow(), 0.5, 0, 0.5, 1)
-            end)
-        elseif action == "topHalf" then
-            bindHotkey(shortcut, function()
-                moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 1, 0.5)
-            end)
-        elseif action == "bottomHalf" then
-            bindHotkey(shortcut, function()
-                moveWindowToPosition(hs.window.focusedWindow(), 0, 0.5, 1, 0.5)
-            end)
-        elseif action == "fullScreen" then
-            bindHotkey(shortcut, function()
-                moveWindowToPosition(hs.window.focusedWindow(), 0, 0, 1, 1)
-            end)
-        elseif action == "center" then
-            bindHotkey(shortcut, function()
-                hs.window.focusedWindow():centerOnScreen()
-            end)
-        elseif action == "leftScreen" then
-            bindHotkey(shortcut, function()
-                local win = hs.window.focusedWindow()
-                if win then win:moveOneScreenWest() end
-            end)
-        elseif action == "rightScreen" then
-            bindHotkey(shortcut, function()
-                local win = hs.window.focusedWindow()
-                if win then win:moveOneScreenEast() end
-            end)
-        elseif action == "saveLayout" then
-            bindHotkey(shortcut, function()
-                local numWindowsChooser = hs.chooser.new(function(choice)
-                    if choice then
-                        local numWindows = tonumber(choice.text)
-                        local button, layoutName = hs.dialog.textPrompt("Name Layout", "Enter a name for this layout:", "", "Save", "Cancel")
-                        if button == "Save" and layoutName and layoutName ~= "" then
-                            saveLayout(layoutName, numWindows)
-                        else
-                            hs.alert.show("Layout save cancelled or empty name provided")
-                        end
-                    else
-                        hs.alert.show("No number of windows selected")
-                    end
-                end)
+    -- Screen movement functions
+    local function moveToScreen(direction)
+        local win = hs.window.focusedWindow()
+        if not win then return end
         
-                numWindowsChooser:choices({
-                    {text = "1"}, {text = "2"}, {text = "3"}, {text = "4"}, {text = "5"}
-                })
+        local screen = win:screen()
+        local nextScreen
         
-                numWindowsChooser:show()
-            end)
-        elseif action == "loadLayout" then
-            bindHotkey(shortcut, function()
-                local layoutsFile = os.getenv("HOME") .. "/.hammerspoon/savedLayouts.json"
-                local file = io.open(layoutsFile, "r")
-                if not file then
-                    hs.alert.show("Error: No saved layouts found")
-                    return
-                end
-        
-                local content = file:read("*all")
-                file:close()
-                local savedLayouts = hs.json.decode(content) or {}
-        
-                local layoutNames = {}
-                for name, _ in pairs(savedLayouts) do
-                    table.insert(layoutNames, {text = name})
-                end
-        
-                if #layoutNames == 0 then
-                    hs.alert.show("No saved layouts found")
-                    return
-                end
-        
-                local chooser = hs.chooser.new(function(choice)
-                    if choice then
-                        loadLayout(choice.text)
-                    end
-                end)
-        
-                chooser:choices(layoutNames)
-                chooser:show()
-            end)
+        if direction == "next" then
+            nextScreen = screen:next()
+        else
+            nextScreen = screen:previous()
         end
+        
+        win:moveToScreen(nextScreen, false, true, config.windowAnimation)
     end
 
-    -- Cycle through windows of the current application
-    local function cycleWindowsOfApp(reverse)
-        local currentWindow = hs.window.focusedWindow()
-        if not currentWindow then
-            log.d("No focused window")
-            return
-        end
-    
-        local app = currentWindow:application()
-        local windows = app:allWindows()
-        log.d("Total windows for app: " .. #windows)
-    
-        -- Filter out minimized windows and the window with ID 0, then sort by ID
-        local activeWindows = hs.fnutils.filter(windows, function(w)
-            return not w:isMinimized() and w:id() ~= 0
-        end)
-        table.sort(activeWindows, function(a, b) return a:id() < b:id() end)
-        log.d("Active windows: " .. #activeWindows)
-    
-        if #activeWindows <= 1 then
-            log.d("Not enough windows to cycle")
-            return
-        end
-    
-        -- Find the index of the current window
+    -- Window cycling functions
+    local function cycleWindows(direction)
+        local app = hs.application.frontmostApplication()
+        if not app then return end
+        
+        local windows = app:visibleWindows()
+        if #windows <= 1 then return end
+        
+        -- Sort windows by ID to maintain consistent order
+        table.sort(windows, function(a, b) return a:id() < b:id() end)
+        
+        local focusedWindow = hs.window.focusedWindow()
         local currentIndex
-        for i, w in ipairs(activeWindows) do
-            if w:id() == currentWindow:id() then
+        
+        -- Find current window index
+        for i, win in ipairs(windows) do
+            if win:id() == focusedWindow:id() then
                 currentIndex = i
                 break
             end
         end
-        log.d("Current window index: " .. tostring(currentIndex))
-    
-        if not currentIndex then
-            log.d("Current window not found in active windows, focusing first window")
-            activeWindows[1]:focus()
-            return
-        end
-    
+        
+        if not currentIndex then return end
+        
+        -- Calculate next window index
         local nextIndex
-        if reverse then
-            nextIndex = currentIndex > 1 and currentIndex - 1 or #activeWindows
+        if direction == "next" then
+            nextIndex = currentIndex % #windows + 1
         else
-            nextIndex = currentIndex < #activeWindows and currentIndex + 1 or 1
+            nextIndex = (currentIndex - 2) % #windows + 1
         end
-        log.d("Next window index: " .. nextIndex)
-    
-        activeWindows[nextIndex]:focus()
-        log.d("Focused window: " .. activeWindows[nextIndex]:title())
+        
+        -- Focus next window
+        windows[nextIndex]:focus()
     end
 
-    -- Bind cycle window shortcuts
-    bindHotkey(config.shortcuts.windowManagement.nextWindow, function()
-        log.d("Cycling forward")
-        cycleWindowsOfApp(false)
-    end)
-
-    bindHotkey(config.shortcuts.windowManagement.previousWindow, function()
-        log.d("Cycling backward")
-        cycleWindowsOfApp(true)
-    end)
+    -- Bind window movement shortcuts
+    for name, shortcut in pairs(config.keys.windows) do
+        local mods = shortcut.mods
+        local key = shortcut.key
+        
+        if name == "left" then
+            hs.hotkey.bind(mods, key, function() moveWindow("left") end)
+        elseif name == "right" then
+            hs.hotkey.bind(mods, key, function() moveWindow("right") end)
+        elseif name == "top" then
+            hs.hotkey.bind(mods, key, function() moveWindow("top") end)
+        elseif name == "bottom" then
+            hs.hotkey.bind(mods, key, function() moveWindow("bottom") end)
+        elseif name == "center" then
+            hs.hotkey.bind(mods, key, function() moveWindow("center") end)
+        elseif name == "full" then
+            hs.hotkey.bind(mods, key, function() moveWindow("full") end)
+        elseif name == "nextScreen" then
+            hs.hotkey.bind(mods, key, function() moveToScreen("next") end)
+        elseif name == "prevScreen" then
+            hs.hotkey.bind(mods, key, function() moveToScreen("prev") end)
+        elseif name == "nextWindow" then
+            hs.hotkey.bind(mods, key, function() cycleWindows("next") end)
+        elseif name == "prevWindow" then
+            hs.hotkey.bind(mods, key, function() cycleWindows("prev") end)
+        end
+    end
 
     log.i("Window management setup complete")
 end

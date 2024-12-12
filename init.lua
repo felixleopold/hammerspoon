@@ -1,21 +1,15 @@
 -- Initialize logger
 local log = hs.logger.new('MyConfig', 'debug')
 
--- Set user path dynamically
-local userPath = os.getenv("HOME")
-
 -- Set the path for Hammerspoon files
-local configPath = userPath .. "/.hammerspoon"
-
--- Add the config path to package.path
-package.path = package.path .. ";" .. configPath .. "/?.lua"
+package.path = package.path .. ";" .. os.getenv("HOME") .. "/.hammerspoon/?.lua"
 
 -- Load modules
 local application = require("application")
 local windowManagement = require("windowManagement")
 local fabric = require("fabric")
 local setup = require("setup")
-local version = require("version")  -- Add this line to import the version module
+local version = require("version")
 
 -- Disable animation for window movements
 hs.window.animationDuration = 0
@@ -24,7 +18,7 @@ hs.window.animationDuration = 0
 function reloadConfig(files)
     local doReload = false
     for _, file in pairs(files) do
-        if file:sub(-4) == ".lua" then
+        if file:sub(-4) == ".lua" or file:sub(-5) == ".json" then
             doReload = true
         end
     end
@@ -34,7 +28,7 @@ function reloadConfig(files)
 end
 
 -- Set up auto-reload of configuration
-local myWatcher = hs.pathwatcher.new(configPath, reloadConfig):start()
+local myWatcher = hs.pathwatcher.new(os.getenv("HOME") .. "/.hammerspoon", reloadConfig):start()
 
 -- Load configuration
 local config = setup.getConfig()
@@ -44,31 +38,6 @@ application.setup(config)
 windowManagement.setup(config)
 fabric.setup(config)
 
--- Bind setup wizard
-setup.bindSetupWizard()
-
--- Add this after the setup.bindSetupWizard() call
-log.i("Setup wizard bound to shortcut: ctrl+opt+cmd+shift+S")
-
 -- Show a notification when the configuration is loaded
 hs.alert.show("Hammerspoon configuration v" .. version.current .. " loaded")
-
 log.i("Hammerspoon configuration version " .. version.current .. " loaded")
-
--- Add this near the top of the file
-local function checkForConfigChanges()
-    local tempConfigPath = os.getenv("HOME") .. "/.hammerspoon/temp_config.json"
-    if hs.fs.attributes(tempConfigPath) then
-        os.remove(tempConfigPath)
-        hs.reload()
-    end
-end
-
--- Add this at the end of the file
-hs.timer.doEvery(5, checkForConfigChanges)
-
--- Add this near the end of the file
-hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "S", function()
-    log.i("Fallback method: Launching setup wizard")
-    setup.runSetup()
-end)
