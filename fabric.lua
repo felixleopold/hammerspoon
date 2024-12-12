@@ -33,16 +33,19 @@ function M.setup(config)
 
         -- Find fabric executable
         local fabricPath = hs.execute("which fabric"):gsub("%s+", "")
+        log.i("Found fabric at: " .. (fabricPath ~= "" and fabricPath or "not found"))
         if fabricPath == "" then
             -- Try common installation paths
             local possiblePaths = {
                 os.getenv("HOME") .. "/.local/bin/fabric",
                 "/usr/local/bin/fabric",
-                "/opt/homebrew/bin/fabric"
+                "/opt/homebrew/bin/fabric",
+                os.getenv("HOME") .. "/go/bin/fabric"
             }
             for _, path in ipairs(possiblePaths) do
                 if hs.fs.attributes(path) then
                     fabricPath = path
+                    log.i("Found fabric in alternate location: " .. path)
                     break
                 end
             end
@@ -90,16 +93,19 @@ function M.setup(config)
 
             -- Escape the URL for shell
             url = url:gsub('"', '\\"')
-            command = string.format('echo "%s" | %s -y --stream --pattern %s --model=%s', 
+            command = string.format('echo "%s" | %s -y --pattern %s --model=%s', 
                 url, fabricPath, commandToUse, modelToUse)
         else
             -- Escape the content for shell
             local escapedContent = clipboardContent:gsub('"', '\\"')
-            command = string.format('echo "%s" | %s --stream --pattern %s --model=%s',
+            command = string.format('echo "%s" | %s --pattern %s --model=%s',
                 escapedContent, fabricPath, commandToUse, modelToUse)
         end
 
         log.i("Executing command: " .. command)
+        log.i("Pattern: " .. pattern.id)
+        log.i("Model: " .. modelToUse)
+        log.i("Content length: " .. #clipboardContent)
         hs.task.new("/bin/bash", function(exitCode, stdOut, stdErr)
             if exitCode == 0 then
                 hs.pasteboard.setContents(stdOut)
