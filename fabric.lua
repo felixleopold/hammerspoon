@@ -31,11 +31,29 @@ function M.setup(config)
         -- Get the command to use (some patterns might use a different command)
         local commandToUse = pattern.command or pattern.id
 
-        -- Build the fabric command
-        local fabricPath = os.getenv("HOME") .. "/.local/bin/fabric"
-        local command = string.format('%s --stream --pattern %s --model=%s', fabricPath, commandToUse, modelToUse)
+        -- Find fabric executable
+        local fabricPath = hs.execute("which fabric"):gsub("%s+", "")
+        if fabricPath == "" then
+            -- Try common installation paths
+            local possiblePaths = {
+                os.getenv("HOME") .. "/.local/bin/fabric",
+                "/usr/local/bin/fabric",
+                "/opt/homebrew/bin/fabric"
+            }
+            for _, path in ipairs(possiblePaths) do
+                if hs.fs.attributes(path) then
+                    fabricPath = path
+                    break
+                end
+            end
+            if fabricPath == "" then
+                log.e("Could not find fabric executable")
+                return
+            end
+        end
         
-        -- Add YouTube flag if it's a YouTube pattern
+        -- Build the fabric command
+        local command
         if pattern.youtube then
             -- For YouTube patterns, check if the URL is from a browser
             local browserApps = {
@@ -70,14 +88,18 @@ function M.setup(config)
                 url = clipboardContent
             end
 
-            command = string.format('%s -y "%s" --stream --pattern %s --model=%s', 
-                fabricPath, url, commandToUse, modelToUse)
+            -- Escape the URL for shell
+            url = url:gsub('"', '\\"')
+            command = string.format('echo "%s" | %s -y --stream --pattern %s --model=%s', 
+                url, fabricPath, commandToUse, modelToUse)
         else
             -- Escape the content for shell
-            local escapedContent = clipboardContent:gsub("'", "'\\''")
-            command = string.format('%s <<EOF\n%s\nEOF', command, escapedContent)
+            local escapedContent = clipboardContent:gsub('"', '\\"')
+            command = string.format('echo "%s" | %s --stream --pattern %s --model=%s',
+                escapedContent, fabricPath, commandToUse, modelToUse)
         end
 
+        log.i("Executing command: " .. command)
         hs.task.new("/bin/bash", function(exitCode, stdOut, stdErr)
             if exitCode == 0 then
                 hs.pasteboard.setContents(stdOut)
