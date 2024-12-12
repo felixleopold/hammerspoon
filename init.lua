@@ -34,9 +34,9 @@ local myWatcher = hs.pathwatcher.new(os.getenv("HOME") .. "/.hammerspoon", reloa
 local config = setup.getConfig()
 
 -- Use this config when setting up modules
-application.setup(config)
-windowManagement.setup(config)
 fabric.setup(config)
+windowManagement.setup(config)
+application.setup(config)
 
 -- Show a notification when the configuration is loaded
 hs.alert.show("Hammerspoon configuration v" .. version.current .. " loaded")
