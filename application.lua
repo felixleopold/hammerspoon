@@ -44,8 +44,11 @@ function M.setup(config)
     for name, shortcut in pairs(config.shortcuts.appShortcuts) do
         local appName = config.applications[name]
         if appName then
-            log.d("Setting up shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. appName)
-            bindHotkey(shortcut, function() launchOrFocus(appName) end)
+            log.i("Setting up shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. appName)
+            bindHotkey(shortcut, function() 
+                log.i("Launching " .. appName .. " via shortcut " .. hs.inspect(shortcut))
+                launchOrFocus(appName)
+            end)
         else
             log.w("No application defined for shortcut: " .. name .. ". Please check your configuration.")
         end
@@ -62,7 +65,6 @@ function M.setup(config)
                     hs.execute(string.format('/usr/bin/open "%s"', path))
                 else
                     log.w("Folder does not exist: " .. path)
-                    hs.alert.show("Folder does not exist: " .. path)
                 end
             end)
         else

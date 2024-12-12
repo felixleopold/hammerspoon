@@ -8,7 +8,6 @@ function M.getConfig()
         return M.expandConfig(config)
     else
         log.e("Failed to load config.lua")
-        hs.alert.show("Error: Failed to load config.lua")
         return {}
     end
 end

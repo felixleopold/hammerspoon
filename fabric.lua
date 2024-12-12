@@ -14,7 +14,7 @@ function M.setup(config)
     local function executeFabricPattern(patternId)
         local clipboardContent = hs.pasteboard.getContents()
         if not clipboardContent or clipboardContent == "" then
-            hs.alert.show("Error: Clipboard is empty")
+            log.w("Error: Clipboard is empty")
             return
         end
 
@@ -22,7 +22,6 @@ function M.setup(config)
         local pattern = patternLookup[patternId]
         if not pattern then
             log.e("Pattern not found: " .. patternId)
-            hs.alert.show("Error: Pattern not found")
             return
         end
 
@@ -33,7 +32,8 @@ function M.setup(config)
         local commandToUse = pattern.command or pattern.id
 
         -- Build the fabric command
-        local command = string.format('fabric --stream --pattern %s --model=%s', commandToUse, modelToUse)
+        local fabricPath = os.getenv("HOME") .. "/.local/bin/fabric"
+        local command = string.format('%s --stream --pattern %s --model=%s', fabricPath, commandToUse, modelToUse)
         
         -- Add YouTube flag if it's a YouTube pattern
         if pattern.youtube then
@@ -70,8 +70,8 @@ function M.setup(config)
                 url = clipboardContent
             end
 
-            command = string.format('fabric -y "%s" --stream --pattern %s --model=%s', 
-                url, commandToUse, modelToUse)
+            command = string.format('%s -y "%s" --stream --pattern %s --model=%s', 
+                fabricPath, url, commandToUse, modelToUse)
         else
             -- Escape the content for shell
             local escapedContent = clipboardContent:gsub("'", "'\\''")
@@ -83,10 +83,10 @@ function M.setup(config)
                 hs.pasteboard.setContents(stdOut)
                 hs.timer.doAfter(0.1, function()
                     hs.eventtap.keyStroke({"cmd"}, "v")
-                    hs.alert.show(pattern.name .. " completed")
+                    log.i(pattern.name .. " completed")
                 end)
             else
-                hs.alert.show("Error processing text: " .. (stdErr or "Unknown error"))
+                log.e("Error processing text: " .. (stdErr or "Unknown error"))
             end
         end, {"-c", command}):start()
     end

@@ -148,13 +148,6 @@ local config = {
                 key = "W",
             },
             {
-                id = "analyze_claims",
-                name = "Analyze Claims",
-                desc = "Analyze claims and evidence",
-                trigger = "pattern",
-                key = "A",
-            },
-            {
                 id = "improve_writing",
                 name = "Improve Writing",
                 desc = "Improve writing style and clarity",
@@ -277,7 +270,7 @@ local config = {
         categories = {
             {
                 name = "Text Analysis",
-                patterns = { "summarize", "extract_wisdom", "analyze_claims", 
+                patterns = { "summarize", "extract_wisdom", 
                            "improve_writing", "find_action_items" }
             },
             {
