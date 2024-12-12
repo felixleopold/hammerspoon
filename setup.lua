@@ -13,25 +13,11 @@ function M.getConfig()
     end
 end
 
--- Helper function to convert shortcut string to modifiers and key
-local function parseShortcut(shortcutStr)
-    local mods = {}
-    local parts = {}
-    for part in shortcutStr:gmatch("[^+]+") do
-        table.insert(parts, part:lower())
-    end
-    local key = parts[#parts]
-    for i = 1, #parts - 1 do
-        table.insert(mods, parts[i])
-    end
-    return mods, key:upper()
-end
-
 -- Expand the simplified config into the format expected by the modules
 function M.expandConfig(config)
     local expanded = {
-        applications = {},
-        folders = {},
+        applications = config.applications,
+        folders = config.folders,
         shortcuts = {
             appShortcuts = {},
             folderShortcuts = {},
@@ -41,49 +27,53 @@ function M.expandConfig(config)
         windowManagement = {
             animationDuration = config.windowAnimation or 0
         },
-        -- Include fabric configuration directly
-        fabric = config.fabric
+        fabric = {
+            defaultModel = config.fabric.defaultModel,
+            patterns = {},
+            categories = config.fabric.categories,
+        }
     }
 
-    -- Expand applications
-    for name, app in pairs(config.apps) do
-        expanded.applications[name:gsub("^%l", string.upper)] = app
-    end
-
-    -- Expand folders
-    for name, path in pairs(config.folders) do
-        expanded.folders[name:gsub("^%l", string.upper)] = path
-    end
-
     -- Expand app shortcuts
-    for _, shortcut in ipairs(config.keys.apps) do
-        expanded.shortcuts.appShortcuts[shortcut.app] = {"ctrl", "alt", "cmd", shortcut.key}
+    for _, shortcut in ipairs(config.shortcuts.apps) do
+        expanded.shortcuts.appShortcuts[shortcut.app] = config.triggers.app
+        table.insert(expanded.shortcuts.appShortcuts[shortcut.app], shortcut.key)
     end
 
     -- Expand folder shortcuts
-    for _, shortcut in ipairs(config.keys.folders) do
-        expanded.shortcuts.folderShortcuts[shortcut.path] = {"cmd", "shift", shortcut.key}
+    for _, shortcut in ipairs(config.shortcuts.folders) do
+        expanded.shortcuts.folderShortcuts[shortcut.path] = config.triggers.folder
+        table.insert(expanded.shortcuts.folderShortcuts[shortcut.path], shortcut.key)
     end
 
     -- Expand window management shortcuts
-    for name, shortcutStr in pairs(config.windows) do
-        local mods, key = parseShortcut(shortcutStr)
-        expanded.shortcuts.windowManagement[name] = mods
-        table.insert(expanded.shortcuts.windowManagement[name], key)
+    for name, shortcut in pairs(config.shortcuts.windows) do
+        expanded.shortcuts.windowManagement[name] = config.triggers[shortcut.trigger]
+        table.insert(expanded.shortcuts.windowManagement[name], shortcut.key)
     end
 
-    -- Convert fabric shortcuts to the expanded format
-    if expanded.fabric and expanded.fabric.patterns then
-        for _, pattern in ipairs(expanded.fabric.patterns) do
-            if pattern.shortcut then
-                local mods, key = parseShortcut(pattern.shortcut)
-                pattern.shortcut = {
-                    mods = mods,
-                    key = key
-                }
-            end
-        end
+    -- Expand fabric patterns
+    for _, pattern in ipairs(config.fabric.patterns) do
+        local expandedPattern = {
+            id = pattern.id,
+            name = pattern.name,
+            desc = pattern.desc,
+            command = pattern.command,
+            model = pattern.model,
+            youtube = pattern.youtube,
+            shortcut = {
+                mods = config.triggers[pattern.trigger],
+                key = pattern.key
+            }
+        }
+        table.insert(expanded.fabric.patterns, expandedPattern)
     end
+
+    -- Add fabric chooser shortcut
+    expanded.fabric.chooserShortcut = {
+        mods = config.fabric.chooserTrigger,
+        key = config.fabric.chooserKey
+    }
 
     return expanded
 end

@@ -2,20 +2,6 @@ local M = {}
 local log = hs.logger.new('Fabric', 'debug')
 local setup = require("setup")
 
--- Helper function to convert shortcut string to modifiers and key
-local function parseShortcut(shortcutStr)
-    local mods = {}
-    local parts = {}
-    for part in shortcutStr:gmatch("[^+]+") do
-        table.insert(parts, part:lower())
-    end
-    local key = parts[#parts]
-    for i = 1, #parts - 1 do
-        table.insert(mods, parts[i])
-    end
-    return mods, key:upper()
-end
-
 function M.setup(config)
     log.i("Setting up Fabric integration")
 
@@ -51,8 +37,41 @@ function M.setup(config)
         
         -- Add YouTube flag if it's a YouTube pattern
         if pattern.youtube then
+            -- For YouTube patterns, check if the URL is from a browser
+            local browserApps = {
+                config.applications.Browser,     -- Primary browser (Zen)
+                config.applications.Browser2,    -- Secondary browser (Edge)
+            }
+            local url = clipboardContent
+            local foundUrl = false
+
+            for _, browserName in ipairs(browserApps) do
+                local browser = hs.application.get(browserName)
+                if browser then
+                    -- Try to get URL from browser
+                    browser:activate()
+                    hs.timer.usleep(50000)
+                    hs.eventtap.keyStroke({"cmd"}, "l")
+                    hs.timer.usleep(50000)
+                    hs.eventtap.keyStroke({"cmd"}, "c")
+                    hs.timer.usleep(50000)
+                    hs.eventtap.keyStroke({}, "escape")
+                    local browserUrl = hs.pasteboard.getContents()
+                    if browserUrl and browserUrl:match("^https?://") then
+                        url = browserUrl
+                        foundUrl = true
+                        break
+                    end
+                end
+            end
+
+            if not foundUrl then
+                -- If no URL found in browsers, use clipboard content
+                url = clipboardContent
+            end
+
             command = string.format('fabric -y "%s" --stream --pattern %s --model=%s', 
-                clipboardContent, commandToUse, modelToUse)
+                url, commandToUse, modelToUse)
         else
             -- Escape the content for shell
             local escapedContent = clipboardContent:gsub("'", "'\\''")
@@ -97,8 +116,7 @@ function M.setup(config)
     end
 
     -- Add shortcut to show pattern chooser
-    local chooserMods, chooserKey = parseShortcut(config.fabric.chooserShortcut)
-    hs.hotkey.bind(chooserMods, chooserKey, function()
+    hs.hotkey.bind(config.fabric.chooserShortcut.mods, config.fabric.chooserShortcut.key, function()
         local chooser = hs.chooser.new(function(choice)
             if choice then
                 executeFabricPattern(choice.patternId)

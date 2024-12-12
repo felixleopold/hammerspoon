@@ -26,19 +26,30 @@ Shortcut Modifiers:
 ]]--
 
 local config = {
+    -- Common modifier combinations
+    triggers = {
+        app = {"ctrl", "alt", "cmd"},     -- For launching applications
+        folder = {"cmd", "shift"},        -- For opening folders
+        window = {"alt"},                 -- For window management
+        screen = {"ctrl", "alt"},         -- For screen management
+        pattern = {"ctrl", "alt"},        -- For basic fabric patterns
+        advanced = {"ctrl", "alt", "shift"}, -- For advanced fabric patterns
+        research = {"ctrl", "alt", "cmd"}, -- For research-related patterns
+    },
+
     -- Applications to control
-    apps = {
-        browser = "Zen Browser",      -- Primary browser
-        browser2 = "Microsoft Edge",  -- Secondary browser
-        editor = "Visual Studio Code", -- Code editor
-        terminal = "kitty",           -- Terminal emulator
-        notes = "Obsidian",           -- Note-taking app
-        mail = "Mail",                -- Email client
-        spotify = "Spotify",          -- Music player
-        finder = "Finder",            -- File manager
-        whatsapp = "WhatsApp",        -- Messaging
-        settings = "System Settings",  -- System preferences
-        utm = "UTM",                  -- Virtual machines
+    applications = {
+        Browser = "Zen Browser",      -- Primary browser
+        Browser2 = "Microsoft Edge",  -- Secondary browser
+        Editor = "Visual Studio Code", -- Code editor
+        Terminal = "kitty",           -- Terminal emulator
+        Notes = "Obsidian",           -- Note-taking app
+        Mail = "Mail",                -- Email client
+        Spotify = "Spotify",          -- Music player
+        Finder = "Finder",            -- File manager
+        WhatsApp = "WhatsApp",        -- Messaging
+        Settings = "System Settings",  -- System preferences
+        UTM = "UTM",                  -- Virtual machines
     },
 
     -- Common folders
@@ -56,87 +67,67 @@ local config = {
         projects = "~/Documents/Projects", -- Programming projects
     },
 
-    --[[
-    =====================================
-    Window Management
-    =====================================
-    Configure window movement, screen management, and window cycling.
-    All shortcuts use the same string format: "modifier1+modifier2+key"
-    ]]--
-    windows = {
-        -- Basic window movements
-        left = "alt+a",      -- Left half
-        right = "alt+d",     -- Right half
-        top = "alt+w",       -- Top half
-        bottom = "alt+h",    -- Bottom half
-        center = "alt+c",    -- Center on screen
-        full = "alt+f",      -- Full screen
+    -- Keyboard shortcuts
+    shortcuts = {
+        -- Application shortcuts (ctrl + alt + cmd + key)
+        apps = {
+            { app = "Browser", key = "Z" },    -- Primary browser
+            { app = "Browser2", key = "A" },   -- Secondary browser
+            { app = "Editor", key = "V" },     -- VS Code
+            { app = "Terminal", key = "T" },   -- Terminal
+            { app = "Notes", key = "O" },      -- Obsidian
+            { app = "Mail", key = "M" },       -- Mail
+            { app = "Spotify", key = "S" },    -- Spotify
+            { app = "Finder", key = "F" },     -- Finder
+            { app = "WhatsApp", key = "W" },   -- WhatsApp
+            { app = "Settings", key = "P" },   -- System Settings
+            { app = "UTM", key = "U" },        -- UTM
+        },
 
-        -- Screen management
-        nextScreen = "ctrl+alt+d", -- Move to next screen
-        prevScreen = "ctrl+alt+a", -- Move to previous screen
+        -- Folder shortcuts (cmd + shift + key)
+        folders = {
+            { path = "home", key = "H" },        -- Home
+            { path = "desktop", key = "D" },     -- Desktop
+            { path = "downloads", key = "L" },   -- Downloads
+            { path = "documents", key = "F" },   -- Documents
+            { path = "pictures", key = "P" },    -- Pictures
+            { path = "music", key = "M" },       -- Music
+            { path = "movies", key = "V" },      -- Movies
+            { path = "applications", key = "A" }, -- Applications
+            { path = "notes", key = "O" },       -- Obsidian vault
+            { path = "school", key = "S" },      -- School
+            { path = "projects", key = "R" },    -- Projects
+        },
 
-        -- Window cycling
-        nextWindow = "alt+e", -- Next window in app
-        prevWindow = "alt+q", -- Previous window in app
+        -- Window management
+        windows = {
+            -- Basic window movements (alt + key)
+            left = { trigger = "window", key = "A" },      -- Left half
+            right = { trigger = "window", key = "D" },     -- Right half
+            top = { trigger = "window", key = "W" },       -- Top half
+            bottom = { trigger = "window", key = "H" },    -- Bottom half
+            center = { trigger = "window", key = "C" },    -- Center
+            full = { trigger = "window", key = "F" },      -- Full screen
+
+            -- Screen management (ctrl + alt + key)
+            nextScreen = { trigger = "screen", key = "D" }, -- Move to next screen
+            prevScreen = { trigger = "screen", key = "A" }, -- Move to previous screen
+
+            -- Window cycling (alt + key)
+            nextWindow = { trigger = "window", key = "E" }, -- Next window in app
+            prevWindow = { trigger = "window", key = "Q" }, -- Previous window in app
+        },
     },
 
     -- Window animation duration (0 for instant)
     windowAnimation = 0,
 
-    --[[
-    =====================================
-    Keyboard Shortcuts
-    =====================================
-    All keyboard shortcuts are defined here in two categories:
-    1. Application shortcuts (ctrl + alt + cmd + key)
-    2. Folder shortcuts (cmd + shift + key)
-    ]]--
-    keys = {
-        -- Application Shortcuts (ctrl + alt + cmd + key)
-        apps = {
-            { key = "Z", app = "browser" },    -- Primary browser
-            { key = "A", app = "browser2" },   -- Secondary browser
-            { key = "V", app = "editor" },     -- VS Code
-            { key = "T", app = "terminal" },   -- Terminal
-            { key = "O", app = "notes" },      -- Obsidian
-            { key = "M", app = "mail" },       -- Mail
-            { key = "S", app = "spotify" },    -- Spotify
-            { key = "F", app = "finder" },     -- Finder
-            { key = "W", app = "whatsapp" },   -- WhatsApp
-            { key = "P", app = "settings" },   -- System Settings
-            { key = "U", app = "utm" },        -- UTM
-        },
-
-        -- Folder Shortcuts (cmd + shift + key)
-        folders = {
-            { key = "H", path = "home" },        -- Home
-            { key = "D", path = "desktop" },     -- Desktop
-            { key = "L", path = "downloads" },   -- Downloads
-            { key = "F", path = "documents" },   -- Documents
-            { key = "P", path = "pictures" },    -- Pictures
-            { key = "M", path = "music" },       -- Music
-            { key = "V", path = "movies" },      -- Movies
-            { key = "A", path = "applications" }, -- Applications
-            { key = "O", path = "notes" },       -- Obsidian vault
-            { key = "S", path = "school" },      -- School
-            { key = "R", path = "projects" },    -- Projects
-        },
-    },
-
-    --[[
-    =====================================
-    Fabric AI Integration
-    =====================================
-    Configuration for the Fabric AI assistant integration.
-    
-    Shortcut Format: "cmd+alt+shift+key" or "ctrl+alt+key"
-    Available Models: "gpt-4", "gpt-3.5-turbo", "claude-2", etc.
-    ]]--
+    -- Fabric AI Integration
     fabric = {
         -- Default settings
         defaultModel = "gpt-4",
-        chooserShortcut = "cmd+alt+shift+p",  -- Global shortcut to open pattern chooser
+        chooserTrigger = {"cmd", "alt", "shift"},  -- Global trigger for pattern chooser
+        chooserKey = "P",                          -- Key for pattern chooser
         
         -- Pattern definitions
         patterns = {
@@ -145,32 +136,37 @@ local config = {
                 id = "summarize",
                 name = "Summarize",
                 desc = "Create a concise summary",
-                shortcut = "ctrl+alt+s",
-                model = "gpt-4",  -- Override default model if needed
+                trigger = "pattern",
+                key = "S",
+                model = "gpt-4",
             },
             {
                 id = "extract_wisdom",
                 name = "Extract Wisdom",
                 desc = "Extract key insights",
-                shortcut = "ctrl+alt+w",
+                trigger = "pattern",
+                key = "W",
             },
             {
                 id = "analyze_claims",
                 name = "Analyze Claims",
                 desc = "Analyze claims and evidence",
-                shortcut = "ctrl+alt+a",
+                trigger = "pattern",
+                key = "A",
             },
             {
                 id = "improve_writing",
                 name = "Improve Writing",
                 desc = "Improve writing style and clarity",
-                shortcut = "ctrl+alt+i",
+                trigger = "pattern",
+                key = "I",
             },
             {
                 id = "find_action_items",
                 name = "Find Action Items",
                 desc = "Extract actionable items",
-                shortcut = "ctrl+alt+f",
+                trigger = "pattern",
+                key = "F",
             },
 
             -- Content Creation Patterns
@@ -178,19 +174,22 @@ local config = {
                 id = "write_essay",
                 name = "Write Essay",
                 desc = "Generate an essay from an idea",
-                shortcut = "ctrl+alt+shift+e",
+                trigger = "advanced",
+                key = "E",
             },
             {
                 id = "create_social",
                 name = "Create Social Post",
                 desc = "Create social media content",
-                shortcut = "ctrl+alt+shift+s",
+                trigger = "advanced",
+                key = "S",
             },
             {
                 id = "art_prompt",
                 name = "Generate Art Prompt",
                 desc = "Create AI art prompt",
-                shortcut = "ctrl+alt+shift+a",
+                trigger = "advanced",
+                key = "A",
             },
 
             -- YouTube Patterns
@@ -199,7 +198,8 @@ local config = {
                 name = "YouTube Summary",
                 desc = "Summarize video content",
                 command = "extract_wisdom",
-                shortcut = "ctrl+alt+shift+y",
+                trigger = "advanced",
+                key = "Y",
                 youtube = true,
             },
             {
@@ -207,7 +207,8 @@ local config = {
                 name = "YouTube Key Points",
                 desc = "Extract main points",
                 command = "extract_key_points",
-                shortcut = "ctrl+alt+shift+k",
+                trigger = "advanced",
+                key = "K",
                 youtube = true,
             },
             {
@@ -215,7 +216,8 @@ local config = {
                 name = "YouTube Lecture Notes",
                 desc = "Create lecture notes",
                 command = "create_lecture_notes",
-                shortcut = "ctrl+alt+shift+l",
+                trigger = "advanced",
+                key = "L",
                 youtube = true,
             },
 
@@ -224,22 +226,25 @@ local config = {
                 id = "explain_code",
                 name = "Explain Code",
                 desc = "Get a detailed code explanation",
-                shortcut = "ctrl+alt+shift+c",
-                model = "gpt-4",  -- Prefer GPT-4 for code
+                trigger = "advanced",
+                key = "C",
+                model = "gpt-4",
             },
             {
                 id = "improve_code",
                 name = "Improve Code",
                 desc = "Get code improvement suggestions",
-                shortcut = "ctrl+alt+shift+i",
-                model = "gpt-4",  -- Prefer GPT-4 for code
+                trigger = "advanced",
+                key = "I",
+                model = "gpt-4",
             },
             {
                 id = "document_code",
                 name = "Document Code",
                 desc = "Generate code documentation",
-                shortcut = "ctrl+alt+shift+d",
-                model = "gpt-4",  -- Prefer GPT-4 for code
+                trigger = "advanced",
+                key = "D",
+                model = "gpt-4",
             },
 
             -- Research Patterns
@@ -247,21 +252,24 @@ local config = {
                 id = "research_deep",
                 name = "Deep Research",
                 desc = "In-depth analysis of a topic",
-                shortcut = "ctrl+alt+cmd+r",
-                model = "gpt-4",  -- Prefer GPT-4 for research
+                trigger = "research",
+                key = "R",
+                model = "gpt-4",
             },
             {
                 id = "academic_summary",
                 name = "Academic Summary",
                 desc = "Summarize academic papers",
-                shortcut = "ctrl+alt+cmd+a",
-                model = "gpt-4",  -- Prefer GPT-4 for academic content
+                trigger = "research",
+                key = "A",
+                model = "gpt-4",
             },
             {
                 id = "extract_references",
                 name = "Extract References",
                 desc = "Extract and format references",
-                shortcut = "ctrl+alt+cmd+e",
+                trigger = "research",
+                key = "E",
             },
         },
 
