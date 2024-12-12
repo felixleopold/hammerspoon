@@ -80,71 +80,75 @@ function M.setup(config)
         local appName = app:name()
         log.i("Cycling windows for app: " .. appName .. " in direction: " .. direction)
         
-        -- Get all visible windows in z-order
-        local allWindows = hs.window.orderedWindows()
+        -- Get windows directly from the application
+        local allWindows = app:allWindows()
         if not allWindows then
-            log.e("Failed to get ordered windows")
+            log.e("Failed to get application windows")
             return
         end
-        log.d("Total windows found in system: " .. #allWindows)
+        log.d("Total windows found for " .. appName .. ": " .. #allWindows)
+        
+        -- Log all windows for debugging
+        for i, win in ipairs(allWindows) do
+            if win then
+                local title = win:title() or ""
+                local role = win:role() or ""
+                local subrole = win:subrole() or ""
+                log.d(string.format("Window %d: title='%s', role='%s', subrole='%s', id=%d, visible=%s, minimized=%s", 
+                    i, title, role, subrole, win:id(),
+                    tostring(win:isVisible()), tostring(win:isMinimized())))
+            end
+        end
         
         local windows = {}
         
         -- Filter windows
         for _, win in ipairs(allWindows) do
             if not win then
-                log.w("Found nil window in orderedWindows")
+                log.w("Found nil window")
                 goto continue
             end
             
-            local winApp = win:application()
-            if not winApp then
-                log.w("Window has no application")
-                goto continue
-            end
+            local title = win:title() or ""
+            local role = win:role() or ""
+            local subrole = win:subrole() or ""
             
-            local winAppName = winApp:name()
-            if not winAppName then
-                log.w("Application has no name")
-                goto continue
-            end
-            
-            if winAppName == appName then
-                local title = win:title() or ""
-                local role = win:role() or ""
-                local subrole = win:subrole() or ""
+            -- Extra logging for Finder windows
+            if appName == "Finder" then
+                log.i(string.format("Analyzing Finder window: title='%s', role='%s', subrole='%s', id=%d", 
+                    title, role, subrole, win:id()))
+                log.i(string.format("Window properties: visible=%s, minimized=%s, standard=%s", 
+                    tostring(win:isVisible()), 
+                    tostring(win:isMinimized()),
+                    tostring(subrole == "AXStandardWindow")))
                 
-                -- Extra logging for Finder windows
-                if appName == "Finder" then
-                    log.i(string.format("Analyzing Finder window: title='%s', role='%s', subrole='%s', id=%d", 
-                        title, role, subrole, win:id()))
-                    log.i(string.format("Window properties: visible=%s, minimized=%s, standard=%s", 
-                        tostring(win:isVisible()), 
-                        tostring(win:isMinimized()),
-                        tostring(subrole == "AXStandardWindow")))
-                    
-                    -- Skip only completely empty windows or system dialogs
-                    if title == "" and (role == "AXSystemDialog" or subrole == "") then
-                        log.i("Skipping empty or system dialog Finder window")
-                        goto continue
+                -- For Finder, include any window that:
+                -- 1. Has a title, OR
+                -- 2. Is a standard window
+                if title ~= "" or subrole == "AXStandardWindow" then
+                    if win:isVisible() and not win:isMinimized() then
+                        table.insert(windows, win)
+                        log.i(string.format("Including Finder window: '%s'", title))
+                    else
+                        log.i(string.format("Skipping invisible/minimized Finder window: '%s'", title))
                     end
+                else
+                    log.i(string.format("Skipping special Finder window: '%s'", title))
                 end
-                
+            else
+                -- For other apps, just check visibility
                 if win:isVisible() and not win:isMinimized() then
                     table.insert(windows, win)
                     log.i(string.format("Including window: title='%s', role='%s', subrole='%s', id=%d", 
                         title, role, subrole, win:id()))
                 else
-                    log.i(string.format("Skipping invisible/minimized window: '%s' (visible=%s, minimized=%s)", 
-                        title, tostring(win:isVisible()), tostring(win:isMinimized())))
+                    log.i(string.format("Skipping invisible/minimized window: '%s'", title))
                 end
-            else
-                log.d(string.format("Skipping window from different app: %s", winAppName))
             end
             ::continue::
         end
         
-        log.i("Found " .. #windows .. " windows for " .. appName)
+        log.i("Found " .. #windows .. " usable windows for " .. appName)
         
         if #windows <= 1 then
             log.i("Not enough windows to cycle")
