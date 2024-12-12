@@ -64,6 +64,13 @@ function M.setup(config)
 
     -- Window cycling functions
     local function cycleWindows(direction)
+        -- Check if we have accessibility permissions
+        if not hs.accessibilityState() then
+            log.e("Accessibility permissions not granted. Please enable Hammerspoon in System Settings > Privacy & Security > Accessibility")
+            hs.alert.show("Accessibility permissions required")
+            return
+        end
+
         local app = hs.application.frontmostApplication()
         if not app then 
             log.w("No frontmost application found")
@@ -75,12 +82,34 @@ function M.setup(config)
         
         -- Get all visible windows in z-order
         local allWindows = hs.window.orderedWindows()
+        if not allWindows then
+            log.e("Failed to get ordered windows")
+            return
+        end
+        log.d("Total windows found in system: " .. #allWindows)
+        
         local windows = {}
         
         -- Filter windows
         for _, win in ipairs(allWindows) do
+            if not win then
+                log.w("Found nil window in orderedWindows")
+                goto continue
+            end
+            
             local winApp = win:application()
-            if winApp and winApp:name() == appName then
+            if not winApp then
+                log.w("Window has no application")
+                goto continue
+            end
+            
+            local winAppName = winApp:name()
+            if not winAppName then
+                log.w("Application has no name")
+                goto continue
+            end
+            
+            if winAppName == appName then
                 local title = win:title() or ""
                 local role = win:role() or ""
                 local subrole = win:subrole() or ""
@@ -97,8 +126,11 @@ function M.setup(config)
                     log.i(string.format("Including window: title='%s', role='%s', subrole='%s', id=%d", 
                         title, role, subrole, win:id()))
                 else
-                    log.i(string.format("Skipping invisible/minimized window: '%s'", title))
+                    log.i(string.format("Skipping invisible/minimized window: '%s' (visible=%s, minimized=%s)", 
+                        title, tostring(win:isVisible()), tostring(win:isMinimized())))
                 end
+            else
+                log.d(string.format("Skipping window from different app: %s", winAppName))
             end
             ::continue::
         end
@@ -132,7 +164,10 @@ function M.setup(config)
         
         if not currentIndex then
             log.i("Current window not in cycle list, focusing first window")
-            windows[1]:focus()
+            if not windows[1]:focus() then
+                log.e("Failed to focus first window")
+                return
+            end
             return
         end
         
@@ -148,7 +183,10 @@ function M.setup(config)
             currentIndex, windows[currentIndex]:title() or "", windows[currentIndex]:id(),
             nextIndex, windows[nextIndex]:title() or "", windows[nextIndex]:id()))
             
-        windows[nextIndex]:focus()
+        if not windows[nextIndex]:focus() then
+            log.e("Failed to focus next window")
+            return
+        end
     end
 
     -- Bind window management shortcuts

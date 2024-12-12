@@ -2,6 +2,17 @@
 
 A powerful and customizable configuration for Hammerspoon, featuring window management, application shortcuts, folder navigation, and Fabric AI integration.
 
+## Setup
+
+1. Install Hammerspoon from https://www.hammerspoon.org/
+2. Clone this repository to `~/.hammerspoon/`
+3. Grant required permissions:
+   - Open System Settings > Privacy & Security > Accessibility
+   - Enable Hammerspoon
+   - This is required for window management and keyboard shortcuts
+4. Launch Hammerspoon
+5. The configuration will load automatically
+
 ## Features
 
 ### Window Management
