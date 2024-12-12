@@ -26,16 +26,7 @@ Shortcut Modifiers:
 ]]--
 
 local config = {
-    --[[
-    =====================================
-    Applications Configuration
-    =====================================
-    Define the applications you want to control with shortcuts.
-    Format: name = "Application Name"
-    
-    Usage: ctrl + alt + cmd + key
-    Example: ctrl + alt + cmd + Z opens primary browser
-    ]]--
+    -- Applications to control
     apps = {
         browser = "Zen Browser",      -- Primary browser
         browser2 = "Microsoft Edge",  -- Secondary browser
@@ -50,16 +41,7 @@ local config = {
         utm = "UTM",                  -- Virtual machines
     },
 
-    --[[
-    =====================================
-    Folders Configuration
-    =====================================
-    Quick access to common directories.
-    Format: name = "path"
-    
-    Usage: cmd + shift + key
-    Example: cmd + shift + D opens Desktop
-    ]]--
+    -- Common folders
     folders = {
         home = "~",                    -- Home directory
         desktop = "~/Desktop",         -- Desktop folder
@@ -76,12 +58,39 @@ local config = {
 
     --[[
     =====================================
+    Window Management
+    =====================================
+    Configure window movement, screen management, and window cycling.
+    All shortcuts use the same string format: "modifier1+modifier2+key"
+    ]]--
+    windows = {
+        -- Basic window movements
+        left = "alt+a",      -- Left half
+        right = "alt+d",     -- Right half
+        top = "alt+w",       -- Top half
+        bottom = "alt+h",    -- Bottom half
+        center = "alt+c",    -- Center on screen
+        full = "alt+f",      -- Full screen
+
+        -- Screen management
+        nextScreen = "ctrl+alt+d", -- Move to next screen
+        prevScreen = "ctrl+alt+a", -- Move to previous screen
+
+        -- Window cycling
+        nextWindow = "alt+e", -- Next window in app
+        prevWindow = "alt+q", -- Previous window in app
+    },
+
+    -- Window animation duration (0 for instant)
+    windowAnimation = 0,
+
+    --[[
+    =====================================
     Keyboard Shortcuts
     =====================================
-    All keyboard shortcuts are defined here in three categories:
+    All keyboard shortcuts are defined here in two categories:
     1. Application shortcuts (ctrl + alt + cmd + key)
     2. Folder shortcuts (cmd + shift + key)
-    3. Window management (alt + key)
     ]]--
     keys = {
         -- Application Shortcuts (ctrl + alt + cmd + key)
@@ -113,57 +122,7 @@ local config = {
             { key = "S", path = "school" },      -- School
             { key = "R", path = "projects" },    -- Projects
         },
-
-        -- Window Management
-        windows = {
-            -- Basic window movements
-            left = "alt+a",      -- Left half
-            right = "alt+d",     -- Right half
-            top = "alt+w",       -- Top half
-            bottom = "alt+h",    -- Bottom half
-            center = "alt+c",    -- Center on screen
-            full = "alt+f",      -- Full screen
-
-            -- Screen management
-            nextScreen = "ctrl+alt+d", -- Move to next screen
-            prevScreen = "ctrl+alt+a", -- Move to previous screen
-
-            -- Window cycling
-            nextWindow = "alt+e", -- Next window in app
-            prevWindow = "alt+q", -- Previous window in app
-        },
-
-        -- URL Management
-        copyUrl = { mods = {"cmd", "shift"}, key = "C" }, -- Copy URL from browser
     },
-
-    --[[
-    =====================================
-    Window Management
-    =====================================
-    Configure window movement, screen management, and window cycling.
-    All shortcuts use the same string format: "modifier1+modifier2+key"
-    ]]--
-    windows = {
-        -- Basic window movements
-        left = "alt+a",      -- Left half
-        right = "alt+d",     -- Right half
-        top = "alt+w",       -- Top half
-        bottom = "alt+h",    -- Bottom half
-        center = "alt+c",    -- Center on screen
-        full = "alt+f",      -- Full screen
-
-        -- Screen management
-        nextScreen = "ctrl+alt+d", -- Move to next screen
-        prevScreen = "ctrl+alt+a", -- Move to previous screen
-
-        -- Window cycling
-        nextWindow = "alt+e", -- Next window in app
-        prevWindow = "alt+q", -- Previous window in app
-    },
-
-    -- Window animation duration (0 for instant)
-    windowAnimation = 0,
 
     --[[
     =====================================

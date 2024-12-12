@@ -42,7 +42,7 @@ function M.setup(config)
             winFrame = frame
         end
         
-        win:setFrame(winFrame, config.windowAnimation)
+        win:setFrame(winFrame, config.windowManagement.animationDuration)
     end
 
     -- Screen movement functions
@@ -59,7 +59,7 @@ function M.setup(config)
             nextScreen = screen:previous()
         end
         
-        win:moveToScreen(nextScreen, false, true, config.windowAnimation)
+        win:moveToScreen(nextScreen, false, true, config.windowManagement.animationDuration)
     end
 
     -- Window cycling functions
@@ -98,23 +98,10 @@ function M.setup(config)
         windows[nextIndex]:focus()
     end
 
-    -- Helper function to convert shortcut string to modifiers and key
-    local function parseShortcut(shortcutStr)
-        local mods = {}
-        local parts = {}
-        for part in shortcutStr:gmatch("[^+]+") do
-            table.insert(parts, part:lower())
-        end
-        local key = parts[#parts]
-        for i = 1, #parts - 1 do
-            table.insert(mods, parts[i])
-        end
-        return mods, key:upper()
-    end
-
     -- Bind window management shortcuts
-    for name, shortcut in pairs(config.windows) do
-        local mods, key = parseShortcut(shortcut)
+    for name, shortcut in pairs(config.shortcuts.windowManagement) do
+        local mods = shortcut
+        local key = table.remove(mods)
         
         if name == "left" then
             hs.hotkey.bind(mods, key, function() moveWindow("left") end)
