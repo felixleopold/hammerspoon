@@ -75,13 +75,17 @@ function M.setup(config)
         -- Special handling for Finder
         if app:name() == "Finder" then
             local windows = {}
-            -- Only include standard Finder windows (exclude desktop, etc)
+            -- Include all Finder windows except Desktop
             for _, win in ipairs(app:allWindows()) do
-                if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" and win:isVisible() then
+                local title = win:title()
+                if title and title ~= "" and title ~= "Desktop" then
+                    log.d("Found Finder window: " .. title)
                     table.insert(windows, win)
-                    log.d("Found Finder window: " .. win:title())
+                else
+                    log.d("Skipping Finder window with title: " .. (title or "nil"))
                 end
             end
+            
             if #windows <= 1 then 
                 log.i("Not enough Finder windows to cycle (" .. #windows .. " windows)")
                 return 
