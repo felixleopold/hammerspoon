@@ -1,226 +1,186 @@
 local M = {}
 local log = hs.logger.new('WindowManagement', 'debug')
 
+-- Initialize module with configuration
 function M.setup(config)
-    log.i("Setting up window management")
+    if not config.shortcuts or not config.shortcuts.windowManagement then
+        log.w("No window management shortcuts configured")
+        return
+    end
+
+    local shortcuts = config.shortcuts.windowManagement
+
+    -- Window cycling functions
+    local function cycleWindowsOfApp(reverse)
+        log.i("Starting window cycling...")
+        
+        -- Get current window and validate
+        local currentWindow = hs.window.focusedWindow()
+        if not currentWindow then
+            log.e("No focused window found")
+            return
+        end
+        log.i("Current window: " .. (currentWindow:title() or "Untitled") .. " (ID: " .. currentWindow:id() .. ")")
+
+        -- Get application and validate
+        local app = currentWindow:application()
+        if not app then
+            log.e("No application found for current window")
+            return
+        end
+        log.i("Application: " .. (app:name() or "Unknown"))
+
+        -- Get all windows
+        local allWindows = app:allWindows()
+        log.i("Total windows found: " .. #allWindows)
+        
+        -- Log all windows for debugging
+        for i, w in ipairs(allWindows) do
+            log.i(string.format("Window %d: '%s' (ID: %d, Minimized: %s)", 
+                i, w:title() or "Untitled", w:id(), tostring(w:isMinimized())))
+        end
+
+        -- Filter windows
+        local activeWindows = {}
+        for _, w in ipairs(allWindows) do
+            if w and not w:isMinimized() and w:id() ~= 0 and w:isVisible() then
+                table.insert(activeWindows, w)
+                log.i(string.format("Including window: '%s' (ID: %d)", 
+                    w:title() or "Untitled", w:id()))
+            else
+                log.i(string.format("Excluding window: '%s' (ID: %d) - Minimized: %s, ID zero: %s, Visible: %s", 
+                    w:title() or "Untitled", w:id(), 
+                    tostring(w:isMinimized()), 
+                    tostring(w:id() == 0),
+                    tostring(w:isVisible())))
+            end
+        end
+
+        -- Sort windows by ID
+        table.sort(activeWindows, function(a, b) return a:id() < b:id() end)
+        log.i("Active windows after filtering: " .. #activeWindows)
+
+        if #activeWindows <= 1 then
+            log.w("Not enough windows to cycle (count: " .. #activeWindows .. ")")
+            return
+        end
+
+        -- Find current window index
+        local currentIndex
+        for i, w in ipairs(activeWindows) do
+            if w:id() == currentWindow:id() then
+                currentIndex = i
+                log.i("Found current window at index " .. i)
+                break
+            end
+        end
+
+        if not currentIndex then
+            log.w("Current window not found in active windows list, focusing first window")
+            activeWindows[1]:focus()
+            return
+        end
+
+        -- Calculate next window index
+        local nextIndex
+        if reverse then
+            nextIndex = currentIndex > 1 and currentIndex - 1 or #activeWindows
+            log.i("Cycling backward from " .. currentIndex .. " to " .. nextIndex)
+        else
+            nextIndex = currentIndex < #activeWindows and currentIndex + 1 or 1
+            log.i("Cycling forward from " .. currentIndex .. " to " .. nextIndex)
+        end
+
+        -- Focus next window
+        local nextWindow = activeWindows[nextIndex]
+        log.i(string.format("Focusing window: '%s' (ID: %d)", 
+            nextWindow:title() or "Untitled", nextWindow:id()))
+        nextWindow:focus()
+    end
+
+    -- Bind window cycling shortcuts
+    if shortcuts.nextWindow then
+        log.i("Binding next window shortcut: " .. hs.inspect(shortcuts.nextWindow))
+        hs.hotkey.bind(config.triggers.window, shortcuts.nextWindow.key, function()
+            log.i("Triggered: Cycle to next window")
+            cycleWindowsOfApp(false)
+        end)
+    end
+
+    if shortcuts.prevWindow then
+        log.i("Binding previous window shortcut: " .. hs.inspect(shortcuts.prevWindow))
+        hs.hotkey.bind(config.triggers.window, shortcuts.prevWindow.key, function()
+            log.i("Triggered: Cycle to previous window")
+            cycleWindowsOfApp(true)
+        end)
+    end
 
     -- Window movement functions
     local function moveWindow(direction)
         local win = hs.window.focusedWindow()
         if not win then return end
-        
+
         local screen = win:screen()
-        local frame = screen:frame()
-        local winFrame = win:frame()
+        local frame = win:frame()
+        local screenFrame = screen:frame()
         
         if direction == "left" then
-            winFrame.x = frame.x
-            winFrame.y = frame.y
-            winFrame.w = frame.w / 2
-            winFrame.h = frame.h
+            frame.x = screenFrame.x
+            frame.y = screenFrame.y
+            frame.w = screenFrame.w / 2
+            frame.h = screenFrame.h
         elseif direction == "right" then
-            winFrame.x = frame.x + (frame.w / 2)
-            winFrame.y = frame.y
-            winFrame.w = frame.w / 2
-            winFrame.h = frame.h
-        elseif direction == "top" then
-            winFrame.x = frame.x
-            winFrame.y = frame.y
-            winFrame.w = frame.w
-            winFrame.h = frame.h / 2
-        elseif direction == "bottom" then
-            winFrame.x = frame.x
-            winFrame.y = frame.y + (frame.h / 2)
-            winFrame.w = frame.w
-            winFrame.h = frame.h / 2
-        elseif direction == "center" then
-            winFrame.x = frame.x + (frame.w * 0.125)
-            winFrame.y = frame.y + (frame.h * 0.125)
-            winFrame.w = frame.w * 0.75
-            winFrame.h = frame.h * 0.75
-        elseif direction == "full" then
-            winFrame = frame
+            frame.x = screenFrame.x + (screenFrame.w / 2)
+            frame.y = screenFrame.y
+            frame.w = screenFrame.w / 2
+            frame.h = screenFrame.h
+        elseif direction == "up" then
+            frame.x = screenFrame.x
+            frame.y = screenFrame.y
+            frame.w = screenFrame.w
+            frame.h = screenFrame.h / 2
+        elseif direction == "down" then
+            frame.x = screenFrame.x
+            frame.y = screenFrame.y + (screenFrame.h / 2)
+            frame.w = screenFrame.w
+            frame.h = screenFrame.h / 2
+        elseif direction == "maximize" then
+            frame = screenFrame
         end
         
-        win:setFrame(winFrame, config.windowManagement.animationDuration)
+        win:setFrame(frame)
     end
 
-    -- Screen movement functions
-    local function moveToScreen(direction)
-        local win = hs.window.focusedWindow()
-        if not win then return end
-        
-        local screen = win:screen()
-        local nextScreen
-        
-        if direction == "next" then
-            nextScreen = screen:next()
-        else
-            nextScreen = screen:previous()
-        end
-        
-        win:moveToScreen(nextScreen, false, true, config.windowManagement.animationDuration)
+    -- Bind window movement shortcuts
+    if shortcuts.moveLeft then
+        hs.hotkey.bind(shortcuts.moveLeft.mods, shortcuts.moveLeft.key, function()
+            moveWindow("left")
+        end)
     end
 
-    -- Window cycling functions
-    local function cycleWindows(direction)
-        local app = hs.application.frontmostApplication()
-        if not app then 
-            log.w("No frontmost application found")
-            return 
-        end
-        
-        local appName = app:name()
-        log.i("Cycling windows for app: " .. appName .. " in direction: " .. direction)
-        log.i("System info:")
-        log.i("  OS Version: " .. hs.host.operatingSystemVersion())
-        log.i("  Device: " .. hs.host.hardwareModel())
-        log.i("  Hostname: " .. hs.host.localizedName())
-        
-        -- Get windows using application method
-        local windows = {}
-        local seenIds = {}
-        
-        local appWindows = app:allWindows()
-        log.i("Raw window count: " .. #appWindows)
-        
-        -- Detailed window inspection
-        for i, win in ipairs(appWindows) do
-            if win then
-                local title = win:title() or ""
-                local role = win:role() or ""
-                local subrole = win:subrole() or ""
-                local frame = win:frame()
-                
-                log.i(string.format("\nWindow %d Details:", i))
-                log.i("  Title: '" .. title .. "'")
-                log.i("  ID: " .. win:id())
-                log.i("  Role: " .. role)
-                log.i("  Subrole: " .. subrole)
-                log.i("  Visible: " .. tostring(win:isVisible()))
-                log.i("  Minimized: " .. tostring(win:isMinimized()))
-                log.i("  Standard: " .. tostring(subrole == "AXStandardWindow"))
-                log.i("  Frame: x=" .. frame.x .. ", y=" .. frame.y .. ", w=" .. frame.w .. ", h=" .. frame.h)
-                
-                -- Try to get all possible properties
-                local axwin = hs.axuielement.windowElement(win)
-                if axwin then
-                    local attrs = axwin:allAttributeValues()
-                    log.i("  AX Attributes: " .. hs.inspect(attrs))
-                end
-                
-                if win:isVisible() and not win:isMinimized() then
-                    if appName == "Finder" then
-                        -- For Finder, try multiple detection methods
-                        local isStandardWindow = (
-                            subrole == "AXStandardWindow" or
-                            role == "AXWindow" or
-                            (title ~= "" and title ~= "Desktop")
-                        )
-                        
-                        if isStandardWindow then
-                            table.insert(windows, win)
-                            seenIds[win:id()] = true
-                            log.i("  Status: Including Finder window")
-                        else
-                            log.i("  Status: Skipping non-standard Finder window")
-                        end
-                    else
-                        -- For other apps, use normal criteria
-                        if title ~= "" and role == "AXWindow" then
-                            table.insert(windows, win)
-                            seenIds[win:id()] = true
-                            log.i("  Status: Including window")
-                        else
-                            log.i("  Status: Skipping non-standard window")
-                        end
-                    end
-                else
-                    log.i("  Status: Skipping invisible/minimized window")
-                end
-            end
-        end
-        
-        log.i("\nFinal window count: " .. #windows)
-        
-        if #windows <= 1 then
-            log.i("Not enough windows to cycle")
-            return
-        end
-        
-        -- Sort windows by ID to maintain consistent order
-        table.sort(windows, function(a, b) return a:id() < b:id() end)
-        
-        local focusedWindow = hs.window.focusedWindow()
-        if not focusedWindow then
-            log.w("No focused window")
-            return
-        end
-        
-        -- Find current window index
-        local currentIndex
-        for i, win in ipairs(windows) do
-            if win:id() == focusedWindow:id() then
-                currentIndex = i
-                log.i(string.format("Current window %d of %d: '%s'", 
-                    i, #windows, win:title() or ""))
-                break
-            end
-        end
-        
-        if not currentIndex then
-            log.i("Current window not in cycle list, focusing first window")
-            windows[1]:focus()
-            return
-        end
-        
-        -- Calculate next window index with proper wrapping
-        local nextIndex
-        if direction == "next" then
-            nextIndex = currentIndex + 1
-            if nextIndex > #windows then
-                nextIndex = 1
-            end
-        else
-            nextIndex = currentIndex - 1
-            if nextIndex < 1 then
-                nextIndex = #windows
-            end
-        end
-        
-        log.i(string.format("Moving from window %d ('%s') to %d ('%s')", 
-            currentIndex, windows[currentIndex]:title() or "",
-            nextIndex, windows[nextIndex]:title() or ""))
-            
-        windows[nextIndex]:focus()
+    if shortcuts.moveRight then
+        hs.hotkey.bind(shortcuts.moveRight.mods, shortcuts.moveRight.key, function()
+            moveWindow("right")
+        end)
     end
 
-    -- Bind window management shortcuts
-    for name, shortcut in pairs(config.shortcuts.windowManagement) do
-        if name == "left" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("left") end)
-        elseif name == "right" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("right") end)
-        elseif name == "top" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("top") end)
-        elseif name == "bottom" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("bottom") end)
-        elseif name == "center" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("center") end)
-        elseif name == "full" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveWindow("full") end)
-        elseif name == "nextScreen" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveToScreen("next") end)
-        elseif name == "prevScreen" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() moveToScreen("prev") end)
-        elseif name == "nextWindow" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() cycleWindows("next") end)
-        elseif name == "prevWindow" then
-            hs.hotkey.bind(shortcut.mods, shortcut.key, function() cycleWindows("prev") end)
-        end
+    if shortcuts.moveUp then
+        hs.hotkey.bind(shortcuts.moveUp.mods, shortcuts.moveUp.key, function()
+            moveWindow("up")
+        end)
     end
 
-    log.i("Window management setup complete")
+    if shortcuts.moveDown then
+        hs.hotkey.bind(shortcuts.moveDown.mods, shortcuts.moveDown.key, function()
+            moveWindow("down")
+        end)
+    end
+
+    if shortcuts.maximize then
+        hs.hotkey.bind(shortcuts.maximize.mods, shortcuts.maximize.key, function()
+            moveWindow("maximize")
+        end)
+    end
 end
 
 return M

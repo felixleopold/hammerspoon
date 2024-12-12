@@ -120,8 +120,8 @@ local config = {
             prevScreen = { trigger = "screen", key = "A" }, -- Move to previous screen
 
             -- Window cycling (alt + key)
-            nextWindow = { trigger = "window", key = "E" }, -- Next window in app
-            prevWindow = { trigger = "window", key = "Q" }, -- Previous window in app
+            nextWindow = { trigger = "window", key = "E" }, -- Next window in app (⌥E)
+            prevWindow = { trigger = "window", key = "Q" }, -- Previous window in app (⌥Q)
         },
 
         -- Utility shortcuts
