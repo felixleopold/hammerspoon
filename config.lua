@@ -127,6 +127,8 @@ local config = {
         -- Utility shortcuts
         utils = {
             { mods = {"cmd", "shift"}, key = "X", action = "closeFinderWindows" },  -- Close all Finder windows (cmd+shift+X)
+            { mods = {"cmd", "shift"}, key = "W", action = "closeOtherAppWindows" }, -- Close other windows of current app (cmd+shift+W)
+            { mods = {"cmd", "shift"}, key = "Q", action = "closeOtherApps" },       -- Close other applications (cmd+shift+Q)
             { mods = {"ctrl"}, key = "C", action = "copyBrowserUrl" },         -- Copy URL from browser (ctrl+C)
         },
     },
@@ -142,10 +144,19 @@ local config = {
     --[[-----------------------------------------
     Fabric AI Integration
     Configure AI patterns and shortcuts
+
+    To use Fabric AI:
+    1. Install the fabric CLI tool:
+       go install github.com/mrakinola/fabric-cli@latest
+
+    2. The tool will be installed to your Go bin directory:
+       - Default: ~/go/bin/fabric
+       - You can change the path below if installed elsewhere
     ------------------------------------------]]
     fabric = {
         -- Default settings
         defaultModel = "gpt-4",
+        fabricPath = "~/go/bin/fabric",  -- Path to fabric executable
         chooserTrigger = {"cmd", "alt", "shift"},  -- Global trigger for pattern chooser
         chooserKey = "P",                          -- Key for pattern chooser
         

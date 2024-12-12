@@ -3,12 +3,26 @@ local log = hs.logger.new('WindowManagement', 'debug')
 
 -- Initialize module with configuration
 function M.setup(config)
-    if not config.shortcuts or not config.shortcuts.windowManagement then
-        log.w("No window management shortcuts configured")
+    log.i("Starting window management setup")
+    
+    if not config then
+        log.e("No config provided")
+        return
+    end
+    
+    if not config.shortcuts then
+        log.e("No shortcuts in config")
+        return
+    end
+    
+    if not config.shortcuts.windowManagement then
+        log.e("No window management shortcuts in config")
         return
     end
 
     local shortcuts = config.shortcuts.windowManagement
+    log.i("Loaded window management shortcuts: " .. hs.inspect(shortcuts))
+    log.i("Available triggers: " .. hs.inspect(config.triggers))
 
     -- Window cycling functions
     local function cycleWindowsOfApp(reverse)
@@ -43,20 +57,22 @@ function M.setup(config)
         -- Filter windows
         local activeWindows = {}
         for _, w in ipairs(allWindows) do
-            if w and not w:isMinimized() and w:id() ~= 0 and w:isVisible() then
+            -- Only include windows that are visible, not minimized, have a valid ID and a title
+            if w and not w:isMinimized() and w:id() ~= 0 and w:isVisible() and w:title() ~= "" then
                 table.insert(activeWindows, w)
                 log.i(string.format("Including window: '%s' (ID: %d)", 
                     w:title() or "Untitled", w:id()))
             else
-                log.i(string.format("Excluding window: '%s' (ID: %d) - Minimized: %s, ID zero: %s, Visible: %s", 
+                log.i(string.format("Excluding window: '%s' (ID: %d) - Minimized: %s, ID zero: %s, Visible: %s, Empty title: %s", 
                     w:title() or "Untitled", w:id(), 
                     tostring(w:isMinimized()), 
                     tostring(w:id() == 0),
-                    tostring(w:isVisible())))
+                    tostring(w:isVisible()),
+                    tostring(w:title() == "")))
             end
         end
 
-        -- Sort windows by ID
+        -- Sort windows by ID to maintain consistent order
         table.sort(activeWindows, function(a, b) return a:id() < b:id() end)
         log.i("Active windows after filtering: " .. #activeWindows)
 
@@ -81,13 +97,15 @@ function M.setup(config)
             return
         end
 
-        -- Calculate next window index
+        -- Calculate next window index with proper wrapping
         local nextIndex
         if reverse then
-            nextIndex = currentIndex > 1 and currentIndex - 1 or #activeWindows
+            nextIndex = currentIndex - 1
+            if nextIndex < 1 then nextIndex = #activeWindows end
             log.i("Cycling backward from " .. currentIndex .. " to " .. nextIndex)
         else
-            nextIndex = currentIndex < #activeWindows and currentIndex + 1 or 1
+            nextIndex = currentIndex + 1
+            if nextIndex > #activeWindows then nextIndex = 1 end
             log.i("Cycling forward from " .. currentIndex .. " to " .. nextIndex)
         end
 
@@ -100,19 +118,27 @@ function M.setup(config)
 
     -- Bind window cycling shortcuts
     if shortcuts.nextWindow then
-        log.i("Binding next window shortcut: " .. hs.inspect(shortcuts.nextWindow))
-        hs.hotkey.bind(config.triggers.window, shortcuts.nextWindow.key, function()
+        log.i("Setting up next window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.nextWindow.mods))
+        log.i("Key: " .. shortcuts.nextWindow.key)
+        hs.hotkey.bind(shortcuts.nextWindow.mods, shortcuts.nextWindow.key, function()
             log.i("Triggered: Cycle to next window")
             cycleWindowsOfApp(false)
         end)
+    else
+        log.w("No next window shortcut configured")
     end
 
     if shortcuts.prevWindow then
-        log.i("Binding previous window shortcut: " .. hs.inspect(shortcuts.prevWindow))
-        hs.hotkey.bind(config.triggers.window, shortcuts.prevWindow.key, function()
+        log.i("Setting up previous window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.prevWindow.mods))
+        log.i("Key: " .. shortcuts.prevWindow.key)
+        hs.hotkey.bind(shortcuts.prevWindow.mods, shortcuts.prevWindow.key, function()
             log.i("Triggered: Cycle to previous window")
             cycleWindowsOfApp(true)
         end)
+    else
+        log.w("No previous window shortcut configured")
     end
 
     -- Window movement functions
@@ -144,6 +170,10 @@ function M.setup(config)
             frame.y = screenFrame.y + (screenFrame.h / 2)
             frame.w = screenFrame.w
             frame.h = screenFrame.h / 2
+        elseif direction == "center" then
+            -- Keep current window size, just center it on screen
+            frame.x = screenFrame.x + (screenFrame.w - frame.w) / 2
+            frame.y = screenFrame.y + (screenFrame.h - frame.h) / 2
         elseif direction == "maximize" then
             frame = screenFrame
         end
@@ -152,35 +182,79 @@ function M.setup(config)
     end
 
     -- Bind window movement shortcuts
-    if shortcuts.moveLeft then
-        hs.hotkey.bind(shortcuts.moveLeft.mods, shortcuts.moveLeft.key, function()
+    if shortcuts.left then
+        log.i("Setting up left window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.left.mods))
+        log.i("Key: " .. shortcuts.left.key)
+        hs.hotkey.bind(shortcuts.left.mods, shortcuts.left.key, function()
+            log.i("Triggered: Move window left")
             moveWindow("left")
         end)
+    else
+        log.w("No left window shortcut configured")
     end
 
-    if shortcuts.moveRight then
-        hs.hotkey.bind(shortcuts.moveRight.mods, shortcuts.moveRight.key, function()
+    if shortcuts.right then
+        log.i("Setting up right window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.right.mods))
+        log.i("Key: " .. shortcuts.right.key)
+        hs.hotkey.bind(shortcuts.right.mods, shortcuts.right.key, function()
+            log.i("Triggered: Move window right")
             moveWindow("right")
         end)
+    else
+        log.w("No right window shortcut configured")
     end
 
-    if shortcuts.moveUp then
-        hs.hotkey.bind(shortcuts.moveUp.mods, shortcuts.moveUp.key, function()
+    if shortcuts.top then
+        log.i("Setting up top window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.top.mods))
+        log.i("Key: " .. shortcuts.top.key)
+        hs.hotkey.bind(shortcuts.top.mods, shortcuts.top.key, function()
+            log.i("Triggered: Move window up")
             moveWindow("up")
         end)
+    else
+        log.w("No top window shortcut configured")
     end
 
-    if shortcuts.moveDown then
-        hs.hotkey.bind(shortcuts.moveDown.mods, shortcuts.moveDown.key, function()
+    if shortcuts.bottom then
+        log.i("Setting up bottom window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.bottom.mods))
+        log.i("Key: " .. shortcuts.bottom.key)
+        hs.hotkey.bind(shortcuts.bottom.mods, shortcuts.bottom.key, function()
+            log.i("Triggered: Move window down")
             moveWindow("down")
         end)
+    else
+        log.w("No bottom window shortcut configured")
     end
 
-    if shortcuts.maximize then
-        hs.hotkey.bind(shortcuts.maximize.mods, shortcuts.maximize.key, function()
+    if shortcuts.center then
+        log.i("Setting up center window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.center.mods))
+        log.i("Key: " .. shortcuts.center.key)
+        hs.hotkey.bind(shortcuts.center.mods, shortcuts.center.key, function()
+            log.i("Triggered: Center window")
+            moveWindow("center")
+        end)
+    else
+        log.w("No center window shortcut configured")
+    end
+
+    if shortcuts.full then
+        log.i("Setting up maximize window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.full.mods))
+        log.i("Key: " .. shortcuts.full.key)
+        hs.hotkey.bind(shortcuts.full.mods, shortcuts.full.key, function()
+            log.i("Triggered: Maximize window")
             moveWindow("maximize")
         end)
+    else
+        log.w("No maximize window shortcut configured")
     end
+
+    log.i("Window management setup complete")
 end
 
 return M

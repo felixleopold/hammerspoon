@@ -162,16 +162,15 @@ function M.setup(config)
                             local role = win:role() or ""
                             local subrole = win:subrole() or ""
                             
-                            -- Only close standard Finder windows
-                            if win:isVisible() and not win:isMinimized() and 
-                               title ~= "Desktop" and subrole == "AXStandardWindow" then
+                            -- Close all visible Finder windows except empty windows
+                            if win:isVisible() and not win:isMinimized() and title ~= "" then
                                 log.d(string.format("Closing window: title='%s', role='%s', subrole='%s'", 
                                     title, role, subrole))
                                 win:close()
                                 closedCount = closedCount + 1
                             else
-                                log.d(string.format("Skipping window: title='%s', role='%s', subrole='%s'", 
-                                    title, role, subrole))
+                                log.d(string.format("Skipping window: title='%s', role='%s', subrole='%s', visible=%s, minimized=%s", 
+                                    title, role, subrole, tostring(win:isVisible()), tostring(win:isMinimized())))
                             end
                         end
                         log.i("Closed " .. closedCount .. " Finder windows")
@@ -198,6 +197,134 @@ function M.setup(config)
                     else
                         log.w("Zen Browser not focused (current app: " .. (frontApp and frontApp:name() or "nil") .. ")")
                     end
+                elseif shortcut.action == "closeOtherAppWindows" then
+                    local currentWindow = hs.window.focusedWindow()
+                    if not currentWindow then
+                        log.w("No focused window")
+                        return
+                    end
+
+                    local app = currentWindow:application()
+                    if not app then
+                        log.w("No application found for current window")
+                        return
+                    end
+
+                    log.i("Closing other windows for " .. app:name())
+                    local closedCount = 0
+                    local windows = app:allWindows()
+                    for _, win in ipairs(windows) do
+                        if win:id() ~= currentWindow:id() and win:isVisible() and not win:isMinimized() then
+                            log.d(string.format("Closing window: '%s'", win:title() or "Untitled"))
+                            win:close()
+                            closedCount = closedCount + 1
+                        else
+                            log.d(string.format("Skipping window: '%s' (current=%s, visible=%s, minimized=%s)", 
+                                win:title() or "Untitled",
+                                tostring(win:id() == currentWindow:id()),
+                                tostring(win:isVisible()),
+                                tostring(win:isMinimized())))
+                        end
+                    end
+                    log.i("Closed " .. closedCount .. " windows")
+
+                elseif shortcut.action == "closeOtherApps" then
+                    local currentApp = hs.application.frontmostApplication()
+                    if not currentApp then
+                        log.w("No frontmost application")
+                        return
+                    end
+
+                    log.i("Closing other applications except " .. currentApp:name())
+                    local closedCount = 0
+                    local apps = hs.application.runningApplications()
+                    
+                    -- List of bundle IDs for system apps we want to keep running
+                    local systemApps = {
+                        ["com.apple.finder"] = true,        -- Finder
+                        ["com.apple.dock"] = true,          -- Dock
+                        ["com.apple.dock.extra"] = true,    -- Dock Extra
+                        ["com.apple.systemuiserver"] = true, -- Menu bar
+                        ["com.apple.loginwindow"] = true,    -- Login window
+                        ["com.apple.WindowManager"] = true,  -- Window manager
+                        ["com.apple.notificationcenterui"] = true, -- Notification Center
+                        ["com.apple.controlcenter"] = true,  -- Control Center
+                        ["org.hammerspoon.Hammerspoon"] = true, -- Hammerspoon itself
+                        ["com.apple.wallpaper.agent"] = true, -- Wallpaper
+                        ["com.apple.UIKitSystemApp"] = true,  -- System UI
+                        ["com.apple.TextInputMenuAgent"] = true, -- Text Input Menu
+                        ["com.apple.TextInputSwitcher"] = true, -- Text Input Switcher
+                        ["com.apple.Spotlight"] = true,        -- Spotlight
+                        ["com.apple.ViewBridgeAuxiliary"] = true -- View Bridge (UI related)
+                    }
+
+                    -- List of bundle ID patterns that indicate system processes
+                    local systemPatterns = {
+                        "^com%.apple%.TextInput",
+                        "^com%.apple%.appkit%.xpc",
+                        "^com%.apple%.UIKit",
+                        "^com%.apple%.ViewBridge",
+                        "^com%.apple%.CoreServices",
+                        "^com%.apple%.systemui"
+                    }
+
+                    for _, app in ipairs(apps) do
+                        local bundleID = app:bundleID()
+                        local name = app:name()
+                        
+                        -- Check if the bundle ID matches any system patterns
+                        local isSystemProcess = false
+                        if bundleID then
+                            for _, pattern in ipairs(systemPatterns) do
+                                if string.match(bundleID:lower(), pattern:lower()) then
+                                    isSystemProcess = true
+                                    break
+                                end
+                            end
+                        end
+                        
+                        -- Only close apps that:
+                        -- 1. Have a bundle ID
+                        -- 2. Are not the current app
+                        -- 3. Are not in our system apps list
+                        -- 4. Are not helper processes
+                        -- 5. Are not system UI processes
+                        -- 6. Don't match system patterns
+                        if bundleID and 
+                           bundleID ~= currentApp:bundleID() and
+                           not systemApps[bundleID] and
+                           not string.lower(name):match("helper") and
+                           not string.lower(name):match("agent") and
+                           not string.lower(name):match("daemon") and
+                           not string.lower(name):match("service") and
+                           not isSystemProcess and
+                           not app:isHidden() then
+                            
+                            log.d(string.format("Closing application: %s (%s)", 
+                                name or "Unknown",
+                                bundleID or "No Bundle ID"))
+                            app:kill()
+                            closedCount = closedCount + 1
+                        else
+                            local skipReason = "unknown"
+                            if not bundleID then skipReason = "no bundle ID"
+                            elseif bundleID == currentApp:bundleID() then skipReason = "current app"
+                            elseif systemApps[bundleID] then skipReason = "system app"
+                            elseif string.lower(name):match("helper") then skipReason = "helper process"
+                            elseif string.lower(name):match("agent") then skipReason = "agent process"
+                            elseif string.lower(name):match("daemon") then skipReason = "daemon process"
+                            elseif string.lower(name):match("service") then skipReason = "service process"
+                            elseif isSystemProcess then skipReason = "system UI process"
+                            elseif app:isHidden() then skipReason = "hidden"
+                            end
+                            
+                            log.d(string.format("Skipping application: %s (%s) - reason: %s", 
+                                name or "Unknown",
+                                bundleID or "No Bundle ID",
+                                skipReason))
+                        end
+                    end
+                    log.i("Closed " .. closedCount .. " applications")
                 end
             end)
         end

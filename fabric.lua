@@ -32,15 +32,32 @@ function M.setup(config)
         local commandToUse = pattern.command or pattern.id
 
         -- Find fabric executable
-        local fabricPath = hs.execute("which fabric"):gsub("%s+", "")
-        log.i("Found fabric at: " .. (fabricPath ~= "" and fabricPath or "not found"))
+        local fabricPath = ""
+        
+        -- First try the configured path
+        if config.fabric.fabricPath then
+            local configPath = config.fabric.fabricPath:gsub("^~", os.getenv("HOME"))
+            if hs.fs.attributes(configPath) then
+                fabricPath = configPath
+                log.i("Found fabric at configured path: " .. fabricPath)
+            else
+                log.w("Configured fabric path not found: " .. configPath)
+            end
+        end
+        
+        -- If configured path doesn't work, try to find it
         if fabricPath == "" then
-            -- Try common installation paths
+            fabricPath = hs.execute("which fabric"):gsub("%s+", "")
+            log.i("Found fabric in PATH: " .. (fabricPath ~= "" and fabricPath or "not found"))
+        end
+        
+        -- If still not found, try common installation paths
+        if fabricPath == "" then
             local possiblePaths = {
+                os.getenv("HOME") .. "/go/bin/fabric",  -- Go installation (most common)
                 os.getenv("HOME") .. "/.local/bin/fabric",
                 "/usr/local/bin/fabric",
-                "/opt/homebrew/bin/fabric",
-                os.getenv("HOME") .. "/go/bin/fabric"
+                "/opt/homebrew/bin/fabric"
             }
             for _, path in ipairs(possiblePaths) do
                 if hs.fs.attributes(path) then
@@ -49,10 +66,16 @@ function M.setup(config)
                     break
                 end
             end
-            if fabricPath == "" then
-                log.e("Could not find fabric executable")
-                return
-            end
+        end
+        
+        if fabricPath == "" then
+            log.e([[
+Could not find fabric executable. Please:
+1. Install fabric: go install github.com/mrakinola/fabric-cli@latest
+2. Set the correct path in config.lua (fabric.fabricPath)
+Default installation path is: ~/go/bin/fabric
+            ]])
+            return
         end
         
         -- Build the fabric command

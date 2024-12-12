@@ -52,11 +52,26 @@ function M.expandConfig(config)
 
     -- Expand window management shortcuts
     for name, shortcut in pairs(config.shortcuts.windows) do
+        log.i(string.format("Expanding window shortcut '%s': trigger=%s, key=%s", 
+            name, shortcut.trigger, shortcut.key))
+        
+        local mods = config.triggers[shortcut.trigger]
+        if not mods then
+            log.e(string.format("No trigger found for '%s' in config.triggers", shortcut.trigger))
+            goto continue
+        end
+        
         expanded.shortcuts.windowManagement[name] = {
-            mods = config.triggers[shortcut.trigger],
+            mods = mods,
             key = shortcut.key
         }
+        log.i(string.format("Expanded '%s' to: mods=%s, key=%s", 
+            name, hs.inspect(mods), shortcut.key))
+        
+        ::continue::
     end
+
+    log.i("Window management shortcuts expanded: " .. hs.inspect(expanded.shortcuts.windowManagement))
 
     -- Expand utility shortcuts
     if config.shortcuts.utils then
