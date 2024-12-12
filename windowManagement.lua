@@ -64,6 +64,12 @@ function M.setup(config)
 
     -- Window cycling functions
     local function cycleWindows(direction)
+        -- Log system information
+        log.i("System Information:")
+        log.i("  OS Version: " .. hs.host.operatingSystemVersion())
+        log.i("  Hostname: " .. hs.host.localizedName())
+        log.i("  Hammerspoon Version: " .. hs.processInfo.version)
+        
         -- Check if we have accessibility permissions
         if not hs.accessibilityState() then
             log.e("Accessibility permissions not granted. Please enable Hammerspoon in System Settings > Privacy & Security > Accessibility")
@@ -94,9 +100,22 @@ function M.setup(config)
                 local title = win:title() or ""
                 local role = win:role() or ""
                 local subrole = win:subrole() or ""
+                local frame = win:frame()
                 log.d(string.format("Window %d: title='%s', role='%s', subrole='%s', id=%d, visible=%s, minimized=%s", 
                     i, title, role, subrole, win:id(),
                     tostring(win:isVisible()), tostring(win:isMinimized())))
+                log.d(string.format("  Frame: x=%d, y=%d, w=%d, h=%d", 
+                    frame.x, frame.y, frame.w, frame.h))
+                
+                -- Try to get window AXAttributes
+                local axapp = hs.axuielement.applicationElement(app)
+                if axapp then
+                    local axwin = hs.axuielement.windowElement(win)
+                    if axwin then
+                        local attrs = axwin:allAttributeValues()
+                        log.d("  AX Attributes: " .. hs.inspect(attrs))
+                    end
+                end
             end
         end
         
