@@ -80,40 +80,14 @@ Default installation path is: ~/go/bin/fabric
         
         -- Build the fabric command
         local command
-        if pattern.id == "general" then
-            -- For general pattern, prompt for instructions
-            hs.focus()  -- Bring Hammerspoon to front for the dialog
-            local button, instruction = hs.dialog.textPrompt(
-                "AI Instructions",
-                "Enter your instructions for the AI:",
-                "",  -- Default text
-                "OK",
-                "Cancel"
-            )
-            
-            if button == "Cancel" then
-                showAlert("❌ Cancelled")
-                return
-            end
-            
-            if instruction and instruction ~= "" then
-                -- Add the instruction as a variable
-                command = string.format('echo "%s" | %s --pattern general --variable "instruction=%s"',
-                    clipboardContent:gsub('"', '\\"'),
-                    fabricPath,
-                    instruction:gsub('"', '\\"'))
-            else
-                showAlert("❌ No instruction provided")
-                return
-            end
-        elseif pattern.youtube then
+        if pattern.youtube then
             -- For YouTube patterns
             command = string.format('%s -y "%s" --stream --pattern %s',
                 fabricPath,
                 clipboardContent:gsub('"', '\\"'),  -- Escape quotes in URL
                 commandToUse)
         else
-            -- For regular patterns
+            -- For regular patterns (including general)
             command = string.format('echo "%s" | %s --pattern %s',
                 clipboardContent:gsub('"', '\\"'),
                 fabricPath,
