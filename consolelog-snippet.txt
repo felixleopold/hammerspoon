@@ -16,3 +16,6 @@
 2024-12-12 20:07:11:              Fabric: Model: gpt-4
 2024-12-12 20:07:11:              Fabric: Content length: 13
 2024-12-12 20:07:12: 20:07:12 ERROR:    Fabric: Error processing text: 
+
+
+chatgpt-4o-latest
