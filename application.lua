@@ -62,7 +62,32 @@ function M.setup(config)
             log.d("Setting up folder shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to open " .. path)
             bindHotkey(shortcut, function()
                 if hs.fs.attributes(path) then
+                    -- Get list of visible Finder windows before opening
+                    local finder = hs.application.get("Finder")
+                    local visibleWindows = {}
+                    if finder then
+                        for _, win in ipairs(finder:allWindows()) do
+                            if win:isVisible() then
+                                visibleWindows[win:id()] = true
+                            end
+                        end
+                    end
+
+                    -- Open the folder
                     hs.execute(string.format('/usr/bin/open "%s"', path))
+
+                    -- Wait a bit for the window to open
+                    hs.timer.doAfter(0.1, function()
+                        -- Only allow previously visible windows to stay visible
+                        if finder then
+                            for _, win in ipairs(finder:allWindows()) do
+                                if not visibleWindows[win:id()] and win:isVisible() then
+                                    -- This is a previously hidden window that became visible
+                                    win:sendToBack()
+                                end
+                            end
+                        end
+                    end)
                 else
                     log.w("Folder does not exist: " .. path)
                 end
@@ -96,7 +121,50 @@ function M.setup(config)
             log.e("Failed to copy URL from browser")
         end)
     else
-        log.w("No copyUrl shortcut defined in general shortcuts. Please check your user_config.json file.")
+        log.w("No copyUrl shortcut defined in general shortcuts. Please check your configuration.")
+    end
+
+    -- Set up close Finder windows shortcut
+    if config.shortcuts.general and config.shortcuts.general.closeFinderWindows then
+        local shortcut = config.shortcuts.general.closeFinderWindows
+        bindHotkey({
+            mods = config.triggers[shortcut.trigger],
+            key = shortcut.key
+        }, function()
+            local finder = hs.application.get("Finder")
+            if finder then
+                local closedCount = 0
+                for _, win in ipairs(finder:allWindows()) do
+                    -- Only close standard Finder windows (not desktop, etc)
+                    if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" then
+                        win:close()
+                        closedCount = closedCount + 1
+                    end
+                end
+                log.i("Closed " .. closedCount .. " Finder windows")
+            end
+        end)
+    end
+
+    -- Set up browser URL copy shortcut
+    if config.shortcuts.general and config.shortcuts.general.copyBrowserUrl then
+        local shortcut = config.shortcuts.general.copyBrowserUrl
+        bindHotkey({
+            mods = config.triggers[shortcut.trigger],
+            key = shortcut.key
+        }, function()
+            local frontApp = hs.application.frontmostApplication()
+            if frontApp and frontApp:name() == config.applications.Browser then
+                -- Sequence: cmd+L to select URL, cmd+C to copy, ESC to deselect
+                hs.timer.usleep(50000)  -- Small delay before starting
+                hs.eventtap.keyStroke({"cmd"}, "l")
+                hs.timer.usleep(50000)  -- Wait for URL bar to be selected
+                hs.eventtap.keyStroke({"cmd"}, "c")
+                hs.timer.usleep(50000)  -- Wait for copy
+                hs.eventtap.keyStroke({}, "escape")
+                log.i("Copied URL from Zen Browser")
+            end
+        end)
     end
 
     log.i("Application shortcuts setup complete")

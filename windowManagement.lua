@@ -67,6 +67,47 @@ function M.setup(config)
         local app = hs.application.frontmostApplication()
         if not app then return end
         
+        -- Special handling for Finder
+        if app:name() == "Finder" then
+            local windows = {}
+            -- Only include standard Finder windows (exclude desktop, etc)
+            for _, win in ipairs(app:allWindows()) do
+                if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" then
+                    table.insert(windows, win)
+                end
+            end
+            if #windows <= 1 then return end
+            
+            -- Sort windows by ID to maintain consistent order
+            table.sort(windows, function(a, b) return a:id() < b:id() end)
+            
+            local focusedWindow = hs.window.focusedWindow()
+            local currentIndex
+            
+            -- Find current window index
+            for i, win in ipairs(windows) do
+                if win:id() == focusedWindow:id() then
+                    currentIndex = i
+                    break
+                end
+            end
+            
+            if not currentIndex then return end
+            
+            -- Calculate next window index
+            local nextIndex
+            if direction == "next" then
+                nextIndex = currentIndex % #windows + 1
+            else
+                nextIndex = (currentIndex - 2) % #windows + 1
+            end
+            
+            -- Focus next window
+            windows[nextIndex]:focus()
+            return
+        end
+        
+        -- Normal handling for other applications
         local windows = app:visibleWindows()
         if #windows <= 1 then return end
         

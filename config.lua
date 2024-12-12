@@ -35,6 +35,8 @@ local config = {
         pattern = {"ctrl", "alt"},        -- For basic fabric patterns (⌃⌥)
         advanced = {"ctrl", "alt", "shift"}, -- For advanced fabric patterns (⌃⌥⇧)
         research = {"ctrl", "alt", "cmd"}, -- For research-related patterns (⌘⌃⌥)
+        general = {"cmd", "shift"},       -- For general shortcuts (⌘⇧)
+        copy = {"ctrl"},                  -- For copy shortcuts (⌃)
     },
 
     -- Applications to control
@@ -116,6 +118,12 @@ local config = {
             -- Window cycling (alt + key)
             nextWindow = { trigger = "window", key = "E" }, -- Next window in app
             prevWindow = { trigger = "window", key = "Q" }, -- Previous window in app
+        },
+
+        -- General shortcuts
+        general = {
+            closeFinderWindows = { trigger = "general", key = "X" }, -- Close all Finder windows
+            copyBrowserUrl = { trigger = "copy", key = "C" }, -- Copy URL from browser
         },
     },
 
