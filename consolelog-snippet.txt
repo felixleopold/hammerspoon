@@ -1,0 +1,18 @@
+2024-12-12 20:06:43: 20:06:43     Fabric: Executing fabric pattern: improve_code
+2024-12-12 20:06:43: -- Loading extension: pasteboard
+2024-12-12 20:06:43:              Fabric: Found fabric in PATH: not found
+2024-12-12 20:06:43:              Fabric: Found fabric in alternate location: /Users/felixmrak/go/bin/fabric
+2024-12-12 20:06:43:              Fabric: Executing command: echo "dis is a test" | /Users/felixmrak/go/bin/fabric --pattern improve_code --model=gpt-4
+2024-12-12 20:06:43:              Fabric: Pattern: improve_code
+2024-12-12 20:06:43:              Fabric: Model: gpt-4
+2024-12-12 20:06:43:              Fabric: Content length: 13
+2024-12-12 20:06:43: -- Loading extension: task
+2024-12-12 20:06:44: 20:06:44 ERROR:    Fabric: Error processing text: 
+2024-12-12 20:07:11: 20:07:11     Fabric: Executing fabric pattern: improve_code
+2024-12-12 20:07:11:              Fabric: Found fabric in PATH: not found
+2024-12-12 20:07:11:              Fabric: Found fabric in alternate location: /Users/felixmrak/go/bin/fabric
+2024-12-12 20:07:11:              Fabric: Executing command: echo "dis is a test" | /Users/felixmrak/go/bin/fabric --pattern improve_code --model=gpt-4
+2024-12-12 20:07:11:              Fabric: Pattern: improve_code
+2024-12-12 20:07:11:              Fabric: Model: gpt-4
+2024-12-12 20:07:11:              Fabric: Content length: 13
+2024-12-12 20:07:12: 20:07:12 ERROR:    Fabric: Error processing text: 
