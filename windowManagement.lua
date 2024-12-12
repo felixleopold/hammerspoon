@@ -80,11 +80,8 @@ function M.setup(config)
         -- Filter windows
         for _, win in ipairs(allWindows) do
             if win:isVisible() and not win:isMinimized() then
-                -- For Finder, skip Desktop window
-                if appName ~= "Finder" or win:title() ~= "Desktop" then
-                    table.insert(windows, win)
-                    log.i(string.format("Including window: '%s'", win:title() or ""))
-                end
+                table.insert(windows, win)
+                log.i(string.format("Including window: '%s'", win:title() or ""))
             end
         end
         
