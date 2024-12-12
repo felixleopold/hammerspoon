@@ -33,7 +33,8 @@ local ALERT_STYLE = {
             alignment = "center",
         }
     },
-    maxWidth = 400,  -- Maximum width in pixels
+    maxWidth = 300,  -- Fixed width in pixels
+    minWidth = 300,  -- Same as maxWidth for consistency
 }
 
 -- Set global alert styling
@@ -52,6 +53,12 @@ function showAlert(message, duration)
     -- Truncate message if too long
     if #message > 50 then
         message = message:sub(1, 47) .. "..."
+    end
+    
+    -- Pad short messages with spaces to maintain minimum width
+    if #message < 20 then
+        local padding = string.rep(" ", math.floor((20 - #message) / 2))
+        message = padding .. message .. padding
     end
     
     -- Show the alert
