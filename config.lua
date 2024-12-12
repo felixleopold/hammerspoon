@@ -57,8 +57,6 @@ local config = {
         downloads = "~/Downloads",     -- Downloads folder
         documents = "~/Documents",     -- Documents folder
         pictures = "~/Pictures",       -- Pictures folder
-        music = "~/Music",            -- Music folder
-        movies = "~/Movies",          -- Movies folder
         applications = "/Applications", -- Applications folder
         notes = "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyBrain", -- Obsidian vault
         school = "~/Documents/School", -- School documents
@@ -89,8 +87,6 @@ local config = {
             { path = "downloads", key = "L" },   -- Downloads
             { path = "documents", key = "F" },   -- Documents
             { path = "pictures", key = "P" },    -- Pictures
-            { path = "music", key = "M" },       -- Music
-            { path = "movies", key = "V" },      -- Movies
             { path = "applications", key = "A" }, -- Applications
             { path = "notes", key = "O" },       -- Obsidian vault
             { path = "school", key = "S" },      -- School

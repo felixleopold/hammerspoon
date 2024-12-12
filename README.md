@@ -55,8 +55,6 @@ A powerful and customizable configuration for Hammerspoon, featuring window mana
 - `L`: Open Downloads folder
 - `F`: Open Documents folder
 - `P`: Open Pictures folder
-- `M`: Open Music folder
-- `V`: Open Movies folder
 - `A`: Open Applications folder
 - `O`: Open Obsidian vault
 - `S`: Open School folder
