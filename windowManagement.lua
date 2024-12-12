@@ -80,8 +80,14 @@ function M.setup(config)
         -- Filter windows
         for _, win in ipairs(allWindows) do
             if win:isVisible() and not win:isMinimized() then
-                table.insert(windows, win)
-                log.i(string.format("Including window: '%s'", win:title() or ""))
+                local title = win:title() or ""
+                -- Only include windows with titles
+                if title ~= "" then
+                    table.insert(windows, win)
+                    log.i(string.format("Including window: '%s'", title))
+                else
+                    log.i("Skipping window with empty title")
+                end
             end
         end
         
@@ -118,10 +124,13 @@ function M.setup(config)
             return
         end
         
-        -- Calculate next window index
+        -- Calculate next window index with proper wrapping
         local nextIndex
         if direction == "next" then
-            nextIndex = (currentIndex % #windows) + 1
+            nextIndex = currentIndex + 1
+            if nextIndex > #windows then
+                nextIndex = 1
+            end
         else
             nextIndex = currentIndex - 1
             if nextIndex < 1 then
