@@ -134,29 +134,43 @@ function M.setup(config)
                 if shortcut.action == "closeFinderWindows" then
                     local finder = hs.application.get("Finder")
                     if finder then
+                        log.i("Attempting to close all Finder windows")
                         local closedCount = 0
                         local windows = finder:allWindows()
+                        log.d("Found " .. #windows .. " total Finder windows")
                         for _, win in ipairs(windows) do
                             -- Only close standard Finder windows (not desktop, etc)
                             if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" and win:isVisible() then
+                                log.d("Closing window: " .. win:title())
                                 win:close()
                                 closedCount = closedCount + 1
+                            else
+                                log.d("Skipping window: " .. win:title() .. " (role: " .. win:role() .. ", subrole: " .. (win:subrole() or "nil") .. ", visible: " .. tostring(win:isVisible()) .. ")")
                             end
                         end
                         log.i("Closed " .. closedCount .. " Finder windows")
+                    else
+                        log.w("Finder not running")
                     end
                 elseif shortcut.action == "copyBrowserUrl" then
                     local frontApp = hs.application.frontmostApplication()
                     if frontApp and frontApp:name() == config.applications.Browser then
+                        log.i("Copying URL from Zen Browser")
                         -- Sequence: cmd+L to select URL, cmd+C to copy, ESC to deselect
+                        log.d("Selecting URL bar")
                         hs.eventtap.keyStroke({"cmd"}, "l")
                         hs.timer.doAfter(0.1, function()
+                            log.d("Copying URL")
                             hs.eventtap.keyStroke({"cmd"}, "c")
                             hs.timer.doAfter(0.1, function()
+                                log.d("Deselecting URL bar")
                                 hs.eventtap.keyStroke({}, "escape")
-                                log.i("Copied URL from Zen Browser")
+                                local url = hs.pasteboard.getContents()
+                                log.i("Copied URL: " .. (url or "nil"))
                             end)
                         end)
+                    else
+                        log.w("Zen Browser not focused (current app: " .. (frontApp and frontApp:name() or "nil") .. ")")
                     end
                 end
             end)

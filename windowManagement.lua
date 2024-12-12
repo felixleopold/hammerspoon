@@ -65,7 +65,12 @@ function M.setup(config)
     -- Window cycling functions
     local function cycleWindows(direction)
         local app = hs.application.frontmostApplication()
-        if not app then return end
+        if not app then 
+            log.w("No frontmost application found")
+            return 
+        end
+        
+        log.i("Cycling windows for app: " .. app:name() .. " in direction: " .. direction)
         
         -- Special handling for Finder
         if app:name() == "Finder" then
@@ -74,9 +79,13 @@ function M.setup(config)
             for _, win in ipairs(app:allWindows()) do
                 if win:role() == "AXWindow" and win:subrole() == "AXStandardWindow" and win:isVisible() then
                     table.insert(windows, win)
+                    log.d("Found Finder window: " .. win:title())
                 end
             end
-            if #windows <= 1 then return end
+            if #windows <= 1 then 
+                log.i("Not enough Finder windows to cycle (" .. #windows .. " windows)")
+                return 
+            end
             
             -- Sort windows by ID to maintain consistent order
             table.sort(windows, function(a, b) return a:id() < b:id() end)
@@ -88,12 +97,13 @@ function M.setup(config)
             for i, win in ipairs(windows) do
                 if win:id() == focusedWindow:id() then
                     currentIndex = i
+                    log.d("Current window index: " .. i .. " of " .. #windows)
                     break
                 end
             end
             
             if not currentIndex then
-                -- If current window not found in list, focus the first one
+                log.i("Current window not found in list, focusing first window")
                 windows[1]:focus()
                 return
             end
@@ -106,6 +116,7 @@ function M.setup(config)
                 nextIndex = (currentIndex - 2) % #windows + 1
             end
             
+            log.i("Moving from window " .. currentIndex .. " to " .. nextIndex)
             -- Focus next window
             windows[nextIndex]:focus()
             return
