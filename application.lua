@@ -162,22 +162,17 @@ function M.setup(config)
                             local role = win:role() or ""
                             local subrole = win:subrole() or ""
                             
-                            -- Skip the special always-running Finder window
-                            if title == "" or role == "AXSystemDialog" then
-                                log.d(string.format("Skipping special Finder window: title='%s', role='%s', subrole='%s'", 
-                                    title, role, subrole))
-                                goto continue
-                            end
-                            
-                            if win:isVisible() and not win:isMinimized() then
+                            -- Only close standard Finder windows
+                            if win:isVisible() and not win:isMinimized() and 
+                               title ~= "Desktop" and subrole == "AXStandardWindow" then
                                 log.d(string.format("Closing window: title='%s', role='%s', subrole='%s'", 
                                     title, role, subrole))
                                 win:close()
                                 closedCount = closedCount + 1
                             else
-                                log.d(string.format("Skipping invisible/minimized window: '%s'", title))
+                                log.d(string.format("Skipping window: title='%s', role='%s', subrole='%s'", 
+                                    title, role, subrole))
                             end
-                            ::continue::
                         end
                         log.i("Closed " .. closedCount .. " Finder windows")
                     else
