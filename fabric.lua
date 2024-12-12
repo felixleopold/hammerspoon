@@ -129,12 +129,18 @@ Default installation path is: ~/go/bin/fabric
             return msg
         end
         
+        -- Helper function to show alerts (clears previous alerts first)
+        local function showProcessAlert(message)
+            hs.alert.closeAll()
+            showAlert(message)
+        end
+        
         log.i("Executing command: " .. command)
         log.i("Pattern: " .. commandToUse)
         log.i("Content length: " .. #clipboardContent)
 
         -- Show processing alert
-        showAlert("Processing with " .. pattern.name .. "...", 10)  -- Longer duration for processing
+        showProcessAlert("Processing with " .. pattern.name .. "...")
 
         -- Execute the command and capture both stdout and stderr
         local output, status, type, rc = hs.execute(command)
@@ -145,22 +151,20 @@ Default installation path is: ~/go/bin/fabric
                 hs.pasteboard.setContents(output)
                 log.i("Successfully processed text with pattern: " .. commandToUse)
                 
-                -- Clear processing alert and show success
-                hs.alert.closeAll()
-                showAlert("✓ " .. pattern.name .. " completed")
+                -- Show success alert
+                showProcessAlert("✓ " .. pattern.name .. " completed")
                 
                 -- Automatically paste the result
                 hs.timer.doAfter(0.1, function()
                     hs.eventtap.keyStroke({"cmd"}, "v")
                     -- Show paste confirmation after a short delay
                     hs.timer.doAfter(0.2, function()
-                        showAlert("Content pasted")
+                        showProcessAlert("Content pasted")
                     end)
                 end)
             else
                 -- Success but no output
-                hs.alert.closeAll()
-                showAlert("⚠️ No output received")
+                showProcessAlert("⚠️ No output received")
                 log.e("No output received from fabric command for pattern: " .. commandToUse)
             end
         else
@@ -170,10 +174,9 @@ Default installation path is: ~/go/bin/fabric
             log.e("Return code: " .. tostring(rc))
             log.e("Error type: " .. tostring(type))
             
-            -- Clear processing alert and show truncated error
-            hs.alert.closeAll()
+            -- Show truncated error
             local shortError = errorMsg:match("^[^\n]+") or "Unknown error"  -- Get first line only
-            showAlert("❌ Error: " .. truncateMessage(shortError, 80))
+            showProcessAlert("❌ Error: " .. truncateMessage(shortError, 80))
             
             -- Additional pattern-specific error info
             if errorMsg:match("could not get pattern") then
