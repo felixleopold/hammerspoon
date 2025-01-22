@@ -55,6 +55,7 @@ local config = {
 		WhatsApp = "WhatsApp", -- Messaging
 		Settings = "System Settings", -- System preferences
 		UTM = "UTM", -- Virtual machines
+		ChatGPT = "ChatGPT"
 	},
 
 	--[[-----------------------------------------
@@ -91,6 +92,7 @@ local config = {
 			{ app = "WhatsApp", key = "W" }, -- WhatsApp
 			{ app = "Settings", key = "P" }, -- System Settings
 			{ app = "UTM", key = "U" }, -- UTM
+			{ app = "ChatGPT", key = "C" }, -- ChatGPT
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
@@ -99,11 +101,10 @@ local config = {
 			{ path = "desktop", key = "D" }, -- Desktop
 			{ path = "downloads", key = "L" }, -- Downloads
 			{ path = "documents", key = "F" }, -- Documents
-			{ path = "pictures", key = "P" }, -- Pictures
 			{ path = "applications", key = "A" }, -- Applications
 			{ path = "notes", key = "O" }, -- Obsidian vault
 			{ path = "school", key = "R" }, -- School
-			{ path = "projects", key = "P" }, -- Projects
+			{ path = "projects", key = "V" }, -- Projects (VS) Code
 		},
 
 		-- Window management shortcuts
