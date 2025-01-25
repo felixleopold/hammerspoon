@@ -55,7 +55,8 @@ local config = {
 		WhatsApp = "WhatsApp", -- Messaging
 		Settings = "System Settings", -- System preferences
 		UTM = "UTM", -- Virtual machines
-		ChatGPT = "ChatGPT"
+		ChatGPT = "ChatGPT",
+		Preview = "Preview"
 	},
 
 	--[[-----------------------------------------
@@ -93,6 +94,7 @@ local config = {
 			{ app = "Settings", key = "P" }, -- System Settings
 			{ app = "UTM", key = "U" }, -- UTM
 			{ app = "ChatGPT", key = "C" }, -- ChatGPT
+			{ app = "Preview", key = "I" }, -- ChatGPT
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
