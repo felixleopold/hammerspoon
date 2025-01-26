@@ -64,8 +64,28 @@ function M.setup(config)
         if path then
             path = expandPath(path)
             log.d("Setting up folder shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to open " .. path)
-            bindHotkey(shortcut, function()
+            -- Use custom modifiers if provided, otherwise use default folder modifiers
+            local mods = shortcut.mods or config.triggers.folder
+            bindHotkey({mods = mods, key = shortcut.key}, function()
                 if hs.fs.attributes(path) then
+                    -- Special case for Hammerspoon config folder - open in editor
+                    if name == "hammerspoon" and shortcut.mods and 
+                       #shortcut.mods == 4 and 
+                       table.concat(shortcut.mods, "") == table.concat({"ctrl", "alt", "cmd", "shift"}, "") then
+                        log.i("Opening Hammerspoon config in editor: " .. path)
+                        local editor = config.applications.Editor
+                        if editor then
+                            hs.application.launchOrFocus(editor)
+                            hs.timer.doAfter(0.1, function()
+                                hs.execute(string.format('/usr/bin/open -a "%s" "%s"', editor, path))
+                            end)
+                        else
+                            log.w("No editor application configured")
+                        end
+                        return
+                    end
+
+                    -- Normal folder opening behavior
                     -- Get list of visible Finder windows before opening
                     local finder = hs.application.get("Finder")
                     local visibleWindows = {}

@@ -46,7 +46,8 @@ local config = {
 	applications = {
 		Browser = "Zen Browser", -- Primary browser
 		Browser2 = "Microsoft Edge", -- Secondary browser
-		Editor = "Visual Studio Code", -- Code editor
+		Editor = "Cursor", -- Code editor
+		Editor2 = "Visual Studio Code", -- Second editor instance
 		Terminal = "kitty", -- Terminal emulator
 		Notes = "Obsidian", -- Note-taking app
 		Mail = "Mail", -- Email client
@@ -73,6 +74,7 @@ local config = {
 		notes = "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyBrain", -- Obsidian vault
 		school = "~/Documents/Radboud/", -- School documents
 		projects = "~/Documents/Radboud/Programming/", -- Programming projects
+		hammerspoon = "~/.hammerspoon", -- Hammerspoon configuration folder
 	},
 
 	--[[-----------------------------------------
@@ -84,7 +86,8 @@ local config = {
 		apps = {
 			{ app = "Browser", key = "Z" }, -- Primary browser
 			{ app = "Browser2", key = "A" }, -- Secondary browser
-			{ app = "Editor", key = "V" }, -- VS Code
+			{ app = "Editor", key = "C" }, -- Cursor
+			{ app = "Editor2", key = "V" }, -- VS Code
 			{ app = "Terminal", key = "T" }, -- Terminal
 			{ app = "Notes", key = "O" }, -- Obsidian
 			{ app = "Mail", key = "M" }, -- Mail
@@ -93,7 +96,7 @@ local config = {
 			{ app = "WhatsApp", key = "W" }, -- WhatsApp
 			{ app = "Settings", key = "P" }, -- System Settings
 			{ app = "UTM", key = "U" }, -- UTM
-			{ app = "ChatGPT", key = "C" }, -- ChatGPT
+			{ app = "ChatGPT", key = "G" }, -- ChatGPT
 			{ app = "Preview", key = "I" }, -- ChatGPT
 		},
 
@@ -107,6 +110,7 @@ local config = {
 			{ path = "notes", key = "O" }, -- Obsidian vault
 			{ path = "school", key = "R" }, -- School
 			{ path = "projects", key = "V" }, -- Projects (VS) Code
+			{ path = "hammerspoon", key = "S", mods = { "ctrl", "alt", "cmd", "shift" } }, -- Hammerspoon folder
 		},
 
 		-- Window management shortcuts

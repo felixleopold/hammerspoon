@@ -45,7 +45,7 @@ function M.expandConfig(config)
     -- Expand folder shortcuts
     for _, shortcut in ipairs(config.shortcuts.folders) do
         expanded.shortcuts.folderShortcuts[shortcut.path] = {
-            mods = config.triggers.folder,
+            mods = shortcut.mods or config.triggers.folder,
             key = shortcut.key
         }
     end
