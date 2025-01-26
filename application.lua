@@ -44,6 +44,63 @@ function M.setup(config)
         return absolutePath
     end
 
+    -- Helper function to find window with path
+    local function findWindowWithPath(app, path)
+        if not app then return nil end
+        for _, win in ipairs(app:allWindows()) do
+            -- Different editors store the path in different ways
+            local winTitle = win:title()
+            if winTitle then
+                -- Check if the path is in the window title
+                if winTitle:find(path, 1, true) then
+                    return win
+                end
+            end
+        end
+        return nil
+    end
+
+    -- Helper function to open folder in editor
+    local function openInEditor(path, editorName)
+        if not path or not editorName then 
+            log.e("Missing required parameters:", {path = path, editor = editorName})
+            return 
+        end
+        
+        path = expandPath(path)
+        log.i(string.format("Opening %s in %s", path, editorName))
+        
+        -- Try to find existing editor window with this path
+        local editor = hs.application.get(editorName)
+        if editor then
+            log.d("Found existing editor instance")
+            local existingWindow = findWindowWithPath(editor, path)
+            if existingWindow then
+                log.i("Found existing window with path, focusing it")
+                existingWindow:focus()
+                return
+            else
+                log.d("No existing window found with path")
+            end
+        else
+            log.d("No existing editor instance found")
+        end
+        
+        -- Launch or focus editor and open the path
+        log.i("Launching editor and opening path")
+        hs.application.launchOrFocus(editorName)
+        hs.timer.doAfter(0.1, function()
+            local command = string.format('/usr/bin/open -a "%s" "%s"', editorName, path)
+            log.d("Executing command: " .. command)
+            local output, status = hs.execute(command)
+            if status then
+                log.i("Successfully opened folder in editor")
+            else
+                log.e("Failed to open folder in editor: " .. (output or "unknown error"))
+            end
+        end)
+    end
+
     -- Set up application shortcuts
     for name, shortcut in pairs(config.shortcuts.appShortcuts) do
         local appName = config.applications[name]
@@ -58,6 +115,45 @@ function M.setup(config)
         end
     end
 
+    -- Set up general shortcuts
+    if config.shortcuts.general then
+        for _, shortcut in ipairs(config.shortcuts.general) do
+            log.i(string.format("Setting up general shortcut: %s with mods=%s, key=%s", 
+                shortcut.action, 
+                hs.inspect(shortcut.mods), 
+                shortcut.key))
+
+            bindHotkey({mods = shortcut.mods, key = shortcut.key}, function()
+                if shortcut.action == "openHammerspoonConfig" then
+                    log.i("Triggered: Open Hammerspoon config in editor")
+                    local path = config.folders.hammerspoon
+                    local editor = config.applications.Editor
+                    if path and editor then
+                        log.d(string.format("Opening Hammerspoon config: path=%s, editor=%s", path, editor))
+                        openInEditor(path, editor)
+                    else
+                        log.e("Missing configuration for Hammerspoon editor shortcut", {
+                            path = path,
+                            editor = editor
+                        })
+                    end
+                elseif shortcut.action == "copyBrowserUrl" then
+                    local frontApp = hs.application.frontmostApplication()
+                    if frontApp and frontApp:name() == config.applications.Browser then
+                        log.i("Copying URL from Zen Browser")
+                        hs.eventtap.keyStroke({"cmd"}, "l")
+                        hs.timer.doAfter(0.1, function()
+                            hs.eventtap.keyStroke({"cmd"}, "c")
+                            hs.timer.doAfter(0.1, function()
+                                hs.eventtap.keyStroke({}, "escape")
+                            end)
+                        end)
+                    end
+                end
+            end)
+        end
+    end
+
     -- Set up folder shortcuts
     for name, shortcut in pairs(config.shortcuts.folderShortcuts) do
         local path = config.folders[name]
@@ -68,23 +164,6 @@ function M.setup(config)
             local mods = shortcut.mods or config.triggers.folder
             bindHotkey({mods = mods, key = shortcut.key}, function()
                 if hs.fs.attributes(path) then
-                    -- Special case for Hammerspoon config folder - open in editor
-                    if name == "hammerspoon" and shortcut.mods and 
-                       #shortcut.mods == 4 and 
-                       table.concat(shortcut.mods, "") == table.concat({"ctrl", "alt", "cmd", "shift"}, "") then
-                        log.i("Opening Hammerspoon config in editor: " .. path)
-                        local editor = config.applications.Editor
-                        if editor then
-                            hs.application.launchOrFocus(editor)
-                            hs.timer.doAfter(0.1, function()
-                                hs.execute(string.format('/usr/bin/open -a "%s" "%s"', editor, path))
-                            end)
-                        else
-                            log.w("No editor application configured")
-                        end
-                        return
-                    end
-
                     -- Normal folder opening behavior
                     -- Get list of visible Finder windows before opening
                     local finder = hs.application.get("Finder")

@@ -84,6 +84,17 @@ function M.expandConfig(config)
         end
     end
 
+    -- Expand general shortcuts
+    if config.shortcuts.general then
+        for _, shortcut in ipairs(config.shortcuts.general) do
+            table.insert(expanded.shortcuts.general, {
+                mods = shortcut.mods,
+                key = shortcut.key,
+                action = shortcut.action
+            })
+        end
+    end
+
     -- Expand fabric patterns
     for _, pattern in ipairs(config.fabric.patterns) do
         local expandedPattern = {

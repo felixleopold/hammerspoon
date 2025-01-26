@@ -97,7 +97,7 @@ local config = {
 			{ app = "Settings", key = "P" }, -- System Settings
 			{ app = "UTM", key = "U" }, -- UTM
 			{ app = "ChatGPT", key = "G" }, -- ChatGPT
-			{ app = "Preview", key = "I" }, -- ChatGPT
+			{ app = "Preview", key = "I" }, -- Preview
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
@@ -110,7 +110,19 @@ local config = {
 			{ path = "notes", key = "O" }, -- Obsidian vault
 			{ path = "school", key = "R" }, -- School
 			{ path = "projects", key = "V" }, -- Projects (VS) Code
-			{ path = "hammerspoon", key = "S", mods = { "ctrl", "alt", "cmd", "shift" } }, -- Hammerspoon folder
+		},
+
+		-- General shortcuts
+		general = {
+			{ mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
+			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
+		},
+
+		-- Utility shortcuts
+		utils = {
+			{ mods = { "cmd", "shift" }, key = "X", action = "closeFinderWindows" }, -- Close all Finder windows
+			{ mods = { "cmd", "shift" }, key = "W", action = "closeOtherAppWindows" }, -- Close other windows of current app
+			{ mods = { "cmd", "shift" }, key = "Q", action = "closeOtherApps" }, -- Close other applications
 		},
 
 		-- Window management shortcuts
@@ -130,14 +142,6 @@ local config = {
 			-- Window cycling (alt + key)
 			nextWindow = { trigger = "window", key = "E" }, -- Next window in app (⌥E)
 			prevWindow = { trigger = "window", key = "Q" }, -- Previous window in app (⌥Q)
-		},
-
-		-- Utility shortcuts
-		utils = {
-			{ mods = { "cmd", "shift" }, key = "X", action = "closeFinderWindows" }, -- Close all Finder windows (cmd+shift+X)
-			{ mods = { "cmd", "shift" }, key = "W", action = "closeOtherAppWindows" }, -- Close other windows of current app (cmd+shift+W)
-			{ mods = { "cmd", "shift" }, key = "Q", action = "closeOtherApps" }, -- Close other applications (cmd+shift+Q)
-			{ mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
 		},
 	},
 
