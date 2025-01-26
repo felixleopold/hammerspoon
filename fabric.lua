@@ -11,7 +11,8 @@ function M.setup(config)
         patternLookup[pattern.id] = pattern
     end
 
-    local function executeFabricPattern(patternId)
+    -- Function to execute fabric pattern with custom instruction
+    local function executeFabricPatternWithInstruction(patternId, instruction)
         local clipboardContent = hs.pasteboard.getContents()
         if not clipboardContent or clipboardContent == "" then
             log.w("Error: Clipboard is empty")
@@ -27,9 +28,6 @@ function M.setup(config)
 
         -- Get the model to use (pattern-specific, or default)
         local modelToUse = pattern.model or config.fabric.defaultModel or "gpt-4"
-
-        -- Get the command to use (some patterns might use a different command)
-        local commandToUse = pattern.command or pattern.id
 
         -- Find fabric executable
         local fabricPath = ""
@@ -71,7 +69,7 @@ function M.setup(config)
         if fabricPath == "" then
             log.e([[
 Could not find fabric executable. Please:
-1. Install fabric: go install github.com/mrakinola/fabric-cli@latest
+1. Install fabric: go install github.com/danielmiessler/fabric@latest
 2. Set the correct path in config.lua (fabric.fabricPath)
 Default installation path is: ~/go/bin/fabric
             ]])
@@ -85,13 +83,30 @@ Default installation path is: ~/go/bin/fabric
             command = string.format('%s -y "%s" --stream --pattern %s',
                 fabricPath,
                 clipboardContent:gsub('"', '\\"'),  -- Escape quotes in URL
-                commandToUse)
+                pattern.id)
         else
-            -- For regular patterns (including general)
-            command = string.format('echo "%s" | %s --pattern %s',
+            -- For regular patterns
+            local baseCommand = string.format('echo "%s" | %s --pattern %s',
                 clipboardContent:gsub('"', '\\"'),
                 fabricPath,
-                commandToUse)
+                pattern.id)
+            
+            -- Handle pattern variables
+            if pattern.variables then
+                for varName, defaultValue in pairs(pattern.variables) do
+                    if varName == "instruction" and instruction then
+                        -- Use provided instruction if available
+                        baseCommand = baseCommand .. string.format(' -v=%s:"%s"', 
+                            varName, instruction:gsub('"', '\\"'))
+                    elseif defaultValue and defaultValue ~= "" then
+                        -- Use default value if available
+                        baseCommand = baseCommand .. string.format(' -v=%s:"%s"', 
+                            varName, defaultValue:gsub('"', '\\"'))
+                    end
+                end
+            end
+            
+            command = baseCommand
         end
         
         -- Helper function to truncate messages
@@ -110,7 +125,7 @@ Default installation path is: ~/go/bin/fabric
         end
         
         log.i("Executing command: " .. command)
-        log.i("Pattern: " .. commandToUse)
+        log.i("Pattern: " .. pattern.id)
         log.i("Content length: " .. #clipboardContent)
 
         -- Show processing alert
@@ -122,24 +137,32 @@ Default installation path is: ~/go/bin/fabric
         if status then
             if output and output ~= "" then
                 -- Success with output
+                log.i("Got output: " .. output)  -- Debug log
                 hs.pasteboard.setContents(output)
-                log.i("Successfully processed text with pattern: " .. commandToUse)
+                log.i("Successfully processed text with pattern: " .. pattern.id)
                 
                 -- Show success alert
                 showProcessAlert("✓ " .. pattern.name .. " completed")
                 
-                -- Automatically paste the result
-                hs.timer.doAfter(0.1, function()
+                -- Verify clipboard content
+                log.i("Clipboard content after setting: " .. (hs.pasteboard.getContents() or "nil"))  -- Debug log
+                
+                -- Increase delay before pasting
+                hs.timer.doAfter(0.3, function()
+                    log.i("Attempting to paste content")  -- Debug log
                     hs.eventtap.keyStroke({"cmd"}, "v")
-                    -- Show paste confirmation after a short delay
-                    hs.timer.doAfter(0.2, function()
+                    
+                    -- Show paste confirmation after a longer delay
+                    hs.timer.doAfter(0.5, function()
+                        -- Verify final clipboard content
+                        log.i("Final clipboard content: " .. (hs.pasteboard.getContents() or "nil"))  -- Debug log
                         showProcessAlert("Content pasted")
                     end)
                 end)
             else
                 -- Success but no output
                 showProcessAlert("⚠️ No output received")
-                log.e("No output received from fabric command for pattern: " .. commandToUse)
+                log.e("No output received from fabric command for pattern: " .. pattern.id)
             end
         else
             -- Command failed
@@ -154,9 +177,85 @@ Default installation path is: ~/go/bin/fabric
             
             -- Additional pattern-specific error info
             if errorMsg:match("could not get pattern") then
-                log.e("Pattern '" .. commandToUse .. "' not found. Please check available patterns using 'fabric -l'")
+                log.e("Pattern '" .. pattern.id .. "' not found. Please check available patterns using 'fabric -l'")
             end
         end
+    end
+
+    -- Function to show variable input prompt
+    local function showVariablePrompt(patternId, variableName)
+        -- Store the current window to restore focus later
+        local currentWindow = hs.window.focusedWindow()
+        
+        -- Create a chooser for variable input
+        local chooser = hs.chooser.new(function(choice)
+            if choice then
+                -- Restore focus to the original window
+                if currentWindow then
+                    currentWindow:focus()
+                    -- Small delay to ensure focus is restored
+                    hs.timer.doAfter(0.1, function()
+                        executeFabricPatternWithInstruction(patternId, choice.text)
+                    end)
+                else
+                    executeFabricPatternWithInstruction(patternId, choice.text)
+                end
+            end
+        end)
+        
+        -- Configure the chooser appearance for a modern macOS look
+        chooser:width(25) -- Make it 25% of screen width (more compact)
+        chooser:rows(0)  -- Hide the choices area completely
+        chooser:bgDark(true)  -- Dark mode
+        chooser:fgColor({ hex = "#e5e5e5" })  -- Light gray text for better readability
+        chooser:subTextColor({ hex = "#666666" })  -- Darker gray subtext
+        chooser:searchSubText(false)  -- Don't search in subtext
+        chooser:placeholderText("Enter " .. variableName)  -- Simpler placeholder
+        
+        -- Minimal choice display
+        chooser:queryChangedCallback(function(query)
+            if query and query ~= "" then
+                chooser:choices({
+                    {
+                        text = query,
+                        subText = "⏎ to execute"  -- Unicode symbol for cleaner look
+                    }
+                })
+            else
+                chooser:choices({})
+            end
+        end)
+        
+        -- Show the chooser
+        chooser:show()
+    end
+
+    -- Main execute function that handles all patterns
+    local function executeFabricPattern(patternId)
+        -- Get pattern configuration
+        local pattern = patternLookup[patternId]
+        if not pattern then
+            log.e("Pattern not found: " .. patternId)
+            return
+        end
+
+        log.i("Executing pattern: " .. patternId .. " with variables: " .. hs.inspect(pattern.variables))
+
+        -- Check if pattern has variables that need user input
+        if pattern.variables then
+            -- Find first variable that needs user input
+            for varName, defaultValue in pairs(pattern.variables) do
+                log.i("Checking variable: " .. varName .. " with default value: " .. tostring(defaultValue))
+                if not defaultValue or defaultValue == "" then
+                    log.i("Variable needs user input, showing prompt for: " .. varName)
+                    showVariablePrompt(patternId, varName)
+                    return
+                end
+            end
+        end
+        
+        -- For patterns without variables or with all defaults, execute without instruction
+        executeFabricPatternWithInstruction(patternId, nil)
     end
 
     -- Bind shortcuts for all patterns

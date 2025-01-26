@@ -112,6 +112,7 @@ function M.expandConfig(config)
             command = pattern.command,
             model = pattern.model,
             youtube = pattern.youtube,
+            variables = pattern.variables,
             shortcut = pattern.trigger and {
                 mods = config.triggers[pattern.trigger],
                 key = pattern.key

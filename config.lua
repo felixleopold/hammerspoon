@@ -210,8 +210,8 @@ local config = {
 				trigger = "pattern",
 				key = "G",
 				variables = {
-					instruction = "", -- Will be filled by user input
-				},
+					instruction = ""  -- Will be filled by user input
+				}
 			},
 			{
 				id = "translate",
