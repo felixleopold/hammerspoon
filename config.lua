@@ -116,6 +116,7 @@ local config = {
 		general = {
 			{ mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
+			{ mods = { "cmd", "shift", "alt" }, key = "L", action = "createSymlink" }, -- Create system link
 		},
 
 		-- Utility shortcuts

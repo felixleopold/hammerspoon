@@ -39,7 +39,7 @@ function showAlert(message, duration)
     hs.alert.show(message, ALERT_STYLE, duration)
 end
 
--- Function to reload the Hammerspoon configuration
+-- Function to reload the configuration
 function reloadConfig(files)
     local doReload = false
     for _, file in pairs(files) do
@@ -56,12 +56,22 @@ end
 local myWatcher = hs.pathwatcher.new(os.getenv("HOME") .. "/.hammerspoon", reloadConfig):start()
 
 -- Load configuration
+log.i("Loading configuration...")
 local config = setup.getConfig()
+if not config then
+    log.e("Failed to load configuration")
+    return
+end
+
+-- Debug print the loaded configuration
+log.i("Configuration loaded successfully")
+log.d("General shortcuts: " .. hs.inspect(config.shortcuts.general))
 
 -- Use this config when setting up modules
-fabric.setup(config)
-windowManagement.setup(config)
+log.i("Setting up modules with configuration")
 application.setup(config)
+windowManagement.setup(config)
+fabric.setup(config)
 
 -- Show a notification when the configuration is loaded
 hs.alert.show("Hammerspoon configuration v" .. version.current .. " loaded")

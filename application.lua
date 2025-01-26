@@ -22,7 +22,7 @@ function M.setup(config)
             log.w("Skipping shortcut with no modifiers: " .. shortcut.key)
             return
         end
-        log.d("Binding hotkey: " .. hs.inspect(shortcut.mods) .. " + " .. shortcut.key)
+        log.i("Binding hotkey: mods=" .. hs.inspect(shortcut.mods) .. ", key=" .. shortcut.key)
         hs.hotkey.bind(shortcut.mods, shortcut.key, callback)
     end
 
@@ -115,15 +115,22 @@ function M.setup(config)
         end
     end
 
-    -- Set up general shortcuts
+    -- Set up general shortcuts first
     if config.shortcuts.general then
+        log.i("Setting up general shortcuts: " .. hs.inspect(config.shortcuts.general))
         for _, shortcut in ipairs(config.shortcuts.general) do
-            log.i(string.format("Setting up general shortcut: %s with mods=%s, key=%s", 
-                shortcut.action, 
-                hs.inspect(shortcut.mods), 
+            log.i(string.format("Processing general shortcut: action=%s, mods=%s, key=%s", 
+                shortcut.action,
+                hs.inspect(shortcut.mods),
                 shortcut.key))
 
-            bindHotkey({mods = shortcut.mods, key = shortcut.key}, function()
+            if not shortcut.mods or not shortcut.key or not shortcut.action then
+                log.e("Invalid general shortcut configuration: " .. hs.inspect(shortcut))
+                goto continue
+            end
+
+            bindHotkey(shortcut, function()
+                log.i("Triggered general shortcut: " .. shortcut.action)
                 if shortcut.action == "openHammerspoonConfig" then
                     log.i("Triggered: Open Hammerspoon config in editor")
                     local path = config.folders.hammerspoon
@@ -140,7 +147,7 @@ function M.setup(config)
                 elseif shortcut.action == "copyBrowserUrl" then
                     local frontApp = hs.application.frontmostApplication()
                     if frontApp and frontApp:name() == config.applications.Browser then
-                        log.i("Copying URL from Zen Browser")
+                        log.i("Copying URL from Browser")
                         hs.eventtap.keyStroke({"cmd"}, "l")
                         hs.timer.doAfter(0.1, function()
                             hs.eventtap.keyStroke({"cmd"}, "c")
@@ -149,9 +156,75 @@ function M.setup(config)
                             end)
                         end)
                     end
+                elseif shortcut.action == "createSymlink" then
+                    log.i("Triggered symlink creation")
+                    
+                    -- Get source path from clipboard
+                    local sourcePath = hs.pasteboard.getContents()
+                    if not sourcePath then
+                        hs.alert.show("❌ No path in clipboard", 2)
+                        return
+                    end
+                    
+                    -- Expand ~ if present in source path
+                    sourcePath = sourcePath:gsub("^~", os.getenv("HOME"))
+                    
+                    -- Validate source path exists
+                    if not hs.fs.attributes(sourcePath) then
+                        hs.alert.show("❌ Source path does not exist: " .. sourcePath, 2)
+                        return
+                    end
+                    
+                    -- Get current Finder window path using AppleScript
+                    local script = [[
+                        tell application "Finder"
+                            if (count of windows) is 0 then
+                                return POSIX path of (home as text)
+                            end if
+                            
+                            try
+                                return POSIX path of (target of front window as text)
+                            on error
+                                return POSIX path of (home as text)
+                            end try
+                        end tell
+                    ]]
+                    
+                    local ok, targetDir = hs.osascript.applescript(script)
+                    if not ok or not targetDir then
+                        hs.alert.show("❌ Could not get current Finder location", 2)
+                        return
+                    end
+                    
+                    -- Remove trailing slash if present
+                    targetDir = targetDir:gsub("/$", "")
+                    
+                    -- Get the filename from the source path
+                    local filename = sourcePath:match("([^/]+)$")
+                    if not filename then
+                        hs.alert.show("❌ Could not determine filename from source path", 2)
+                        return
+                    end
+                    
+                    -- Combine target directory with filename
+                    local targetPath = targetDir .. "/" .. filename
+                    
+                    -- Create the symlink
+                    local command = string.format('ln -s "%s" "%s"', sourcePath, targetPath)
+                    local output, status = hs.execute(command)
+                    
+                    if status then
+                        hs.alert.show("✓ Created symlink in current Finder location", 2)
+                    else
+                        local errorMsg = output or "Unknown error"
+                        hs.alert.show("❌ Failed to create symlink: " .. errorMsg, 3)
+                    end
                 end
             end)
+            ::continue::
         end
+    else
+        log.w("No general shortcuts configured")
     end
 
     -- Set up folder shortcuts
@@ -246,9 +319,11 @@ function M.setup(config)
     if config.shortcuts.utils then
         for _, shortcut in ipairs(config.shortcuts.utils) do
             log.i(string.format("Setting up utility shortcut: %s (%s + %s)", 
-                shortcut.action, table.concat(shortcut.mods, "+"), shortcut.key))
+                shortcut.action, 
+                table.concat(shortcut.mods, "+"), 
+                shortcut.key))
             
-            bindHotkey(shortcut, function()
+            bindHotkey({mods = shortcut.mods, key = shortcut.key}, function()
                 if shortcut.action == "closeFinderWindows" then
                     local finder = hs.application.get("Finder")
                     if finder then
@@ -328,13 +403,13 @@ function M.setup(config)
                     log.i("Closed " .. closedCount .. " windows")
 
                 elseif shortcut.action == "closeOtherApps" then
-                    local currentApp = hs.application.frontmostApplication()
-                    if not currentApp then
+                    local frontApp = hs.application.frontmostApplication()
+                    if not frontApp then
                         log.w("No frontmost application")
                         return
                     end
 
-                    log.i("Closing other applications except " .. currentApp:name())
+                    log.i("Closing other applications except " .. frontApp:name())
                     local closedCount = 0
                     local apps = hs.application.runningApplications()
                     
@@ -390,7 +465,7 @@ function M.setup(config)
                         -- 5. Are not system UI processes
                         -- 6. Don't match system patterns
                         if bundleID and 
-                           bundleID ~= currentApp:bundleID() and
+                           bundleID ~= frontApp:bundleID() and
                            not systemApps[bundleID] and
                            not string.lower(name):match("helper") and
                            not string.lower(name):match("agent") and
@@ -407,7 +482,7 @@ function M.setup(config)
                         else
                             local skipReason = "unknown"
                             if not bundleID then skipReason = "no bundle ID"
-                            elseif bundleID == currentApp:bundleID() then skipReason = "current app"
+                            elseif bundleID == frontApp:bundleID() then skipReason = "current app"
                             elseif systemApps[bundleID] then skipReason = "system app"
                             elseif string.lower(name):match("helper") then skipReason = "helper process"
                             elseif string.lower(name):match("agent") then skipReason = "agent process"

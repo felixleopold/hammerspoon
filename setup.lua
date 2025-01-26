@@ -14,6 +14,7 @@ end
 
 -- Expand the simplified config into the format expected by the modules
 function M.expandConfig(config)
+    log.i("Starting config expansion")
     local expanded = {
         applications = config.applications,
         folders = config.folders,
@@ -30,9 +31,27 @@ function M.expandConfig(config)
             folderShortcuts = {},
             windowManagement = {},
             utils = {},
-            general = {}
+            general = {}  -- Initialize as empty table
         }
     }
+
+    -- Process general shortcuts first
+    if config.shortcuts.general then
+        log.i("Processing general shortcuts: " .. hs.inspect(config.shortcuts.general))
+        for _, shortcut in ipairs(config.shortcuts.general) do
+            log.d(string.format("Adding general shortcut: action=%s, mods=%s, key=%s",
+                shortcut.action,
+                hs.inspect(shortcut.mods),
+                shortcut.key))
+            table.insert(expanded.shortcuts.general, {
+                mods = shortcut.mods,
+                key = shortcut.key,
+                action = shortcut.action
+            })
+        end
+    else
+        log.w("No general shortcuts found in config")
+    end
 
     -- Expand application shortcuts
     for _, shortcut in ipairs(config.shortcuts.apps) do
@@ -77,17 +96,6 @@ function M.expandConfig(config)
     if config.shortcuts.utils then
         for _, shortcut in ipairs(config.shortcuts.utils) do
             table.insert(expanded.shortcuts.utils, {
-                mods = shortcut.mods,
-                key = shortcut.key,
-                action = shortcut.action
-            })
-        end
-    end
-
-    -- Expand general shortcuts
-    if config.shortcuts.general then
-        for _, shortcut in ipairs(config.shortcuts.general) do
-            table.insert(expanded.shortcuts.general, {
                 mods = shortcut.mods,
                 key = shortcut.key,
                 action = shortcut.action
