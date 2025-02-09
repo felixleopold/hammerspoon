@@ -57,7 +57,9 @@ local config = {
 		Settings = "System Settings", -- System preferences
 		UTM = "UTM", -- Virtual machines
 		ChatGPT = "ChatGPT",
-		Preview = "Preview"
+		Preview = "Preview",
+		Discord = "Discord", -- Messaging app
+		Word = "Microsoft Word", -- Word processor
 	},
 
 	--[[-----------------------------------------
@@ -98,6 +100,8 @@ local config = {
 			{ app = "UTM", key = "U" }, -- UTM
 			{ app = "ChatGPT", key = "G" }, -- ChatGPT
 			{ app = "Preview", key = "I" }, -- Preview
+			{ app = "Discord", key = "D" }, -- Discord
+			{ app = "Word", key = "R" }, -- Microsoft Word
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
@@ -226,6 +230,20 @@ local config = {
 				desc = "Generate a note name",
 				trigger = "pattern",
 				key = "N",
+			},
+			{
+				id = "markdown_format",
+				name = "Markdown Format",
+				desc = "Format text in Markdown",
+				trigger = "pattern",
+				key = "M",
+			},
+			{
+				id = "fact_check",
+				name = "Fact Check",
+				desc = "Verify the accuracy of information",
+				trigger = "pattern",
+				key = "F",
 			},
 		},
 	},
