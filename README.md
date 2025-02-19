@@ -1,66 +1,148 @@
-# Hammerspoon Configuration
+# Hammerspoon Configuration Framework
 
-A modern, feature-rich Hammerspoon configuration focused on productivity and ease of use.
+A modern, modular Hammerspoon configuration framework focused on productivity and extensibility. This framework provides a structured way to manage your Hammerspoon configuration with easy customization options.
 
-## Features
+## Overview
 
-### Window Management
-- Quick window cycling for Finder and other applications
-- Window closing shortcuts
-- Efficient window management controls
+This framework is organized into several modules:
+- **Application Management**: Quick app switching and window control
+- **Window Management**: Window positioning, sizing, and cycling
+- **Fabric AI Integration**: AI-powered text processing and automation
+- **Custom Shortcuts**: Self-organized system for personal additions
 
-### Fabric AI Integration
-Integrated AI assistance with keyboard shortcuts:
-- `Cmd+Alt+Shift+R` - Correct text
-- `Cmd+Alt+Shift+I` - Improve text
-- `Cmd+Alt+Shift+S` - Summarize YouTube content
-- `Cmd+Alt+Shift+L` - LaTeX processing
-- `Cmd+Alt+Shift+G` - General AI interaction
-- `Cmd+Alt+Shift+T` - Translate text
-- `Cmd+Alt+Shift+N` - Generate note name
-- `Cmd+Alt+Shift+P` - Pattern chooser
+## Project Structure
 
-### Application Management
-- Quick application switching
-- Custom application shortcuts
-- Efficient window management
+```
+~/.hammerspoon/
+├── init.lua           # Main entry point
+├── config.lua         # User configuration
+├── self.lua           # Custom user functions
+├── setup.lua          # Configuration processor
+├── modules/
+│   ├── application.lua    # App management
+│   ├── windowManagement.lua  # Window control
+│   └── fabric.lua        # AI integration
+└── docs/
+    ├── SHORTCUTS.md      # Default shortcuts
+    └── CHANGELOG.md      # Version history
+```
 
 ## Installation
 
 1. Install Hammerspoon:
-   ```bash
-   brew install hammerspoon
-   ```
+```bash
+brew install hammerspoon
+```
 
 2. Clone this repository:
-   ```bash
-   git clone [repository-url] ~/.hammerspoon
-   ```
+```bash
+git clone [repository-url] ~/.hammerspoon
+```
 
-3. Install Fabric CLI (required for AI features):
-   ```bash
-   go install github.com/mrakinola/fabric-cli@latest
-   ```
+3. For AI features (optional), install Fabric CLI:
+```bash
+go install github.com/mrakinola/fabric-cli@latest
+```
 
 4. Launch Hammerspoon and allow accessibility permissions
 
 ## Configuration
 
-The configuration is split into modules for better organization:
-- `init.lua` - Main configuration and module loading
-- `config.lua` - User preferences and shortcuts
-- `application.lua` - Application management
-- `windowManagement.lua` - Window control features
-- `fabric.lua` - AI integration
-- `setup.lua` - Configuration initialization
+### Basic Configuration
+1. Open `config.lua`
+2. Modify the `applications` section to match your installed apps
+3. Adjust shortcuts in the `shortcuts` section
+4. Save and reload Hammerspoon (⌘⌃⌥⇧R)
 
-## UI Features
-- Modern macOS-style notifications
-- Clean, minimal interface
-- Informative status messages
+Example configuration:
+```lua
+applications = {
+    Browser = "Safari",
+    Editor = "Visual Studio Code",
+    Terminal = "iTerm",
+    -- Add your applications
+}
+```
 
-## Requirements
-- macOS (tested on latest version)
-- Hammerspoon
-- Go (for Fabric CLI installation)
-- Fabric CLI tool
+### Adding Custom Shortcuts
+
+1. Add your shortcut to `config.lua` in the `self` section:
+```lua
+self = {
+    shortcuts = {
+        {
+            name = "myCustomFunction",
+            desc = "What this shortcut does",
+            mods = { "cmd", "alt", "shift" },
+            key = "K",
+        },
+    },
+}
+```
+
+2. Add the corresponding function in `self.lua`:
+```lua
+function functions.myCustomFunction()
+    log.i("Executing my custom function")
+    -- Your code here
+    hs.alert.show("Custom function executed!")
+end
+```
+
+### Extending the Framework
+
+To add new functionality:
+
+1. Create a new module file (e.g., `mymodule.lua`)
+2. Follow the module pattern:
+```lua
+local M = {}
+local log = hs.logger.new('MyModule', 'debug')
+
+function M.setup(config)
+    -- Your initialization code
+end
+
+return M
+```
+
+3. Add your module to `init.lua`:
+```lua
+local mymodule = require("mymodule")
+mymodule.setup(config)
+```
+
+## Updating
+
+1. Pull the latest changes:
+```bash
+cd ~/.hammerspoon
+git pull
+```
+
+2. Check CHANGELOG.md for breaking changes
+3. Reload Hammerspoon
+
+## Troubleshooting
+
+1. Check the Hammerspoon Console for errors
+2. Verify your configuration in `config.lua`
+3. Look for log messages from specific modules
+4. Ensure all required applications are installed
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+MIT License - See LICENSE file for details
+
+## See Also
+
+- [SHORTCUTS.md](docs/SHORTCUTS.md) - Default keyboard shortcuts
+- [CHANGELOG.md](docs/CHANGELOG.md) - Version history
+- [Hammerspoon Documentation](https://www.hammerspoon.org/docs/)

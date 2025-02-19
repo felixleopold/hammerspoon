@@ -32,8 +32,35 @@ function M.expandConfig(config)
             windowManagement = {},
             utils = {},
             general = {}  -- Initialize as empty table
+        },
+        -- Add self configuration section
+        self = {
+            triggers = config.self and config.self.triggers or {},
+            shortcuts = {}
         }
     }
+
+    -- Process self-organized shortcuts
+    if config.self and config.self.shortcuts then
+        log.i("Processing self-organized shortcuts")
+        for _, shortcut in ipairs(config.self.shortcuts) do
+            log.d(string.format("Adding self shortcut: name=%s, mods=%s, key=%s",
+                shortcut.name,
+                hs.inspect(shortcut.mods),
+                shortcut.key))
+            
+            -- Copy the shortcut configuration directly
+            -- This preserves all properties needed by self.lua
+            table.insert(expanded.self.shortcuts, {
+                name = shortcut.name,
+                desc = shortcut.desc,
+                mods = shortcut.mods,
+                key = shortcut.key
+            })
+        end
+    else
+        log.w("No self-organized shortcuts found in config")
+    end
 
     -- Process general shortcuts first
     if config.shortcuts.general then

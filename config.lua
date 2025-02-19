@@ -32,7 +32,7 @@ local config = {
     Used throughout the configuration for consistent shortcuts
     ------------------------------------------]]
 	triggers = {
-		app = { "ctrl", "alt", "cmd" }, -- For launching applications (⌘⌃⌥)
+		app = { "ctrl", "alt", "cmd"}, -- For launching applications (⌘⌃⌥)
 		folder = { "cmd", "shift" }, -- For opening folders (⌘⇧)
 		window = { "alt" }, -- For window management (⌥)
 		screen = { "cmd", "alt" }, -- For screen management (⌘⌥)
@@ -245,6 +245,29 @@ local config = {
 				trigger = "pattern",
 				key = "F",
 			},
+		},
+	},
+
+	--[[-----------------------------------------
+    Self-Organized Custom Shortcuts
+    Add your own custom shortcuts and functions here
+    ------------------------------------------]]
+	self = {
+		-- Trigger keys for self-organized shortcuts
+		triggers = {
+			custom = { "cmd", "alt", "shift" }, -- Example trigger combination
+		},
+
+		-- Custom shortcuts
+		shortcuts = {
+			-- Example shortcut
+			{
+				name = "sayHello",  -- Function name in self.lua
+				desc = "Show hello message", -- Description for documentation
+				mods = { "cmd", "alt", "shift" }, -- Key modifiers
+				key = "H", -- Trigger key
+			},
+			-- Add more shortcuts here
 		},
 	},
 }
