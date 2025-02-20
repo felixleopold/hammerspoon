@@ -11,6 +11,7 @@ local fabric = require("fabric")
 local setup = require("setup")
 local version = require("version")
 local self = require("self")
+local inspectWindows = require("inspect_windows")
 
 -- Disable animation for window movements
 hs.window.animationDuration = 0
@@ -74,6 +75,9 @@ application.setup(config)
 windowManagement.setup(config)
 fabric.setup(config)
 self.setup(config)
+
+-- Set up hotkey to inspect windows (Cmd + Alt + Shift + I)
+hs.hotkey.bind({"cmd", "alt", "shift"}, "I", inspectWindows)
 
 -- Show a notification when the configuration is loaded
 hs.alert.show("Hammerspoon configuration v" .. version.current .. " loaded")

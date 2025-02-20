@@ -9,6 +9,27 @@ function M.setup(config)
     -- Helper function to launch or focus applications
     local function launchOrFocus(appName)
         log.i("Attempting to launch or focus: " .. appName)
+        
+        -- Special handling for Minecraft (Java)
+        if appName == "java" then
+            -- Find all Java windows
+            local allWindows = hs.window.allWindows()
+            for _, win in ipairs(allWindows) do
+                local app = win:application()
+                local title = win:title()
+                -- Check for any Minecraft version (title starts with "Minecraft")
+                if app and app:name() == "java" and title and title:match("^Minecraft%s*[%d%.]*$") then
+                    log.i("Found Minecraft window: " .. title)
+                    win:focus()
+                    return
+                end
+            end
+            -- If no Minecraft window found, launch the launcher instead
+            log.i("No Minecraft window found, launching launcher instead")
+            hs.application.launchOrFocus("Minecraft Launcher")
+            return
+        end
+        
         hs.application.launchOrFocus(appName)
     end
 

@@ -60,6 +60,8 @@ local config = {
 		Preview = "Preview",
 		Discord = "Discord", -- Messaging app
 		Word = "Microsoft Word", -- Word processor
+		MinecraftLauncher = "Minecraft Launcher", -- Minecraft Launcher
+		Minecraft = "java", -- Minecraft game itself
 	},
 
 	--[[-----------------------------------------
@@ -102,6 +104,8 @@ local config = {
 			{ app = "Preview", key = "I" }, -- Preview
 			{ app = "Discord", key = "D" }, -- Discord
 			{ app = "Word", key = "R" }, -- Microsoft Word
+			{ app = "MinecraftLauncher", key = "N" }, -- Minecraft Launcher
+			{ app = "Minecraft", key = "J" }, -- Minecraft Game
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
