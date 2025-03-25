@@ -148,7 +148,9 @@ git pull
 The framework comes with several built-in shortcuts:
 
 #### General Shortcuts
-- **⌘.** (Command + Period): Open current Finder location in kitty terminal
+- **⌘.** (Command + Period): Open current Finder location in terminal
+- **⌘;** (Command + Semicolumn): Open current Finder location in Editor
+- **⌘'** (Command + Apostrophe): Open current Finder location in Editor2
 - **⌃C** (Control + C): Copy URL from browser
 - **⌘⌃⌥⇧S** (Command + Control + Option + Shift + S): Open Hammerspoon config in editor
 - **⌘⇧⌥L** (Command + Shift + Option + L): Create symbolic links from clipboard paths to current Finder location

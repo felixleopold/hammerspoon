@@ -428,6 +428,56 @@ function M.setup(config)
                             log.e("Failed to create symlink: " .. failedPath)
                         end
                     end
+                elseif shortcut.action == "openInEditor" then
+                    -- Only proceed if Finder is the frontmost application
+                    local frontApp = hs.application.frontmostApplication()
+                    if not frontApp or frontApp:name() ~= "Finder" then
+                        log.w("Not in Finder, ignoring editor shortcut")
+                        return
+                    end
+
+                    -- Use AppleScript to get the current folder path
+                    local script = [[
+                        tell application "Finder"
+                            set theFolder to POSIX path of (folder of front window as alias)
+                        end tell
+                        
+                        do shell script "/usr/bin/open -a ]] .. config.applications.Editor .. [[ " & quoted form of theFolder
+                        return true
+                    ]]
+                    
+                    local ok, result = hs.osascript.applescript(script)
+                    if not ok then
+                        hs.alert.show("❌ Failed to open editor window", 2)
+                        log.e("Failed to open editor: " .. (result or "unknown error"))
+                    else
+                        log.i("Successfully opened editor in folder")
+                    end
+                elseif shortcut.action == "openInEditor2" then
+                    -- Only proceed if Finder is the frontmost application
+                    local frontApp = hs.application.frontmostApplication()
+                    if not frontApp or frontApp:name() ~= "Finder" then
+                        log.w("Not in Finder, ignoring editor shortcut")
+                        return
+                    end
+
+                    -- Use AppleScript to get the current folder path
+                    local script = [[
+                        tell application "Finder"
+                            set theFolder to POSIX path of (folder of front window as alias)
+                        end tell
+                        
+                        do shell script "/usr/bin/open -a ]] .. config.applications.Editor2 .. [[ " & quoted form of theFolder
+                        return true
+                    ]]
+                    
+                    local ok, result = hs.osascript.applescript(script)
+                    if not ok then
+                        hs.alert.show("❌ Failed to open secondary editor window", 2)
+                        log.e("Failed to open secondary editor: " .. (result or "unknown error"))
+                    else
+                        log.i("Successfully opened secondary editor in folder")
+                    end
                 elseif shortcut.action == "openInKitty" then
                     -- Only proceed if Finder is the frontmost application
                     local frontApp = hs.application.frontmostApplication()

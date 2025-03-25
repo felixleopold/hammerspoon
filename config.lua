@@ -128,7 +128,9 @@ local config = {
 			{ mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
 			{ mods = { "cmd", "shift", "alt" }, key = "L", action = "createSymlink" }, -- Create symbolic links from clipboard paths to current Finder location
-			{ mods = { "cmd" }, key = ".", action = "openInKitty" }, -- Open current Finder path in kitty
+			{ mods = { "cmd" }, key = ".", action = "openInKitty" }, -- Open current Finder path in terminal
+			{ mods = { "cmd" }, key = ";", action = "openInEditor" }, -- Open current Finder path in editor
+			{ mods = { "cmd" }, key = "'", action = "openInEditor2" }, -- Open current Finder path in secondary editor
 		},
 
 		-- Utility shortcuts
