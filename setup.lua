@@ -37,7 +37,9 @@ function M.expandConfig(config)
         self = {
             triggers = config.self and config.self.triggers or {},
             shortcuts = {}
-        }
+        },
+        -- Include Minecraft configuration
+        minecraft = config.minecraft
     }
 
     -- Process self-organized shortcuts

@@ -12,6 +12,7 @@ local setup = require("setup")
 local version = require("version")
 local self = require("self")
 local inspectWindows = require("inspect_windows")
+local minecraft = require("minecraft")
 
 -- Disable animation for window movements
 hs.window.animationDuration = 0
@@ -75,6 +76,14 @@ application.setup(config)
 windowManagement.setup(config)
 fabric.setup(config)
 self.setup(config)
+
+-- Only initialize Minecraft if enabled in config
+if config and config.minecraft and config.minecraft.enabled then
+    log.i("Initializing Minecraft module")
+    minecraft(config)
+else
+    log.i("Minecraft module disabled in config")
+end
 
 -- Set up hotkey to inspect windows (Cmd + Alt + Shift + I)
 hs.hotkey.bind({"cmd", "alt", "shift"}, "I", inspectWindows)

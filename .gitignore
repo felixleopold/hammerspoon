@@ -6,3 +6,30 @@ Spoons
 hammerspoon-venv/
 hammerspoon_icon.icns
 
+# Hammerspoon specific
+Spoons/
+.DS_Store
+
+# Lua specific
+*.o
+*.so
+*.dylib
+
+# Logs and databases
+*.log
+*.sqlite
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+
+# Editor directories and files
+.idea/
+*.swp
+*.swo
+*~
+
+# Local config overrides
+config.local.lua
+

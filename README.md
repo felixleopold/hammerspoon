@@ -9,6 +9,8 @@ This framework is organized into several modules:
 - **Window Management**: Window positioning, sizing, and cycling
 - **Fabric AI Integration**: AI-powered text processing and automation
 - **Custom Shortcuts**: Self-organized system for personal additions
+- **Terminal Integration**: Quick terminal access from Finder
+- **Debug Tools**: Utilities for configuration and troubleshooting
 
 ## Project Structure
 
@@ -39,10 +41,11 @@ brew install hammerspoon
 git clone [repository-url] ~/.hammerspoon
 ```
 
-3. For AI features (optional), install Fabric CLI:
+3. Install Fabric:
 ```bash
-go install github.com/mrakinola/fabric-cli@latest
+go install github.com/danielmiessler/fabric@latest
 ```
+[Fabric Documentation](https://github.com/danielmiessler/fabric?tab=readme-ov-file#installation)
 
 4. Launch Hammerspoon and allow accessibility permissions
 
@@ -129,6 +132,26 @@ git pull
 2. Verify your configuration in `config.lua`
 3. Look for log messages from specific modules
 4. Ensure all required applications are installed
+
+### Debug Shortcuts
+
+- **⌘⌃⌥⇧I** (Command + Control + Option + Shift + I): Inspect all visible windows
+  - Shows detailed information about all visible windows including:
+    - Application name
+    - Window title
+    - Window role
+    - Window subrole
+  - Useful for configuring window management rules and debugging window detection
+
+### Default Shortcuts
+
+The framework comes with several built-in shortcuts:
+
+#### General Shortcuts
+- **⌘.** (Command + Period): Open current Finder location in kitty terminal
+- **⌃C** (Control + C): Copy URL from browser
+- **⌘⌃⌥⇧S** (Command + Control + Option + Shift + S): Open Hammerspoon config in editor
+- **⌘⇧⌥L** (Command + Shift + Option + L): Create symbolic links from clipboard paths to current Finder location
 
 ## Contributing
 

@@ -62,6 +62,8 @@ local config = {
 		Word = "Microsoft Word", -- Word processor
 		MinecraftLauncher = "Minecraft Launcher", -- Minecraft Launcher
 		Minecraft = "java", -- Minecraft game itself
+		DavinciResolve = "DaVinci Resolve", -- Video editor
+		
 	},
 
 	--[[-----------------------------------------
@@ -103,9 +105,10 @@ local config = {
 			{ app = "ChatGPT", key = "G" }, -- ChatGPT
 			{ app = "Preview", key = "I" }, -- Preview
 			{ app = "Discord", key = "D" }, -- Discord
-			{ app = "Word", key = "R" }, -- Microsoft Word
+			-- { app = "Word", key = "R" }, -- Microsoft Word
 			{ app = "MinecraftLauncher", key = "N" }, -- Minecraft Launcher
 			{ app = "Minecraft", key = "J" }, -- Minecraft Game
+			{ app = "DavinciResolve", key = "R" }, -- DaVinci Resolve
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
@@ -124,7 +127,8 @@ local config = {
 		general = {
 			{ mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
-			{ mods = { "cmd", "shift", "alt" }, key = "L", action = "createSymlink" }, -- Create system link
+			{ mods = { "cmd", "shift", "alt" }, key = "L", action = "createSymlink" }, -- Create symbolic links from clipboard paths to current Finder location
+			{ mods = { "cmd" }, key = ".", action = "openInKitty" }, -- Open current Finder path in kitty
 		},
 
 		-- Utility shortcuts
@@ -160,6 +164,32 @@ local config = {
     ------------------------------------------]]
 	windowManagement = {
 		animationDuration = 0, -- Set to 0 for instant window movements
+	},
+
+	--[[-----------------------------------------
+    Debug Settings
+    Configure debug options for various features
+    ------------------------------------------]]
+	debug = {
+		symlinkCreation = true, -- Set to true to enable detailed logging for symlink creation
+	},
+
+	--[[-----------------------------------------
+    Minecraft Integration
+    Configure Minecraft-specific features and shortcuts
+    Set enabled = false to disable all Minecraft features
+    ------------------------------------------]]
+	minecraft = {
+		enabled = false, -- Set to false to disable Minecraft features
+		debug = false, -- Set to true to enable detailed logging for Minecraft features
+		delays = {
+			chatOpen = 50000, -- Delay after pressing T (in microseconds)
+			commandExecution = 200, -- Delay after command execution (in milliseconds)
+		},
+		detection = {
+			appNames = {"java"}, -- Application names to consider as Minecraft
+			titlePatterns = {"minecraft", "Minecraft"}, -- Patterns to look for in window titles
+		},
 	},
 
 	--[[-----------------------------------------
@@ -205,8 +235,8 @@ local config = {
 				youtube = true, -- Enable YouTube URL handling
 			},
 			{
-				id = "latex_plus",
-				name = "LaTeX Plus",
+				id = "latex",
+				name = "LaTeX",
 				desc = "Enhanced LaTeX processing",
 				trigger = "pattern",
 				key = "L",

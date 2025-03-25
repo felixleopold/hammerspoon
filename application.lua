@@ -167,33 +167,177 @@ function M.setup(config)
                     end
                 elseif shortcut.action == "copyBrowserUrl" then
                     local frontApp = hs.application.frontmostApplication()
-                    if frontApp and frontApp:name() == config.applications.Browser then
-                        log.i("Copying URL from Browser")
-                        hs.eventtap.keyStroke({"cmd"}, "l")
-                        hs.timer.doAfter(0.1, function()
-                            hs.eventtap.keyStroke({"cmd"}, "c")
-                            hs.timer.doAfter(0.1, function()
-                                hs.eventtap.keyStroke({}, "escape")
-                            end)
+                    local frontAppName = frontApp and frontApp:name()
+                    local frontAppClass = frontApp and frontApp:bundleID()
+                    
+                    -- Helper function to check if it's a browser
+                    local function isBrowser(app)
+                        if not app then return false end
+                        local name = app:name()
+                        local class = app:bundleID()
+                        
+                        -- Check against configured browser names
+                        if name == config.applications.Browser or name == config.applications.Browser2 then
+                            return true
+                        end
+                        
+                        -- Check for Zen Browser specifically (it can show up as just "Zen")
+                        if name == "Zen" or name == "Zen Browser" or (class and class:match("zen%-browser")) then
+                            return true
+                        end
+                        
+                        -- Check for Edge specifically
+                        if name == "Microsoft Edge" or (class and class:match("com%.microsoft%.edgemac")) then
+                            return true
+                        end
+                        
+                        return false
+                    end
+                    
+                    -- Check if we're in a browser
+                    if isBrowser(frontApp) then
+                        log.i("Copying URL from browser: " .. frontAppName .. " (class: " .. (frontAppClass or "nil") .. ")")
+                        -- Use cmd+L to select URL, wait a bit, then copy
+                        hs.eventtap.keyStroke({"cmd"}, "l", 0)
+                        hs.timer.usleep(100000) -- 100ms delay
+                        hs.eventtap.keyStroke({"cmd"}, "c", 0)
+                        hs.timer.usleep(50000) -- 50ms delay
+                        hs.eventtap.keyStroke({}, "escape", 0)
+                        
+                        -- Verify we got a URL
+                        hs.timer.doAfter(0.2, function()
+                            local url = hs.pasteboard.getContents()
+                            if url and url:match("^https?://") then
+                                log.i("Successfully copied URL: " .. url)
+                                hs.alert.show("✓ URL copied", 1)
+                            else
+                                log.w("Copied content is not a URL: " .. (url or "nil"))
+                                hs.alert.show("❌ Failed to copy URL", 2)
+                            end
                         end)
+                    else
+                        log.w("Not in a browser (current app: " .. frontAppName .. ", class: " .. (frontAppClass or "nil") .. ")")
                     end
                 elseif shortcut.action == "createSymlink" then
                     log.i("Triggered symlink creation")
                     
-                    -- Get source path from clipboard
-                    local sourcePath = hs.pasteboard.getContents()
-                    if not sourcePath then
+                    -- Check if debug is enabled
+                    local debugEnabled = config.debug and config.debug.symlinkCreation
+                    
+                    -- Get source paths from clipboard
+                    local clipboardContent = hs.pasteboard.getContents()
+                    if not clipboardContent then
                         hs.alert.show("❌ No path in clipboard", 2)
                         return
                     end
                     
-                    -- Expand ~ if present in source path
-                    sourcePath = sourcePath:gsub("^~", os.getenv("HOME"))
+                    if debugEnabled then
+                        log.d("Clipboard content: " .. clipboardContent)
+                    end
                     
-                    -- Validate source path exists
-                    if not hs.fs.attributes(sourcePath) then
-                        hs.alert.show("❌ Source path does not exist: " .. sourcePath, 2)
+                    -- Check if the clipboard content is from Finder (contains multiple paths)
+                    local sourcePaths = {}
+                    
+                    -- First, try to split by newlines (most reliable separator)
+                    if clipboardContent:find("\n") then
+                        if debugEnabled then
+                            log.d("Splitting clipboard content by newlines")
+                        end
+                        
+                        for path in clipboardContent:gmatch("[^\r\n]+") do
+                            if path and path:len() > 0 then
+                                table.insert(sourcePaths, path)
+                                if debugEnabled then
+                                    log.d("Found path from newline split: " .. path)
+                                end
+                            end
+                        end
+                    else
+                        -- If no newlines, check if it's a Finder-style space-separated list
+                        -- This is a heuristic: if we find multiple file paths that exist, it's likely a space-separated list
+                        if debugEnabled then
+                            log.d("No newlines found, checking for space-separated paths")
+                        end
+                        
+                        local potentialPaths = {}
+                        local inQuote = false
+                        local currentPath = ""
+                        
+                        -- Parse the clipboard content character by character to handle quoted paths
+                        for i = 1, #clipboardContent do
+                            local char = clipboardContent:sub(i, i)
+                            
+                            if char == '"' or char == "'" then
+                                inQuote = not inQuote
+                                if debugEnabled then
+                                    log.d("Quote character found, inQuote = " .. tostring(inQuote))
+                                end
+                            elseif char == ' ' and not inQuote then
+                                if currentPath ~= "" then
+                                    table.insert(potentialPaths, currentPath)
+                                    if debugEnabled then
+                                        log.d("Found potential path: " .. currentPath)
+                                    end
+                                    currentPath = ""
+                                end
+                            else
+                                currentPath = currentPath .. char
+                            end
+                        end
+                        
+                        -- Add the last path if there is one
+                        if currentPath ~= "" then
+                            table.insert(potentialPaths, currentPath)
+                            if debugEnabled then
+                                log.d("Found final potential path: " .. currentPath)
+                            end
+                        end
+                        
+                        -- Check if these paths exist
+                        local validPathCount = 0
+                        for _, path in ipairs(potentialPaths) do
+                            -- Remove quotes if present
+                            local cleanPath = path:gsub("^[\"'](.+)[\"']$", "%1")
+                            -- Expand ~ if present
+                            cleanPath = cleanPath:gsub("^~", os.getenv("HOME"))
+                            
+                            if debugEnabled then
+                                log.d("Checking if path exists: " .. cleanPath)
+                            end
+                            
+                            if hs.fs.attributes(cleanPath) then
+                                validPathCount = validPathCount + 1
+                                table.insert(sourcePaths, path)
+                                if debugEnabled then
+                                    log.d("Valid path found: " .. cleanPath)
+                                end
+                            else
+                                if debugEnabled then
+                                    log.d("Invalid path: " .. cleanPath)
+                                end
+                            end
+                        end
+                        
+                        -- If we didn't find multiple valid paths, treat the whole clipboard as a single path
+                        if validPathCount <= 1 then
+                            sourcePaths = {clipboardContent}
+                            if debugEnabled then
+                                log.d("Using entire clipboard as a single path: " .. clipboardContent)
+                            end
+                        end
+                    end
+                    
+                    -- If no valid paths found, alert the user
+                    if #sourcePaths == 0 then
+                        hs.alert.show("❌ No valid paths found in clipboard", 2)
                         return
+                    end
+                    
+                    log.i("Found " .. #sourcePaths .. " paths in clipboard")
+                    if debugEnabled then
+                        for i, path in ipairs(sourcePaths) do
+                            log.d("Path " .. i .. ": " .. path)
+                        end
                     end
                     
                     -- Get current Finder window path using AppleScript
@@ -220,25 +364,94 @@ function M.setup(config)
                     -- Remove trailing slash if present
                     targetDir = targetDir:gsub("/$", "")
                     
-                    -- Get the filename from the source path
-                    local filename = sourcePath:match("([^/]+)$")
-                    if not filename then
-                        hs.alert.show("❌ Could not determine filename from source path", 2)
-                        return
+                    -- Track success and failures
+                    local successCount = 0
+                    local failedPaths = {}
+                    
+                    -- Process each source path
+                    for _, sourcePath in ipairs(sourcePaths) do
+                        -- Expand ~ if present in source path
+                        sourcePath = sourcePath:gsub("^~", os.getenv("HOME"))
+                        
+                        -- Remove quotes if present
+                        sourcePath = sourcePath:gsub("^[\"'](.+)[\"']$", "%1")
+                        
+                        -- Validate source path exists
+                        if not hs.fs.attributes(sourcePath) then
+                            table.insert(failedPaths, sourcePath .. " (path does not exist)")
+                            goto continue_symlink
+                        end
+                        
+                        -- Get the filename from the source path
+                        local filename = sourcePath:match("([^/]+)$")
+                        if not filename then
+                            table.insert(failedPaths, sourcePath .. " (could not determine filename)")
+                            goto continue_symlink
+                        end
+                        
+                        -- Combine target directory with filename
+                        local targetPath = targetDir .. "/" .. filename
+                        
+                        -- Create the symlink
+                        local command = string.format('ln -s "%s" "%s"', 
+                            sourcePath:gsub('"', '\\"'), -- Escape double quotes in source path
+                            targetPath:gsub('"', '\\"')  -- Escape double quotes in target path
+                        )
+                        
+                        if debugEnabled then
+                            log.d("Executing command: " .. command)
+                        end
+                        
+                        local output, status = hs.execute(command)
+                        
+                        if status then
+                            successCount = successCount + 1
+                        else
+                            local errorMsg = output or "Unknown error"
+                            table.insert(failedPaths, sourcePath .. " (" .. errorMsg:gsub("\n", " ") .. ")")
+                        end
+                        
+                        ::continue_symlink::
                     end
                     
-                    -- Combine target directory with filename
-                    local targetPath = targetDir .. "/" .. filename
-                    
-                    -- Create the symlink
-                    local command = string.format('ln -s "%s" "%s"', sourcePath, targetPath)
-                    local output, status = hs.execute(command)
-                    
-                    if status then
-                        hs.alert.show("✓ Created symlink in current Finder location", 2)
+                    -- Show results
+                    if successCount > 0 and #failedPaths == 0 then
+                        hs.alert.show(string.format("✓ Created %d symlink(s) in current Finder location", successCount), 2)
+                    elseif successCount > 0 and #failedPaths > 0 then
+                        hs.alert.show(string.format("⚠️ Created %d symlink(s), but %d failed", successCount, #failedPaths), 3)
+                        for _, failedPath in ipairs(failedPaths) do
+                            log.e("Failed to create symlink: " .. failedPath)
+                        end
                     else
-                        local errorMsg = output or "Unknown error"
-                        hs.alert.show("❌ Failed to create symlink: " .. errorMsg, 3)
+                        hs.alert.show("❌ Failed to create any symlinks", 3)
+                        for _, failedPath in ipairs(failedPaths) do
+                            log.e("Failed to create symlink: " .. failedPath)
+                        end
+                    end
+                elseif shortcut.action == "openInKitty" then
+                    -- Only proceed if Finder is the frontmost application
+                    local frontApp = hs.application.frontmostApplication()
+                    if not frontApp or frontApp:name() ~= "Finder" then
+                        log.w("Not in Finder, ignoring kitty shortcut")
+                        return
+                    end
+
+                    -- Use AppleScript to trigger the service menu
+                    local script = [[
+                        tell application "Finder"
+                            set theFolder to POSIX path of (folder of front window as alias)
+                        end tell
+                        
+                        do shell script "/usr/bin/open -a kitty " & quoted form of theFolder
+                        return true
+                    ]]
+                    
+                    local ok, result = hs.osascript.applescript(script)
+                    if not ok then
+                        hs.alert.show("❌ Failed to open kitty window", 2)
+                        log.e("Failed to open kitty: " .. (result or "unknown error"))
+                    else
+                        log.i("Successfully opened kitty in folder")
                     end
                 end
             end)
@@ -374,23 +587,56 @@ function M.setup(config)
                     end
                 elseif shortcut.action == "copyBrowserUrl" then
                     local frontApp = hs.application.frontmostApplication()
-                    if frontApp and frontApp:name() == config.applications.Browser then
-                        log.i("Copying URL from Zen Browser")
-                        -- Sequence: cmd+L to select URL, cmd+C to copy, ESC to deselect
-                        log.d("Selecting URL bar")
-                        hs.eventtap.keyStroke({"cmd"}, "l")
-                        hs.timer.doAfter(0.1, function()
-                            log.d("Copying URL")
-                            hs.eventtap.keyStroke({"cmd"}, "c")
-                            hs.timer.doAfter(0.1, function()
-                                log.d("Deselecting URL bar")
-                                hs.eventtap.keyStroke({}, "escape")
-                                local url = hs.pasteboard.getContents()
-                                log.i("Copied URL: " .. (url or "nil"))
-                            end)
+                    local frontAppName = frontApp and frontApp:name()
+                    local frontAppClass = frontApp and frontApp:bundleID()
+                    
+                    -- Helper function to check if it's a browser
+                    local function isBrowser(app)
+                        if not app then return false end
+                        local name = app:name()
+                        local class = app:bundleID()
+                        
+                        -- Check against configured browser names
+                        if name == config.applications.Browser or name == config.applications.Browser2 then
+                            return true
+                        end
+                        
+                        -- Check for Zen Browser specifically (it can show up as just "Zen")
+                        if name == "Zen" or name == "Zen Browser" or (class and class:match("zen%-browser")) then
+                            return true
+                        end
+                        
+                        -- Check for Edge specifically
+                        if name == "Microsoft Edge" or (class and class:match("com%.microsoft%.edgemac")) then
+                            return true
+                        end
+                        
+                        return false
+                    end
+                    
+                    -- Check if we're in a browser
+                    if isBrowser(frontApp) then
+                        log.i("Copying URL from browser: " .. frontAppName .. " (class: " .. (frontAppClass or "nil") .. ")")
+                        -- Use cmd+L to select URL, wait a bit, then copy
+                        hs.eventtap.keyStroke({"cmd"}, "l", 0)
+                        hs.timer.usleep(100000) -- 100ms delay
+                        hs.eventtap.keyStroke({"cmd"}, "c", 0)
+                        hs.timer.usleep(50000) -- 50ms delay
+                        hs.eventtap.keyStroke({}, "escape", 0)
+                        
+                        -- Verify we got a URL
+                        hs.timer.doAfter(0.2, function()
+                            local url = hs.pasteboard.getContents()
+                            if url and url:match("^https?://") then
+                                log.i("Successfully copied URL: " .. url)
+                                hs.alert.show("✓ URL copied", 1)
+                            else
+                                log.w("Copied content is not a URL: " .. (url or "nil"))
+                                hs.alert.show("❌ Failed to copy URL", 2)
+                            end
                         end)
                     else
-                        log.w("Zen Browser not focused (current app: " .. (frontApp and frontApp:name() or "nil") .. ")")
+                        log.w("Not in a browser (current app: " .. frontAppName .. ", class: " .. (frontAppClass or "nil") .. ")")
                     end
                 elseif shortcut.action == "closeOtherAppWindows" then
                     local currentWindow = hs.window.focusedWindow()

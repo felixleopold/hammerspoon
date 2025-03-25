@@ -53,7 +53,7 @@ Various modifier combinations
 | ⌘⇧W | Close Other Windows | Close other windows of current app |
 | ⌘⇧Q | Close Other Apps | Close other applications |
 | ⌃C | Copy Browser URL | Copy URL from active browser |
-| ⌘⇧⌥L | Create Symlink | Create symbolic link |
+| ⌘⇧⌥L | Create Symlink | Create symbolic links from clipboard paths to current Finder location |
 
 ## Folder Shortcuts
 All folder shortcuts use `⌘⇧` (Cmd+Shift) as base modifier
