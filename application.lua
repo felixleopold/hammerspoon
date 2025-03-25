@@ -432,7 +432,7 @@ function M.setup(config)
                     -- Only proceed if Finder is the frontmost application
                     local frontApp = hs.application.frontmostApplication()
                     if not frontApp or frontApp:name() ~= "Finder" then
-                        log.w("Not in Finder, ignoring kitty shortcut")
+                        log.w("Not in Finder, ignoring terminal shortcut")
                         return
                     end
 
@@ -442,16 +442,16 @@ function M.setup(config)
                             set theFolder to POSIX path of (folder of front window as alias)
                         end tell
                         
-                        do shell script "/usr/bin/open -a kitty " & quoted form of theFolder
+                        do shell script "/usr/bin/open -a ]] .. config.applications.Terminal .. [[ " & quoted form of theFolder
                         return true
                     ]]
                     
                     local ok, result = hs.osascript.applescript(script)
                     if not ok then
-                        hs.alert.show("❌ Failed to open kitty window", 2)
-                        log.e("Failed to open kitty: " .. (result or "unknown error"))
+                        hs.alert.show("❌ Failed to open terminal window", 2)
+                        log.e("Failed to open terminal: " .. (result or "unknown error"))
                     else
-                        log.i("Successfully opened kitty in folder")
+                        log.i("Successfully opened terminal in folder")
                     end
                 end
             end)
