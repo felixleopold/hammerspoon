@@ -33,3 +33,5 @@ Spoons/
 # Local config overrides
 config.local.lua
 
+# Config files
+config.lua
