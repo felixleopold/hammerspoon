@@ -39,7 +39,9 @@ function M.expandConfig(config)
             shortcuts = {}
         },
         -- Include Minecraft configuration
-        minecraft = config.minecraft
+        minecraft = config.minecraft,
+        -- Add clipboard configuration
+        clipboard = config.clipboard
     }
 
     -- Process self-organized shortcuts

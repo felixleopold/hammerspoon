@@ -306,6 +306,19 @@ local config = {
 			-- Add more shortcuts here
 		},
 	},
+
+	--[[-----------------------------------------
+    Clipboard Management
+    Configure clipboard history and shortcuts
+    ------------------------------------------]]
+    clipboard = {
+        enabled = true, -- Set to false to disable clipboard features
+        maxHistory = 9, -- Maximum number of clipboard items to track
+        shortcuts = {
+            mods = { "ctrl", "shift" }, -- Modifiers for clipboard shortcuts
+            keys = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- Keys for clipboard items
+        },
+    },
 }
 
 return config

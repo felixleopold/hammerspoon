@@ -13,6 +13,7 @@ local version = require("version")
 local self = require("self")
 local inspectWindows = require("inspect_windows")
 local minecraft = require("minecraft")
+local clipboard = require("clipboard")
 
 -- Disable animation for window movements
 hs.window.animationDuration = 0
@@ -46,8 +47,13 @@ end
 function reloadConfig(files)
     local doReload = false
     for _, file in pairs(files) do
-        if file:sub(-4) == ".lua" or file:sub(-5) == ".json" then
-            doReload = true
+        -- Skip clipboard files (both history and stored files)
+        if not file:match("hammerspoon_clipboard") and 
+           not file:match("clipboard_history%.json") and
+           not file:match("clipboard_files/") then
+            if file:sub(-4) == ".lua" or file:sub(-5) == ".json" then
+                doReload = true
+            end
         end
     end
     if doReload then
@@ -76,6 +82,14 @@ application.setup(config)
 windowManagement.setup(config)
 fabric.setup(config)
 self.setup(config)
+
+-- Initialize clipboard if enabled
+if config.clipboard and config.clipboard.enabled then
+    log.i("Initializing clipboard module")
+    clipboard.setup(config)
+else
+    log.i("Clipboard module disabled in config")
+end
 
 -- Only initialize Minecraft if enabled in config
 if config and config.minecraft and config.minecraft.enabled then

@@ -7,6 +7,7 @@ A modern, modular Hammerspoon configuration framework focused on productivity an
 This framework is organized into several modules:
 - **Application Management**: Quick app switching and window control
 - **Window Management**: Window positioning, sizing, and cycling
+- **Internal Clipboard History**: Paste recent text items (`Ctrl+Shift+[1-9]`)
 - **Fabric AI Integration**: AI-powered text processing and automation
 - **Custom Shortcuts**: Self-organized system for personal additions
 - **Terminal Integration**: Quick terminal access from Finder
@@ -23,7 +24,8 @@ This framework is organized into several modules:
 ├── modules/
 │   ├── application.lua    # App management
 │   ├── windowManagement.lua  # Window control
-│   └── fabric.lua        # AI integration
+│   ├── fabric.lua        # AI integration
+│   └── clipboard.lua     # Internal clipboard history
 └── docs/
     ├── SHORTCUTS.md      # Default shortcuts
     └── CHANGELOG.md      # Version history
@@ -154,6 +156,14 @@ The framework comes with several built-in shortcuts:
 - **⌃C** (Control + C): Copy URL from browser
 - **⌘⌃⌥⇧S** (Command + Control + Option + Shift + S): Open Hammerspoon config in editor
 - **⌘⇧⌥L** (Command + Shift + Option + L): Create symbolic links from clipboard paths to current Finder location
+
+#### Internal Clipboard History
+- **⌃⇧1...9** (Control + Shift + Number 1 through 9): Paste the corresponding text item from the internal clipboard history.
+  - The history stores the last 9 unique text items copied.
+  - Pasting an item moves it to the top of the history.
+  - Non-text items are ignored by this history.
+  - History is lost when Hammerspoon reloads or quits.
+  - This feature operates independently of external clipboard managers like Maccy.
 
 ## Contributing
 
