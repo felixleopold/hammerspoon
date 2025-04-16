@@ -1,14 +1,11 @@
-Fabric-README.md
-Hammerspoon Docs.html
-Hammerspoon-Getting Started.html
-savedLayouts.json
-Spoons
-hammerspoon-venv/
-hammerspoon_icon.icns
-
 # Hammerspoon specific
 Spoons/
+docs/
+
+# MacOS
 .DS_Store
+venv/
+env/
 
 # Lua specific
 *.o
@@ -19,19 +16,12 @@ Spoons/
 *.log
 *.sqlite
 
-# Runtime data
-*.pid
-*.seed
-*.pid.lock
-
-# Editor directories and files
-.idea/
-*.swp
-*.swo
-*~
-
 # Local config overrides
 config.local.lua
 
 # Config files
 config.lua
+
+# Clipboard Manager
+clipboard_files/
+clipboard_history.json
