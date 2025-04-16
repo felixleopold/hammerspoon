@@ -150,6 +150,60 @@ function M.setup(config)
             frame.y = screenFrame.y + (screenFrame.h - frame.h) / 2
         elseif direction == "maximize" then
             frame = screenFrame
+        elseif direction == "third1" then
+            -- First third (left)
+            frame.x = screenFrame.x
+            frame.y = screenFrame.y
+            frame.w = screenFrame.w / 3
+            frame.h = screenFrame.h
+        elseif direction == "third2" then
+            -- Middle third
+            frame.x = screenFrame.x + (screenFrame.w / 3)
+            frame.y = screenFrame.y
+            frame.w = screenFrame.w / 3
+            frame.h = screenFrame.h
+        elseif direction == "third3" then
+            -- Last third (right)
+            frame.x = screenFrame.x + (2 * screenFrame.w / 3)
+            frame.y = screenFrame.y
+            frame.w = screenFrame.w / 3
+            frame.h = screenFrame.h
+        elseif direction == "twoThirdsLeft" then
+            -- Two thirds on the left
+            frame.x = screenFrame.x
+            frame.y = screenFrame.y
+            frame.w = 2 * screenFrame.w / 3
+            frame.h = screenFrame.h
+        elseif direction == "twoThirdsRight" then
+            -- Two thirds on the right
+            frame.x = screenFrame.x + (screenFrame.w / 3)
+            frame.y = screenFrame.y
+            frame.w = 2 * screenFrame.w / 3
+            frame.h = screenFrame.h
+        elseif direction == "topLeft" then
+            -- Top left corner
+            frame.x = screenFrame.x
+            frame.y = screenFrame.y
+            frame.w = screenFrame.w / 2
+            frame.h = screenFrame.h / 2
+        elseif direction == "topRight" then
+            -- Top right corner
+            frame.x = screenFrame.x + (screenFrame.w / 2)
+            frame.y = screenFrame.y
+            frame.w = screenFrame.w / 2
+            frame.h = screenFrame.h / 2
+        elseif direction == "bottomLeft" then
+            -- Bottom left corner
+            frame.x = screenFrame.x
+            frame.y = screenFrame.y + (screenFrame.h / 2)
+            frame.w = screenFrame.w / 2
+            frame.h = screenFrame.h / 2
+        elseif direction == "bottomRight" then
+            -- Bottom right corner
+            frame.x = screenFrame.x + (screenFrame.w / 2)
+            frame.y = screenFrame.y + (screenFrame.h / 2)
+            frame.w = screenFrame.w / 2
+            frame.h = screenFrame.h / 2
         end
         
         win:setFrame(frame)
@@ -226,6 +280,116 @@ function M.setup(config)
         end)
     else
         log.w("No maximize window shortcut configured")
+    end
+
+    -- Add new shortcuts for thirds
+    if shortcuts.third1 then
+        log.i("Setting up first third window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.third1.mods))
+        log.i("Key: " .. shortcuts.third1.key)
+        hs.hotkey.bind(shortcuts.third1.mods, shortcuts.third1.key, function()
+            log.i("Triggered: Move window to first third")
+            moveWindow("third1")
+        end)
+    else
+        log.w("No first third window shortcut configured")
+    end
+
+    if shortcuts.third2 then
+        log.i("Setting up middle third window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.third2.mods))
+        log.i("Key: " .. shortcuts.third2.key)
+        hs.hotkey.bind(shortcuts.third2.mods, shortcuts.third2.key, function()
+            log.i("Triggered: Move window to middle third")
+            moveWindow("third2")
+        end)
+    else
+        log.w("No middle third window shortcut configured")
+    end
+
+    if shortcuts.third3 then
+        log.i("Setting up last third window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.third3.mods))
+        log.i("Key: " .. shortcuts.third3.key)
+        hs.hotkey.bind(shortcuts.third3.mods, shortcuts.third3.key, function()
+            log.i("Triggered: Move window to last third")
+            moveWindow("third3")
+        end)
+    else
+        log.w("No last third window shortcut configured")
+    end
+
+    if shortcuts.twoThirdsLeft then
+        log.i("Setting up two-thirds left window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.twoThirdsLeft.mods))
+        log.i("Key: " .. shortcuts.twoThirdsLeft.key)
+        hs.hotkey.bind(shortcuts.twoThirdsLeft.mods, shortcuts.twoThirdsLeft.key, function()
+            log.i("Triggered: Move window to two-thirds left")
+            moveWindow("twoThirdsLeft")
+        end)
+    else
+        log.w("No two-thirds left window shortcut configured")
+    end
+
+    if shortcuts.twoThirdsRight then
+        log.i("Setting up two-thirds right window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.twoThirdsRight.mods))
+        log.i("Key: " .. shortcuts.twoThirdsRight.key)
+        hs.hotkey.bind(shortcuts.twoThirdsRight.mods, shortcuts.twoThirdsRight.key, function()
+            log.i("Triggered: Move window to two-thirds right")
+            moveWindow("twoThirdsRight")
+        end)
+    else
+        log.w("No two-thirds right window shortcut configured")
+    end
+
+    -- Add new shortcuts for corners and halves
+    if shortcuts.topLeft then
+        log.i("Setting up top left corner window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.topLeft.mods))
+        log.i("Key: " .. shortcuts.topLeft.key)
+        hs.hotkey.bind(shortcuts.topLeft.mods, shortcuts.topLeft.key, function()
+            log.i("Triggered: Move window to top left corner")
+            moveWindow("topLeft")
+        end)
+    else
+        log.w("No top left corner window shortcut configured")
+    end
+
+    if shortcuts.topRight then
+        log.i("Setting up top right corner window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.topRight.mods))
+        log.i("Key: " .. shortcuts.topRight.key)
+        hs.hotkey.bind(shortcuts.topRight.mods, shortcuts.topRight.key, function()
+            log.i("Triggered: Move window to top right corner")
+            moveWindow("topRight")
+        end)
+    else
+        log.w("No top right corner window shortcut configured")
+    end
+
+    if shortcuts.bottomLeft then
+        log.i("Setting up bottom left corner window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.bottomLeft.mods))
+        log.i("Key: " .. shortcuts.bottomLeft.key)
+        hs.hotkey.bind(shortcuts.bottomLeft.mods, shortcuts.bottomLeft.key, function()
+            log.i("Triggered: Move window to bottom left corner")
+            moveWindow("bottomLeft")
+        end)
+    else
+        log.w("No bottom left corner window shortcut configured")
+    end
+
+    if shortcuts.bottomRight then
+        log.i("Setting up bottom right corner window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcuts.bottomRight.mods))
+        log.i("Key: " .. shortcuts.bottomRight.key)
+        hs.hotkey.bind(shortcuts.bottomRight.mods, shortcuts.bottomRight.key, function()
+            log.i("Triggered: Move window to bottom right corner")
+            moveWindow("bottomRight")
+        end)
+    else
+        log.w("No bottom right corner window shortcut configured")
     end
 
     log.i("Window management setup complete")

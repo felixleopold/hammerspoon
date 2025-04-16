@@ -145,8 +145,6 @@ local config = {
 			-- Basic window movements (alt + key)
 			left = { trigger = "window", key = "A" }, -- Left half
 			right = { trigger = "window", key = "D" }, -- Right half
-			top = { trigger = "window", key = "W" }, -- Top half
-			bottom = { trigger = "window", key = "H" }, -- Bottom half
 			center = { trigger = "window", key = "C" }, -- Center
 			full = { trigger = "window", key = "F" }, -- Full screen
 
@@ -154,9 +152,20 @@ local config = {
 			nextScreen = { trigger = "screen", key = "D" }, -- Move to next screen
 			prevScreen = { trigger = "screen", key = "A" }, -- Move to previous screen
 
-			-- Window cycling (alt + key)
-			nextWindow = { trigger = "window", key = "E" }, -- Next window in app (⌥E)
-			prevWindow = { trigger = "window", key = "Q" }, -- Previous window in app (⌥Q)
+			-- Thirds window management (alt + key)
+			third1 = { trigger = "window", key = "1" }, -- First third (left)
+			third2 = { trigger = "window", key = "2" }, -- Middle third
+			third3 = { trigger = "window", key = "3" }, -- Last third (right)
+			twoThirdsLeft = { trigger = "window", key = "4" }, -- Two thirds on the left
+			twoThirdsRight = { trigger = "window", key = "5" }, -- Two thirds on the right
+
+			-- Corner window management (alt + key)
+			topLeft = { trigger = "window", key = "Q" }, -- Top left corner
+			topRight = { trigger = "window", key = "E" }, -- Top right corner
+			bottomLeft = { trigger = "window", key = "Z" }, -- Bottom left corner
+			bottomRight = { trigger = "window", key = "C" }, -- Bottom right corner
+			top = { trigger = "window", key = "W" }, -- Top half
+			bottom = { trigger = "window", key = "S" }, -- Bottom half
 		},
 	},
 
