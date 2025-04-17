@@ -163,7 +163,7 @@ local config = {
 			topLeft = { trigger = "window", key = "Q" }, -- Top left corner
 			topRight = { trigger = "window", key = "E" }, -- Top right corner
 			bottomLeft = { trigger = "window", key = "Z" }, -- Bottom left corner
-			bottomRight = { trigger = "window", key = "C" }, -- Bottom right corner
+			bottomRight = { trigger = "window", key = "X" }, -- Bottom right corner
 			top = { trigger = "window", key = "W" }, -- Top half
 			bottom = { trigger = "window", key = "S" }, -- Bottom half
 		},

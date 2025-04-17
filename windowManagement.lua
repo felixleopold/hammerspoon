@@ -32,11 +32,17 @@ function M.setup(config)
         local frame = win:frame()
         local screenFrame = screen:frame()
         
-        -- More lenient detection - check if window is roughly on the side
+        -- More precise detection - check if window is exactly on the side
         if side == "left" then
-            return math.abs(frame.x - screenFrame.x) < 20
+            -- Check if left edge of window is at left edge of screen AND
+            -- window width is exactly half of screen width (with small tolerance)
+            return math.abs(frame.x - screenFrame.x) < 5 and 
+                   math.abs(frame.w - (screenFrame.w / 2)) < 10
         elseif side == "right" then
-            return math.abs((frame.x + frame.w) - (screenFrame.x + screenFrame.w)) < 20
+            -- Check if right edge of window is at right edge of screen AND
+            -- window width is exactly half of screen width (with small tolerance)
+            return math.abs((frame.x + frame.w) - (screenFrame.x + screenFrame.w)) < 5 and
+                   math.abs(frame.w - (screenFrame.w / 2)) < 10
         end
         return false
     end
@@ -102,15 +108,17 @@ function M.setup(config)
             if nextScreen then
                 log.i("Moving window to next screen in " .. direction .. " direction")
                 win:moveToScreen(nextScreen)
-                -- Move to the same side on the new screen
+                -- Move to the appropriate side on the new screen
                 local newScreenFrame = nextScreen:frame()
                 if direction == "left" then
-                    frame.x = newScreenFrame.x
+                    -- Moving left, place on right side of new screen
+                    frame.x = newScreenFrame.x + (newScreenFrame.w / 2)
                     frame.y = newScreenFrame.y
                     frame.w = newScreenFrame.w / 2
                     frame.h = newScreenFrame.h
                 else
-                    frame.x = newScreenFrame.x + (newScreenFrame.w / 2)
+                    -- Moving right, place on left side of new screen
+                    frame.x = newScreenFrame.x
                     frame.y = newScreenFrame.y
                     frame.w = newScreenFrame.w / 2
                     frame.h = newScreenFrame.h
