@@ -53,8 +53,6 @@ or directly execute the command:
 
 2. **Clone this repository**:
    ```bash
-   [ -d ~/.hammerspoon ] && mv ~/.hammerspoon ~/.hammerspoon.backup
-   
    git clone https://github.com/felixleopold/hammerspoon.git ~/.hammerspoon
    ```
 
