@@ -8,10 +8,19 @@ function M.setup(config)
 
     -- Helper function to launch or focus applications
     local function launchOrFocus(appName)
-        log.i("Attempting to launch or focus: " .. appName)
+        log.i("Attempting to launch or focus: " .. hs.inspect(appName))
+        
+        -- Handle table-based app configuration
+        local appConfig = appName
+        if type(appName) == "table" then
+            log.d("Using extended application configuration: " .. hs.inspect(appName))
+        else
+            -- Convert string to standard format for consistent handling
+            appConfig = { name = appName }
+        end
         
         -- Special handling for Minecraft (Java)
-        if appName == "java" then
+        if appConfig.name == "java" then
             -- Find all Java windows
             local allWindows = hs.window.allWindows()
             for _, win in ipairs(allWindows) do
@@ -30,7 +39,50 @@ function M.setup(config)
             return
         end
         
-        hs.application.launchOrFocus(appName)
+        -- Try to find the application by bundle ID if provided
+        if appConfig.bundleID then
+            log.d("Trying to find app by bundle ID: " .. appConfig.bundleID)
+            local app = hs.application.get(appConfig.bundleID)
+            if app then
+                log.i("Found application by bundle ID, activating")
+                app:activate()
+                return
+            else
+                log.d("App not found by bundle ID, will try other methods")
+            end
+        end
+        
+        -- Try to launch by path if provided
+        if appConfig.path and hs.fs.attributes(appConfig.path) then
+            log.d("Launching app by path: " .. appConfig.path)
+            local success = hs.execute("open \"" .. appConfig.path .. "\"")
+            if success then
+                log.i("Successfully launched app by path")
+                return
+            else
+                log.w("Failed to launch app by path, will try other methods")
+            end
+        end
+        
+        -- Try standard launch or focus by name
+        log.d("Trying standard launchOrFocus with app name: " .. appConfig.name)
+        if hs.application.launchOrFocus(appConfig.name) then
+            log.i("Successfully launched/focused app using standard method")
+            return
+        end
+        
+        -- Try getting app by name as fallback
+        log.d("Trying to get app by name")
+        local app = hs.application.get(appConfig.name)
+        if app then
+            log.i("Found app by name, activating")
+            app:activate()
+            return
+        end
+        
+        -- Last resort: try open -a command
+        log.w("All methods failed, trying open -a as last resort")
+        hs.execute("open -a \"" .. appConfig.name .. "\"")
     end
 
     -- Helper function to bind hotkey
@@ -124,12 +176,13 @@ function M.setup(config)
 
     -- Set up application shortcuts
     for name, shortcut in pairs(config.shortcuts.appShortcuts) do
-        local appName = config.applications[name]
-        if appName then
-            log.i("Setting up shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. appName)
+        local appConfig = config.applications[name]
+        if appConfig then
+            local appDisplay = type(appConfig) == "table" and appConfig.name or appConfig
+            log.i("Setting up shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. appDisplay)
             bindHotkey(shortcut, function() 
-                log.i("Launching " .. appName .. " via shortcut " .. hs.inspect(shortcut))
-                launchOrFocus(appName)
+                log.i("Launching " .. appDisplay .. " via shortcut " .. hs.inspect(shortcut))
+                launchOrFocus(appConfig)
             end)
         else
             log.w("No application defined for shortcut: " .. name .. ". Please check your configuration.")
@@ -453,6 +506,12 @@ function M.setup(config)
                     else
                         log.i("Successfully opened editor in folder")
                     end
+                elseif shortcut.action == "reloadHammerspoonConfig" then
+                    log.i("Triggered: Reload Hammerspoon configuration")
+                    hs.alert.show("Reloading Hammerspoon configuration...", 1)
+                    hs.timer.doAfter(0.5, function()
+                        hs.reload()
+                    end)
                 elseif shortcut.action == "openInEditor2" then
                     -- Only proceed if Finder is the frontmost application
                     local frontApp = hs.application.frontmostApplication()
@@ -460,21 +519,58 @@ function M.setup(config)
                         log.w("Not in Finder, ignoring editor shortcut")
                         return
                     end
-
-                    -- Use AppleScript to get the current folder path
-                    local script = [[
+                    
+                    -- Check if the secondary editor is configured and exists
+                    local editorName = config.applications.Editor2
+                    if not editorName then
+                        log.e("Secondary editor is not configured")
+                        hs.alert.show("❌ Secondary editor is not configured", 2)
+                        return
+                    end
+                    
+                    -- First check if the editor exists
+                    local editorExists = hs.execute('ls -l /Applications/ | grep -i "' .. editorName .. '"')
+                    if editorExists == "" then
+                        log.e("Secondary editor '" .. editorName .. "' does not seem to be installed")
+                        hs.alert.show("❌ Secondary editor not found: " .. editorName, 2)
+                        return
+                    end
+                    
+                    -- Get the current folder first to isolate if that's where the error is
+                    local getFolderScript = [[
                         tell application "Finder"
-                            set theFolder to POSIX path of (folder of front window as alias)
+                            try
+                                set theFolder to POSIX path of (folder of front window as alias)
+                                return theFolder
+                            on error errMsg
+                                return "ERROR: " & errMsg
+                            end try
                         end tell
-                        
-                        do shell script "/usr/bin/open -a ]] .. config.applications.Editor2 .. [[ " & quoted form of theFolder
-                        return true
                     ]]
                     
-                    local ok, result = hs.osascript.applescript(script)
-                    if not ok then
+                    local ok, folderResult = hs.osascript.applescript(getFolderScript)
+                    if not ok or not folderResult or folderResult:match("^ERROR:") then
+                        hs.alert.show("❌ Could not get current Finder folder", 2)
+                        log.e("Failed to get Finder folder: " .. (folderResult or "unknown error"))
+                        return
+                    end
+                    
+                    log.i("Got Finder folder: " .. folderResult)
+                    
+                    -- Now try to open the editor with the folder
+                    local openScript = [[
+                        try
+                            do shell script "/usr/bin/open -a \"]] .. editorName .. [[\" \"]] .. folderResult .. [[\""
+                            return true
+                        on error errMsg
+                            return "ERROR: " & errMsg
+                        end try
+                    ]]
+                    
+                    local ok, result = hs.osascript.applescript(openScript)
+                    if not ok or not result or tostring(result):match("^ERROR:") then
                         hs.alert.show("❌ Failed to open secondary editor window", 2)
-                        log.e("Failed to open secondary editor: " .. (result or "unknown error"))
+                        log.e("Failed to open secondary editor: " .. tostring(result or "unknown error"))
                     else
                         log.i("Successfully opened secondary editor in folder")
                     end

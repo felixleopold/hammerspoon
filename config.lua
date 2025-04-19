@@ -37,11 +37,16 @@ local config = {
 		window = { "alt" }, -- For window management (⌥)
 		screen = { "cmd", "alt" }, -- For screen management (⌘⌥)
 		pattern = { "ctrl", "alt" }, -- For fabric patterns (⌃⌥)
-	},
+	}, 
+
 
 	--[[-----------------------------------------
     Applications
     Define paths to your commonly used applications
+    You can use either a string for the app name or a table with more options:
+    - name: The application name (required)
+    - bundleID: The application's bundle ID (optional)
+    - path: Full path to the application (optional)
     ------------------------------------------]]
 	applications = {
 		Browser = "Zen Browser", -- Primary browser
@@ -63,7 +68,11 @@ local config = {
 		MinecraftLauncher = "Minecraft Launcher", -- Minecraft Launcher
 		Minecraft = "java", -- Minecraft game itself
 		DavinciResolve = "DaVinci Resolve", -- Video editor
-		
+		Emacs = { -- Emacs with bundle ID
+			name = "Emacs.app",
+			bundleID = "org.gnu.Emacs",
+			path = "/opt/homebrew/Cellar/emacs-plus@30/30.1/Emacs.app"
+		},
 	},
 
 	--[[-----------------------------------------
@@ -95,6 +104,7 @@ local config = {
 			{ app = "Editor", key = "C" }, -- Cursor
 			{ app = "Editor2", key = "V" }, -- VS Code
 			{ app = "Terminal", key = "T" }, -- Terminal
+			{ app = "Emacs", key = "E" }, -- Emacs
 			{ app = "Notes", key = "O" }, -- Obsidian
 			{ app = "Mail", key = "M" }, -- Mail
 			{ app = "Spotify", key = "S" }, -- Spotify
@@ -127,6 +137,7 @@ local config = {
 		general = {
 			{ mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
+			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "R", action = "reloadHammerspoonConfig" }, -- Reload Hammerspoon configuration
 			{ mods = { "cmd", "shift", "alt" }, key = "L", action = "createSymlink" }, -- Create symbolic links from clipboard paths to current Finder location
 			{ mods = { "cmd" }, key = ".", action = "openInKitty" }, -- Open current Finder path in terminal
 			{ mods = { "cmd" }, key = ";", action = "openInEditor" }, -- Open current Finder path in editor
@@ -163,7 +174,7 @@ local config = {
 			topLeft = { trigger = "window", key = "Q" }, -- Top left corner
 			topRight = { trigger = "window", key = "E" }, -- Top right corner
 			bottomLeft = { trigger = "window", key = "Z" }, -- Bottom left corner
-			bottomRight = { trigger = "window", key = "X" }, -- Bottom right corner
+			bottomRight = { trigger = "window", key = "V" }, -- Bottom right corner
 			top = { trigger = "window", key = "W" }, -- Top half
 			bottom = { trigger = "window", key = "S" }, -- Bottom half
 		},

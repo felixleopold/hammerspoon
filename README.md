@@ -6,7 +6,7 @@ A modern, modular Hammerspoon configuration framework focused on productivity an
 
 This framework is organized into several modules:
 - **Application Management**: Quick app switching and window control
-- **Window Management**: Window positioning, sizing, and cycling
+- **Window Management**: Precise window positioning including halves, thirds, and corners
 - **Internal Clipboard History**: Paste recent text items (`Ctrl+Shift+[1-9]`)
 - **Fabric AI Integration**: AI-powered text processing and automation
 - **Custom Shortcuts**: Self-organized system for personal additions
@@ -21,11 +21,10 @@ This framework is organized into several modules:
 ├── config.lua         # User configuration
 ├── self.lua           # Custom user functions
 ├── setup.lua          # Configuration processor
-├── modules/
-│   ├── application.lua    # App management
-│   ├── windowManagement.lua  # Window control
-│   ├── fabric.lua        # AI integration
-│   └── clipboard.lua     # Internal clipboard history
+├── application.lua    # App management
+├── windowManagement.lua  # Window control
+├── fabric.lua        # AI integration
+├── clipboard.lua     # Internal clipboard history
 └── docs/
     ├── SHORTCUTS.md      # Default shortcuts
     └── CHANGELOG.md      # Version history
@@ -33,41 +32,130 @@ This framework is organized into several modules:
 
 ## Installation
 
-1. Install Hammerspoon:
+### Prerequisites
+
+- macOS 10.14 or later
+- [Homebrew](https://brew.sh/)
+
+#### Installing Homebrew
+Follow the installation instructions provided on the official [Homebrew website](https://brew.sh/)  
+or directly execute the command:  
 ```bash
-brew install hammerspoon
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-2. Clone this repository:
-```bash
-git clone [repository-url] ~/.hammerspoon
-```
+### Step-by-Step Installation
 
-3. Install Fabric:
-```bash
-go install github.com/danielmiessler/fabric@latest
-```
-[Fabric Documentation](https://github.com/danielmiessler/fabric?tab=readme-ov-file#installation)
+1. **Install Hammerspoon**:
+   ```bash
+   brew install hammerspoon
+   ```
 
-4. Launch Hammerspoon and allow accessibility permissions
+2. **Clone this repository**:
+   ```bash
+   [ -d ~/.hammerspoon ] && mv ~/.hammerspoon ~/.hammerspoon.backup
+   
+   git clone https://github.com/felixleopold/hammerspoon.git ~/.hammerspoon
+   ```
 
-## Configuration
+3. **Setup Fabric AI** (optional, but recommended for AI features):
+   ```bash
+   brew install fabric-ai
+   
+   echo "alias fabric='fabric-ai'" >> ~/.zshrc
+   source ~/.zshrc
+   ```
+   For more details, see the [Fabric Documentation](https://github.com/danielmiessler/fabric?tab=readme-ov-file#installation)
 
-### Basic Configuration
-1. Open `config.lua`
-2. Modify the `applications` section to match your installed apps
-3. Adjust shortcuts in the `shortcuts` section
-4. Save and reload Hammerspoon (⌘⌃⌥⇧R)
+4. **Launch Hammerspoon**:
+   ```bash
+   open -a Hammerspoon
+   ```
+   When prompted, grant Hammerspoon the required accessibility permissions in System Settings.
 
-Example configuration:
-```lua
-applications = {
-    Browser = "Safari",
-    Editor = "Visual Studio Code",
-    Terminal = "iTerm",
-    -- Add your applications
-}
-```
+5. **Configure your setup**:
+   ```bash
+   open ~/.hammerspoon/config.lua
+   ```
+
+## Initial Configuration
+
+After installation, you should customize the configuration for your system:
+
+1. **Update Application Definitions**:
+   Edit the `applications` section in `config.lua` to match the applications you have installed:
+
+   ```lua
+   applications = {
+       Browser = "Safari", -- Change to your primary browser
+       Editor = "Visual Studio Code", -- Change to your preferred editor
+       Terminal = "Terminal", -- Change to your terminal app
+       -- Add more applications as needed
+   }
+   ```
+
+   You can now also use an extended format for applications that need special handling:
+
+   ```lua
+   Emacs = {
+       name = "Emacs.app",
+       bundleID = "org.gnu.Emacs",
+       path = "/Applications/Emacs.app" -- Full path if installed in a non-standard location
+   },
+   ```
+
+2. **Customize Shortcuts**:
+   Modify the shortcut keys in the `shortcuts` section to match your preferences.
+
+3. **Reload Configuration**:
+   After making changes, reload your configuration with:
+   - **⌘⌃⌥⇧R** (Command + Control + Option + Shift + R)
+
+## Key Features
+
+### Window Management
+
+The framework includes advanced window management features:
+
+- **Basic Positioning**:
+  - **⌥A**: Left half of screen
+  - **⌥D**: Right half of screen
+  - **⌥W**: Top half of screen
+  - **⌥S**: Bottom half of screen
+  - **⌥C**: Center window
+  - **⌥F**: Full screen
+
+- **Screen Management**:
+  - **⌘⌥A**: Move to previous screen
+  - **⌘⌥D**: Move to next screen
+
+### Application Shortcuts
+
+Launch or focus applications with **⌃⌥⌘** (Control + Option + Command) plus a key:
+- **⌃⌥⌘Z**: Primary browser
+- **⌃⌥⌘C**: Primary editor
+- *And more defined in your configuration*
+
+Open specific Finder folders with **⌘⇧** (Command + Shift) plus a key:
+- **⌘⇧A**: Applications Folder
+- **⌘⇧D**: Desktop Folder
+- *And more defined in your configuration*
+
+### Utility Shortcuts
+
+- **⌘⇧X**: Close all Finder windows
+- **⌘⇧W**: Close all windows of currect application except for the focused one
+
+### Fabric Shorctus
+Execute a fabric pattern call on the current clipboard content with **⌃⌥** (Control + Option) plus a key:
+- **⌃⌥R**: Correct Pattern
+- **⌃⌥M**: Markdown Pattern
+
+### Internal Clipboard History
+
+Access the last 9 copied text items with **⌃⇧1** through **⌃⇧9**
+
+## Advanced Configuration
 
 ### Adding Custom Shortcuts
 
@@ -126,44 +214,26 @@ git pull
 ```
 
 2. Check CHANGELOG.md for breaking changes
-3. Reload Hammerspoon
+3. Reload Hammerspoon with **⌘⌃⌥⇧R**
 
 ## Troubleshooting
 
-1. Check the Hammerspoon Console for errors
+1. Check the Hammerspoon Console for errors (Help > Console in Hammerspoon menu)
 2. Verify your configuration in `config.lua`
 3. Look for log messages from specific modules
 4. Ensure all required applications are installed
-
-### Debug Shortcuts
-
-- **⌘⌃⌥⇧I** (Command + Control + Option + Shift + I): Inspect all visible windows
-  - Shows detailed information about all visible windows including:
-    - Application name
-    - Window title
-    - Window role
-    - Window subrole
-  - Useful for configuring window management rules and debugging window detection
-
-### Default Shortcuts
-
-The framework comes with several built-in shortcuts:
-
-#### General Shortcuts
-- **⌘.** (Command + Period): Open current Finder location in terminal
-- **⌘;** (Command + Semicolumn): Open current Finder location in Editor
-- **⌘'** (Command + Apostrophe): Open current Finder location in Editor2
-- **⌃C** (Control + C): Copy URL from browser
-- **⌘⌃⌥⇧S** (Command + Control + Option + Shift + S): Open Hammerspoon config in editor
-- **⌘⇧⌥L** (Command + Shift + Option + L): Create symbolic links from clipboard paths to current Finder location
-
-#### Internal Clipboard History
-- **⌃⇧1...9** (Control + Shift + Number 1 through 9): Paste the corresponding text item from the internal clipboard history.
-  - The history stores the last 9 unique text items copied.
-  - Pasting an item moves it to the top of the history.
-  - Non-text items are ignored by this history.
-  - History is lost when Hammerspoon reloads or quits.
-  - This feature operates independently of external clipboard managers like Maccy.
+5. If everything fails, try resetting Hammerspoon:
+   ```bash
+   # Backup your custom configuration
+   cp ~/.hammerspoon/config.lua ~/config.lua.backup
+   
+   # Reset Hammerspoon
+   rm -rf ~/.hammerspoon
+   git clone https://github.com/felixleopold/hammerspoon.git ~/.hammerspoon
+   
+   # Restore your configuration
+   cp ~/config.lua.backup ~/.hammerspoon/config.lua
+   ```
 
 ## Contributing
 
@@ -171,10 +241,6 @@ The framework comes with several built-in shortcuts:
 2. Create a feature branch
 3. Make your changes
 4. Submit a pull request
-
-## License
-
-MIT License - See LICENSE file for details
 
 ## See Also
 
