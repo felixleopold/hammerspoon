@@ -57,6 +57,7 @@ or directly execute the command:
    ```
 
 3. **Setup Fabric AI** (optional, but recommended for AI features):
+    Install Fabric with homebrew and add an alias to `~/.zshrc`
    ```bash
    brew install fabric-ai
    
@@ -65,13 +66,19 @@ or directly execute the command:
    ```
    For more details, see the [Fabric Documentation](https://github.com/danielmiessler/fabric?tab=readme-ov-file#installation)
 
-4. **Launch Hammerspoon**:
+4. **Move fabric patterns** 
+    Overwrite the fabric patterns in `~/.config/fabric/patterns` with the ones from this repository:
+    ```bash
+    rsync -a ~/.hammerspoon/fabric-patterns/ ~/.config/fabric/patterns/ && rm -rf ~/.hammerspoon/fabric-patterns
+    ```
+
+5. **Launch Hammerspoon**:
    ```bash
    open -a Hammerspoon
    ```
    When prompted, grant Hammerspoon the required accessibility permissions in System Settings.
 
-5. **Configure your setup**:
+6. **Configure your setup**:
    ```bash
    open ~/.hammerspoon/config.lua
    ```
