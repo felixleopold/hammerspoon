@@ -32,26 +32,23 @@ local userConfig = {
     -- Any missing sections will use the defaults from config.defaults.lua
 
     --[[-----------------------------------------
+    Shortcut Triggers
+    Override the modifier combinations if desired
+    ------------------------------------------]]
+    triggers = {
+        --    app = { "ctrl", "alt", "cmd" },
+        --    folder = { "cmd", "shift" },
+        --    window = { "alt" },
+        --    screen = { "cmd", "alt" },
+        --    pattern = { "ctrl", "alt" },
+        },
+
+    --[[-----------------------------------------
     Applications
     Override with your preferred applications
     ------------------------------------------]]
     applications = {
-        -- Browser = "Firefox", -- Change to your preferred browser
-        -- Editor = "VSCode",   -- Change to your preferred editor
-        -- Terminal = "iTerm2", -- Change to your terminal
-        -- Add any other applications you want to customize
-    },
-
-    --[[-----------------------------------------
-    Keyboard Shortcut Triggers
-    Override the modifier combinations if desired
-    ------------------------------------------]]
-    triggers = {
-    --    app = { "ctrl", "alt", "cmd" },
-    --    folder = { "cmd", "shift" },
-    --    window = { "alt" },
-    --    screen = { "cmd", "alt" },
-    --    pattern = { "ctrl", "alt" },
+        
     },
 
     --[[-----------------------------------------
@@ -71,6 +68,44 @@ local userConfig = {
     windowManagement = {
     --    animationDuration = 0.2, -- Add a slight animation
     },
+
+    --[[-----------------------------------------
+    Keyboard Shortcuts
+    Define all keyboard shortcuts for Applications, Folders, General, and Window Management
+    ------------------------------------------]]
+	shortcuts = {
+		-- Application shortcuts (ctrl + alt + cmd + key)
+		apps = {
+			-- { app = "Browser", key = "Z" }, -- Primary browser
+            -- ...
+
+		},
+
+		-- Folder shortcuts (cmd + shift + key)
+		folders = {
+			-- { path = "home", key = "H" }, -- Home
+            -- ...
+		},
+
+		-- General shortcuts
+		general = {
+			-- { mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
+            -- ...
+		},
+
+		-- Utility shortcuts
+		utils = {
+			-- { mods = { "cmd", "shift" }, key = "X", action = "closeFinderWindows" }, -- Close all Finder windows
+            -- ...
+		},
+
+		-- Window management shortcuts
+		windows = {
+			-- Basic window movements (alt + key)
+			-- left = { trigger = "window", key = "A" }, -- Left half
+            -- ...
+		},
+	},
 
     --[[-----------------------------------------
     Fabric AI Integration
