@@ -73,7 +73,7 @@ local defaults = {
 
 	--[[-----------------------------------------
     Keyboard Shortcuts
-    Define all keyboard shortcuts for different functions
+    Define all keyboard shortcuts for Applications, Folders, General, and Window Management
     ------------------------------------------]]
 	shortcuts = {
 		-- Application shortcuts (ctrl + alt + cmd + key)
@@ -184,7 +184,7 @@ local defaults = {
     ------------------------------------------]]
 	fabric = {
 		-- Default settings
-		fabricPath = "~/go/bin/fabric", -- Path to fabric executable
+		fabricPath = "~/go/bin/fabric", -- Path to fabric executable (Go install) or "/opt/homebrew/bin/fabric-ai" (Homebrew install)
 		chooserTrigger = { "cmd", "alt", "shift" }, -- Global trigger for pattern chooser
 		chooserKey = "P", -- Key for pattern chooser
 
@@ -213,11 +213,49 @@ local defaults = {
 				youtube = true, -- Enable YouTube URL handling
 			},
 			{
+				id = "latex",
+				name = "LaTeX",
+				desc = "Enhanced LaTeX processing",
+				trigger = "pattern",
+				key = "L",
+			},
+			{
+				id = "general",
+				name = "General AI",
+				desc = "Custom AI instruction",
+				trigger = "pattern",
+				key = "G",
+				variables = {
+					instruction = ""  -- Will be filled by user input
+				}
+			},
+			{
+				id = "translate",
+				name = "Translate",
+				desc = "Translate text",
+				trigger = "pattern",
+				key = "T",
+			},
+			{
+				id = "note_name",
+				name = "Note Name",
+				desc = "Generate a note name",
+				trigger = "pattern",
+				key = "N",
+			},
+			{
 				id = "markdown_format",
 				name = "Markdown Format",
 				desc = "Format text in Markdown",
 				trigger = "pattern",
 				key = "M",
+			},
+			{
+				id = "fact_check",
+				name = "Fact Check",
+				desc = "Verify the accuracy of information",
+				trigger = "pattern",
+				key = "F",
 			},
 		},
 	},
