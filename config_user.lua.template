@@ -7,7 +7,7 @@
                                 `##'
 
 ===================================================================================
-                        Hammerspoon User Configuration
+                        Hammerspoon PERSONAL Configuration
 ===================================================================================
 
 This file contains YOUR PERSONAL configuration values for Hammerspoon.
@@ -27,50 +27,57 @@ If you're coming from an older version with config.lua:
 IMPORTANT: This file will NOT be overwritten when you update Hammerspoon.
 ]]--
 
-local userConfig = {
-    -- You only need to include sections you want to customize
-    -- Any missing sections will use the defaults from config.defaults.lua
-
-    --[[-----------------------------------------
-    Shortcut Triggers
-    Override the modifier combinations if desired
+local defaults = {
+	--[[-----------------------------------------
+    Common Modifier Combinations
+    Used throughout the configuration for consistent shortcuts
     ------------------------------------------]]
-    triggers = {
-        --    app = { "ctrl", "alt", "cmd" },
-        --    folder = { "cmd", "shift" },
-        --    window = { "alt" },
-        --    screen = { "cmd", "alt" },
-        --    pattern = { "ctrl", "alt" },
-        },
+	triggers = {
+		-- app = { "ctrl", "alt", "cmd"}, -- For launching applications (⌘⌃⌥)
+		-- folder = { "cmd", "shift" }, -- For opening folders (⌘⇧)
+		-- window = { "alt" }, -- For window management (⌥)
+		-- screen = { "cmd", "alt" }, -- For screen management (⌘⌥)
+		-- pattern = { "ctrl", "alt" }, -- For fabric patterns (⌃⌥)
+	}, 
 
-    --[[-----------------------------------------
+
+	--[[-----------------------------------------
     Applications
-    Override with your preferred applications
+    Define paths to your commonly used applications
+    You can use either a string for the app name or a table with more options:
+    - name: The application name (required)
+    - bundleID: The application's bundle ID (optional)
+    - path: Full path to the application (optional)
     ------------------------------------------]]
-    applications = {
-        -- Browser = "Safari", -- Primary browser
-        -- ...
-    },
+	applications = {
+		-- Browser = "Safari", -- Primary browser
+		-- Browser2 = "Chrome", -- Secondary browser
+		-- Editor = "Visual Studio Code", -- Code editor
+		-- Editor2 = "Sublime Text", -- Second editor instance
+		-- Terminal = "Terminal", -- Terminal emulator
+		-- Notes = "Notes", -- Note-taking app
+		-- Mail = "Mail", -- Email client
+		-- Spotify = "Spotify", -- Music player
+		-- Finder = "Finder", -- File manager
+		-- WhatsApp = "WhatsApp", -- Messaging
+		-- Settings = "System Settings", -- System preferences
+	},
 
-    --[[-----------------------------------------
+	--[[-----------------------------------------
     Folders
-    Add custom folders or override defaults
+    Define paths to your commonly accessed folders
     ------------------------------------------]]
-    folders = {
-    --    projects = "~/Documents/Projects",
-    --    scripts = "~/Scripts",
-    --    -- Add more custom folders here
-    },
+	folders = {
+		-- home = "~", -- Home directory
+		-- desktop = "~/Desktop", -- Desktop folder
+		-- downloads = "~/Downloads", -- Downloads folder
+		-- documents = "~/Documents", -- Documents folder
+		-- pictures = "~/Pictures", -- Pictures folder
+		-- applications = "/Applications", -- Applications folder
+		-- hammerspoon = "~/.hammerspoon", -- Hammerspoon configuration folder
+	},
 
-    --[[-----------------------------------------
-    Window Management Settings
-    Override window behavior and animations
-    ------------------------------------------]]
-    windowManagement = {
-    --    animationDuration = 0.2, -- Add a slight animation
-    },
-
-    --[[-----------------------------------------
+	--[[-----------------------------------------
     Keyboard Shortcuts
     Define all keyboard shortcuts for Applications, Folders, General, and Window Management
     ------------------------------------------]]
@@ -78,78 +85,248 @@ local userConfig = {
 		-- Application shortcuts (ctrl + alt + cmd + key)
 		apps = {
 			-- { app = "Browser", key = "Z" }, -- Primary browser
-            -- ...
-
+			-- { app = "Browser2", key = "X" }, -- Secondary browser
+			-- { app = "Editor", key = "C" }, -- Code editor
+			-- { app = "Editor2", key = "V" }, -- Second editor
+			-- { app = "Terminal", key = "T" }, -- Terminal
+			-- { app = "Notes", key = "N" }, -- Notes
+			-- { app = "Mail", key = "M" }, -- Mail
+			-- { app = "Spotify", key = "S" }, -- Spotify
+			-- { app = "Finder", key = "F" }, -- Finder
+			-- { app = "WhatsApp", key = "W" }, -- WhatsApp
+			-- { app = "Settings", key = "P" }, -- System Settings
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
 		folders = {
 			-- { path = "home", key = "H" }, -- Home
-            -- ...
+			-- { path = "desktop", key = "D" }, -- Desktop
+			-- { path = "downloads", key = "L" }, -- Downloads
+			-- { path = "documents", key = "F" }, -- Documents
+			-- { path = "applications", key = "A" }, -- Applications
 		},
 
 		-- General shortcuts
 		general = {
 			-- { mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
-            -- ...
+			-- { mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
+			-- { mods = { "ctrl", "alt", "cmd", "shift" }, key = "R", action = "reloadHammerspoonConfig" }, -- Reload Hammerspoon configuration
+			-- { mods = { "cmd" }, key = ".", action = "openInTerminal" }, -- Open current Finder path in terminal
+			-- { mods = { "cmd" }, key = ";", action = "openInEditor" }, -- Open current Finder path in editor
 		},
 
 		-- Utility shortcuts
 		utils = {
 			-- { mods = { "cmd", "shift" }, key = "X", action = "closeFinderWindows" }, -- Close all Finder windows
-            -- ...
+			-- { mods = { "cmd", "shift" }, key = "W", action = "closeOtherAppWindows" }, -- Close other windows of current app
 		},
 
 		-- Window management shortcuts
 		windows = {
 			-- Basic window movements (alt + key)
 			-- left = { trigger = "window", key = "A" }, -- Left half
-            -- ...
+			-- right = { trigger = "window", key = "D" }, -- Right half
+			-- center = { trigger = "window", key = "C" }, -- Center
+			-- full = { trigger = "window", key = "F" }, -- Full screen
+
+			-- Screen management (cmd + alt + key)
+			-- nextScreen = { trigger = "screen", key = "D" }, -- Move to next screen
+			-- prevScreen = { trigger = "screen", key = "A" }, -- Move to previous screen
+
+			-- Thirds window management (alt + key)
+			-- third1 = { trigger = "window", key = "1" }, -- First third (left)
+			-- third2 = { trigger = "window", key = "2" }, -- Middle third
+			-- third3 = { trigger = "window", key = "3" }, -- Last third (right)
+			-- twoThirdsLeft = { trigger = "window", key = "4" }, -- Two thirds on the left
+			-- twoThirdsRight = { trigger = "window", key = "5" }, -- Two thirds on the right
+
+			-- Corner window management (alt + key)
+			-- topLeft = { trigger = "window", key = "Q" }, -- Top left corner
+			-- topRight = { trigger = "window", key = "E" }, -- Top right corner
+			-- bottomLeft = { trigger = "window", key = "Z" }, -- Bottom left corner
+			-- bottomRight = { trigger = "window", key = "V" }, -- Bottom right corner
+			-- top = { trigger = "window", key = "W" }, -- Top half
+			-- bottom = { trigger = "window", key = "S" }, -- Bottom half
 		},
 	},
 
-    --[[-----------------------------------------
+	--[[-----------------------------------------
+    Window Management Settings
+    Configure window behavior and animations
+    ------------------------------------------]]
+	windowManagement = {
+		-- animationDuration = 0, -- Set to 0 for instant window movements
+	},
+
+	--[[-----------------------------------------
+    Debug Settings
+    Configure debug options for various features
+    ------------------------------------------]]
+	debug = {
+		-- symlinkCreation = true, -- Set to true to enable detailed logging for symlink creation
+	},
+
+	--[[-----------------------------------------
+    Minecraft Integration
+    Configure Minecraft-specific features and shortcuts
+    Set enabled = false to disable all Minecraft features
+    ------------------------------------------]]
+	minecraft = {
+		enabled = false, -- Set to false to disable Minecraft features
+		-- debug = false, -- Set to true to enable detailed logging for Minecraft features
+		-- delays = {
+		-- 	chatOpen = 50000, -- Delay after pressing T (in microseconds)
+		-- 	commandExecution = 200, -- Delay after command execution (in milliseconds)
+		-- },
+		-- detection = {
+		-- 	appNames = {"java"}, -- Application names to consider as Minecraft
+		-- 	titlePatterns = {"minecraft", "Minecraft"}, -- Patterns to look for in window titles
+		-- },
+	},
+
+	--[[-----------------------------------------
     Fabric AI Integration
-    Customize AI patterns and shortcuts
+    Configure AI patterns and shortcuts
     ------------------------------------------]]
-    fabric = {
-    --    fabricPath = "/usr/local/bin/fabric-ai",
-    --    -- Pattern customizations can be added here
-    },
+	fabric = {
+		-- Default settings
+		fabricPath = "~/go/bin/fabric", -- Path to fabric executable (Go install) or "/opt/homebrew/bin/fabric-ai" (Homebrew install)
+		chooserTrigger = { "cmd", "alt", "shift" }, -- Global trigger for pattern chooser
+		chooserKey = "P", -- Key for pattern chooser
 
-    --[[-----------------------------------------
+		-- Pattern definitions
+		patterns = {
+			-- {
+			-- 	id = "correct",
+			-- 	name = "Correct Text",
+			-- 	desc = "Fix and correct text",
+			-- 	trigger = "pattern",
+			-- 	key = "R",
+			-- },
+			-- {
+			-- 	id = "improve",
+			-- 	name = "Improve Text",
+			-- 	desc = "Improve and enhance text",
+			-- 	trigger = "pattern",
+			-- 	key = "I",
+			-- },
+			-- {
+			-- 	id = "yt_summarize",
+			-- 	name = "YouTube Summary",
+			-- 	desc = "Summarize YouTube content",
+			-- 	trigger = "pattern",
+			-- 	key = "S",
+			-- 	youtube = true, -- Enable YouTube URL handling
+			-- },
+			-- {
+			-- 	id = "latex",
+			-- 	name = "LaTeX",
+			-- 	desc = "Enhanced LaTeX processing",
+			-- 	trigger = "pattern",
+			-- 	key = "L",
+			-- },
+			-- {
+			-- 	id = "general",
+			-- 	name = "General AI",
+			-- 	desc = "Custom AI instruction",
+			-- 	trigger = "pattern",
+			-- 	key = "G",
+			-- 	variables = {
+			-- 		instruction = ""  -- Will be filled by user input
+			-- 	}
+			-- },
+			-- {
+			-- 	id = "translate",
+			-- 	name = "Translate",
+			-- 	desc = "Translate text",
+			-- 	trigger = "pattern",
+			-- 	key = "T",
+			-- },
+			-- {
+			-- 	id = "note_name",
+			-- 	name = "Note Name",
+			-- 	desc = "Generate a note name",
+			-- 	trigger = "pattern",
+			-- 	key = "N",
+			-- },
+			-- {
+			-- 	id = "markdown_format",
+			-- 	name = "Markdown Format",
+			-- 	desc = "Format text in Markdown",
+			-- 	trigger = "pattern",
+			-- 	key = "M",
+			-- },
+			-- {
+			-- 	id = "fact_check",
+			-- 	name = "Fact Check",
+			-- 	desc = "Verify the accuracy of information",
+			-- 	trigger = "pattern",
+			-- 	key = "F",
+			-- },
+		},
+	},
+
+	--[[-----------------------------------------
     Self-Organized Custom Shortcuts
-    Add your own functions defined in self.lua
+    Add your own custom shortcuts and functions here
     ------------------------------------------]]
-    self = {
-        shortcuts = {
-            -- {
-            --     name = "myCustomFunction",
-            --     desc = "My custom function",
-            --     mods = { "cmd", "alt", "shift" },
-            --     key = "K",
-            -- },
-            -- Add more custom shortcuts as needed
-        },
-    },
+	self = {
+		-- Trigger keys for self-organized shortcuts
+		triggers = {
+			-- custom = { "cmd", "alt", "shift" }, -- Example trigger combination
+		},
 
-    --[[-----------------------------------------
+		-- Custom shortcuts
+		shortcuts = {
+			-- Example shortcut
+			-- {
+			-- 	name = "sayHello",  -- Function name in self.lua
+			-- 	desc = "Show hello message", -- Description for documentation
+			-- 	mods = { "cmd", "alt", "shift" }, -- Key modifiers
+			-- 	key = "H", -- Trigger key
+			-- },
+		},
+	},
+
+	--[[-----------------------------------------
     Clipboard Management
-    Override clipboard history and shortcuts
+    Configure clipboard history and shortcuts
     ------------------------------------------]]
     clipboard = {
-        enabled = true,
-        -- maxHistory = 12, -- Increase history items
+        -- enabled = true, -- Set to false to disable clipboard features
+        -- maxHistory = 9, -- Maximum number of clipboard items to track
+        -- shortcuts = {
+        --     mods = { "ctrl", "shift" }, -- Modifiers for clipboard shortcuts
+        --     keys = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- Keys for clipboard items
+        -- },
     },
 
     --[[-----------------------------------------
     Macro Recording and Playback
-    Override macro settings
+    Configure macro recording, playback, and shortcuts
     ------------------------------------------]]
     macros = {
-        enabled = true,
-    --     maxMacros = 15, -- Store more macros
+        -- enabled = true, -- Set to false to disable macro features
+        -- maxMacros = 10, -- Maximum number of macros to store
+        -- shortcuts = {
+        --     record = {
+        --         mods = { "alt", "cmd" },
+        --         key = "["
+        --     },
+        --     play = {
+        --         mods = { "alt", "cmd" },
+        --         key = "]"
+        --     },
+        --     chooser = {
+        --         mods = { "alt", "cmd" },
+        --         key = "\\"
+        --     },
+        --     editor = {
+        --         mods = { "alt", "cmd" },
+        --         key = "e"
+        --     }
+        -- }
     },
 }
 
-return userConfig 
+return defaults 
