@@ -16,12 +16,18 @@ env/
 *.log
 *.sqlite
 
-# Local config overrides
-config.local.lua
-
-# Config files
+# User configurations (ignore)
+config.user.lua
 config.lua
+
+# Default configurations (don't ignore)
+!config.defaults.lua
+!config.user.lua.template
 
 # Clipboard Manager
 clipboard_files/
 clipboard_history.json
+
+# Macro Manager
+macros/
+macros.json

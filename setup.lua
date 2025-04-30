@@ -1,15 +1,78 @@
 local M = {}
 local log = hs.logger.new('Setup', 'debug')
 
-function M.getConfig()
-    local ok, config = pcall(require, "config")
-    if ok then
-        log.i("Configuration loaded successfully")
-        return M.expandConfig(config)
-    else
-        log.e("Failed to load config.lua")
-        return {}
+-- Initialize configuration tracking flags
+M.usingNewConfigSystem = false
+M.usingUserConfig = false
+
+-- Deep merge function to combine tables
+function M.deepMerge(target, source)
+    if type(target) ~= 'table' or type(source) ~= 'table' then
+        return source
     end
+    
+    for k, v in pairs(source) do
+        if type(v) == 'table' and type(target[k]) == 'table' then
+            -- If both values are tables, merge them recursively
+            target[k] = M.deepMerge(target[k], v)
+        else
+            -- Otherwise just overwrite with source value
+            target[k] = v
+        end
+    end
+    
+    return target
+end
+
+function M.getConfig()
+    -- Load default configuration
+    local ok, defaults = pcall(require, "config.defaults")
+    if not ok then
+        log.e("Failed to load config.defaults.lua")
+        defaults = {}
+        M.usingNewConfigSystem = false
+    else
+        log.i("Default configuration loaded successfully")
+        M.usingNewConfigSystem = true
+    end
+    
+    -- Load user configuration
+    local userOk, userConfig = pcall(require, "config.user")
+    
+    -- Check if we're using user config or fallback to old config
+    if not userOk then
+        -- Try loading from the old config.lua file
+        local oldOk, oldConfig = pcall(require, "config")
+        if oldOk then
+            log.i("Found old config.lua file, using as user config")
+            userConfig = oldConfig
+            M.usingUserConfig = false
+        else
+            log.w("No user configuration found")
+            userConfig = {}
+            M.usingUserConfig = false
+        end
+    else
+        log.i("User configuration loaded successfully")
+        M.usingUserConfig = true
+    end
+    
+    -- If we're not using the new config system, fall back to old method
+    if not M.usingNewConfigSystem then
+        local oldOk, oldConfig = pcall(require, "config")
+        if oldOk then
+            log.i("Using legacy configuration system with config.lua")
+            return M.expandConfig(oldConfig)
+        else
+            log.e("Failed to load any configuration")
+            return {}
+        end
+    end
+    
+    -- Merge configurations, with user config taking precedence
+    local mergedConfig = M.deepMerge(hs.fnutils.copy(defaults), userConfig)
+    
+    return M.expandConfig(mergedConfig)
 end
 
 -- Expand the simplified config into the format expected by the modules

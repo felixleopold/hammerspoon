@@ -1,0 +1,119 @@
+--[[
+                            (\.   \      ,/)
+                            \(   |\     )/
+                            //\  | \   /\\
+                            (/ /\_#oo#_/\ \)
+                            \/\  ####  /\/
+                                `##'
+
+===================================================================================
+                        Hammerspoon User Configuration
+===================================================================================
+
+This file contains YOUR PERSONAL configuration values for Hammerspoon.
+It overrides the default values from config.defaults.lua.
+
+To use this file:
+1. Copy this template to "config.user.lua"
+2. Customize the settings below to your preferences
+3. Your settings will be merged with the defaults
+
+MIGRATION INSTRUCTIONS:
+If you're coming from an older version with config.lua:
+1. Copy only the sections you've customized to this file
+2. You don't need to copy everything, only what you've changed
+3. The structure should match the examples below
+
+IMPORTANT: This file will NOT be overwritten when you update Hammerspoon.
+]]--
+
+local userConfig = {
+    -- You only need to include sections you want to customize
+    -- Any missing sections will use the defaults from config.defaults.lua
+
+    --[[-----------------------------------------
+    Applications
+    Override with your preferred applications
+    ------------------------------------------]]
+    applications = {
+        -- Browser = "Firefox", -- Change to your preferred browser
+        -- Editor = "VSCode",   -- Change to your preferred editor
+        -- Terminal = "iTerm2", -- Change to your terminal
+        -- Add any other applications you want to customize
+    },
+
+    --[[-----------------------------------------
+    Keyboard Shortcut Triggers
+    Override the modifier combinations if desired
+    ------------------------------------------]]
+    triggers = {
+    --    app = { "ctrl", "alt", "cmd" },
+    --    folder = { "cmd", "shift" },
+    --    window = { "alt" },
+    --    screen = { "cmd", "alt" },
+    --    pattern = { "ctrl", "alt" },
+    },
+
+    --[[-----------------------------------------
+    Folders
+    Add custom folders or override defaults
+    ------------------------------------------]]
+    folders = {
+    --    projects = "~/Documents/Projects",
+    --    scripts = "~/Scripts",
+    --    -- Add more custom folders here
+    },
+
+    --[[-----------------------------------------
+    Window Management Settings
+    Override window behavior and animations
+    ------------------------------------------]]
+    windowManagement = {
+    --    animationDuration = 0.2, -- Add a slight animation
+    },
+
+    --[[-----------------------------------------
+    Fabric AI Integration
+    Customize AI patterns and shortcuts
+    ------------------------------------------]]
+    fabric = {
+    --    fabricPath = "/usr/local/bin/fabric-ai",
+    --    -- Pattern customizations can be added here
+    },
+
+    --[[-----------------------------------------
+    Self-Organized Custom Shortcuts
+    Add your own functions defined in self.lua
+    ------------------------------------------]]
+    self = {
+        shortcuts = {
+            -- {
+            --     name = "myCustomFunction",
+            --     desc = "My custom function",
+            --     mods = { "cmd", "alt", "shift" },
+            --     key = "K",
+            -- },
+            -- Add more custom shortcuts as needed
+        },
+    },
+
+    --[[-----------------------------------------
+    Clipboard Management
+    Override clipboard history and shortcuts
+    ------------------------------------------]]
+    clipboard = {
+        enabled = true,
+        -- maxHistory = 12, -- Increase history items
+    },
+
+    --[[-----------------------------------------
+    Macro Recording and Playback
+    Override macro settings
+    ------------------------------------------]]
+    macros = {
+        enabled = true,
+    --     maxMacros = 15, -- Store more macros
+    },
+}
+
+return userConfig 

@@ -14,6 +14,7 @@ local self = require("self")
 local inspectWindows = require("inspect_windows")
 local minecraft = require("minecraft")
 local clipboard = require("clipboard")
+local macro = require("macro")
 
 -- Disable animation for window movements
 hs.window.animationDuration = 0
@@ -72,6 +73,18 @@ if not config then
     return
 end
 
+-- Check if we're using the new configuration system
+if setup.usingNewConfigSystem then
+    log.i("Using new configuration system")
+    if setup.usingUserConfig then
+        log.i("User configuration loaded from config.user.lua")
+    else
+        log.i("Using default configuration (no user config found)")
+    end
+else
+    log.w("Using legacy configuration system (config.lua)")
+end
+
 -- Debug print the loaded configuration
 log.i("Configuration loaded successfully")
 log.d("General shortcuts: " .. hs.inspect(config.shortcuts.general))
@@ -82,6 +95,10 @@ application.setup(config)
 windowManagement.setup(config)
 fabric.setup(config)
 self.setup(config)
+
+-- Initialize macro module
+log.i("Initializing macro module")
+macro.setup(config)
 
 -- Initialize clipboard if enabled
 if config.clipboard and config.clipboard.enabled then

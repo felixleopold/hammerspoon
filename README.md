@@ -9,6 +9,7 @@ This framework is organized into several modules:
 - **Window Management**: Precise window positioning including halves, thirds, and corners
 - **Internal Clipboard History**: Paste recent text items (`Ctrl+Shift+[1-9]`)
 - **Fabric AI Integration**: AI-powered text processing and automation
+- **Macro Recording**: Record and playback mouse and keyboard actions
 - **Custom Shortcuts**: Self-organized system for personal additions
 - **Terminal Integration**: Quick terminal access from Finder
 - **Debug Tools**: Utilities for configuration and troubleshooting
@@ -18,13 +19,16 @@ This framework is organized into several modules:
 ```
 ~/.hammerspoon/
 ├── init.lua           # Main entry point
-├── config.lua         # User configuration
+├── config.defaults.lua # Default configuration (don't edit)
+├── config.user.lua    # User configuration (edit this)
+├── config.user.lua.template # Template for user configuration
 ├── self.lua           # Custom user functions
 ├── setup.lua          # Configuration processor
 ├── application.lua    # App management
 ├── windowManagement.lua  # Window control
 ├── fabric.lua        # AI integration
 ├── clipboard.lua     # Internal clipboard history
+├── macro.lua         # Macro recording and playback
 └── docs/
     ├── SHORTCUTS.md      # Default shortcuts
     └── CHANGELOG.md      # Version history
@@ -61,9 +65,17 @@ or directly execute the command:
    ```bash
    brew install fabric-ai
    
+   # Optional: add an alias if you want to use just "fabric" instead of "fabric-ai"
    echo "alias fabric='fabric-ai'" >> ~/.zshrc
    source ~/.zshrc
    ```
+   
+   **Important:** Update the fabric path in your config:
+   ```lua
+   -- In config.lua, change this line:
+   fabricPath = "/opt/homebrew/bin/fabric-ai", -- For Homebrew installation
+   ```
+   
    For more details, see the [Fabric Documentation](https://github.com/danielmiessler/fabric?tab=readme-ov-file#installation)
 
 4. **Move fabric patterns** 
@@ -80,15 +92,21 @@ or directly execute the command:
 
 6. **Configure your setup**:
    ```bash
-   open ~/.hammerspoon/config.lua
+   open ~/.hammerspoon/config.user.lua
    ```
 
 ## Initial Configuration
 
 After installation, you should customize the configuration for your system:
 
-1. **Update Application Definitions**:
-   Edit the `applications` section in `config.lua` to match the applications you have installed:
+1. **Create your user configuration file**:
+   ```bash
+   cp ~/.hammerspoon/config.user.lua.template ~/.hammerspoon/config.user.lua
+   open ~/.hammerspoon/config.user.lua
+   ```
+
+2. **Update Application Definitions**:
+   Edit the `applications` section in `config.user.lua` to match the applications you have installed:
 
    ```lua
    applications = {
@@ -109,12 +127,43 @@ After installation, you should customize the configuration for your system:
    },
    ```
 
-2. **Customize Shortcuts**:
-   Modify the shortcut keys in the `shortcuts` section to match your preferences.
+3. **Customize Shortcuts**:
+   Modify the shortcut keys in your `config.user.lua` to match your preferences.
 
-3. **Reload Configuration**:
+4. **Reload Configuration**:
    After making changes, reload your configuration with:
    - **⌘⌃⌥⇧R** (Command + Control + Option + Shift + R)
+
+## Configuration System
+
+This framework uses a two-file configuration system:
+
+1. **config.defaults.lua** - Contains default values and is part of the source code
+2. **config.user.lua** - Contains your personal settings that override the defaults
+
+When you update the framework, your personal settings in `config.user.lua` will be preserved.
+New features and settings will be added to `config.defaults.lua` and will be automatically available to you.
+
+You only need to add to `config.user.lua` the settings you want to customize. All other settings will use the defaults.
+
+### Migrating from the old config system
+
+If you're upgrading from a previous version that used `config.lua`, you'll need to manually migrate your settings:
+
+1. Copy the template to create your user config:
+   ```bash
+   cp ~/.hammerspoon/config.user.lua.template ~/.hammerspoon/config.user.lua
+   ```
+
+2. Open both files:
+   ```bash
+   open ~/.hammerspoon/config.lua
+   open ~/.hammerspoon/config.user.lua
+   ```
+
+3. Copy your customizations from `config.lua` to `config.user.lua`. You only need to copy the sections that differ from the defaults.
+
+4. Once you've confirmed everything works, you can delete your old `config.lua` file or keep it as a backup.
 
 ## Key Features
 
@@ -151,6 +200,18 @@ Open specific Finder folders with **⌘⇧** (Command + Shift) plus a key:
 - **⌘⇧X**: Close all Finder windows
 - **⌘⇧W**: Close all windows of currect application except for the focused one
 
+### Macro Recording and Playback
+
+The framework includes a macro recording and playback system:
+
+- **⌥⌘[**: Start/stop recording a macro (toggle)
+- **⌥⌘]**: Play the most recently saved macro
+- **⌥⌘\\**: Open the macro chooser to select and play any saved macro
+
+When recording, red circles will appear around your mouse cursor whenever you click, and a "Recording Macro..." indicator will be displayed on screen. When playing back a macro, blue circles will highlight the cursor actions.
+
+The system records mouse movements, clicks, and keyboard inputs with accurate timing. Up to 10 macros can be saved, with the oldest ones being automatically replaced when this limit is reached.
+
 ### Fabric Shorctus
 Execute a fabric pattern call on the current clipboard content with **⌃⌥** (Control + Option) plus a key:
 - **⌃⌥R**: Correct Pattern
@@ -164,7 +225,7 @@ Access the last 9 copied text items with **⌃⇧1** through **⌃⇧9**
 
 ### Adding Custom Shortcuts
 
-1. Add your shortcut to `config.lua` in the `self` section:
+1. Add your shortcut to `config.user.lua` in the `self` section:
 ```lua
 self = {
     shortcuts = {
@@ -212,32 +273,38 @@ mymodule.setup(config)
 
 ## Updating
 
+When updating the framework, your personal configuration is preserved:
+
 1. Pull the latest changes:
 ```bash
 cd ~/.hammerspoon
 git pull
 ```
 
-2. Check CHANGELOG.md for breaking changes
-3. Reload Hammerspoon with **⌘⌃⌥⇧R**
+2. If new configuration options are added, they will be available in `config.defaults.lua`.
+   You can copy them to your `config.user.lua` if you want to customize them.
+
+3. Check CHANGELOG.md for breaking changes
+
+4. Reload Hammerspoon with **⌘⌃⌥⇧R**
 
 ## Troubleshooting
 
 1. Check the Hammerspoon Console for errors (Help > Console in Hammerspoon menu)
-2. Verify your configuration in `config.lua`
+2. Verify your configuration in `config.user.lua`
 3. Look for log messages from specific modules
 4. Ensure all required applications are installed
 5. If everything fails, try resetting Hammerspoon:
    ```bash
    # Backup your custom configuration
-   cp ~/.hammerspoon/config.lua ~/config.lua.backup
+   cp ~/.hammerspoon/config.user.lua ~/config.user.lua.backup
    
    # Reset Hammerspoon
    rm -rf ~/.hammerspoon
    git clone https://github.com/felixleopold/hammerspoon.git ~/.hammerspoon
    
    # Restore your configuration
-   cp ~/config.lua.backup ~/.hammerspoon/config.lua
+   cp ~/config.user.lua.backup ~/.hammerspoon/config.user.lua
    ```
 
 ## Contributing

@@ -47,6 +47,12 @@ function M.setup(config)
         if fabricPath == "" then
             fabricPath = hs.execute("which fabric"):gsub("%s+", "")
             log.i("Found fabric in PATH: " .. (fabricPath ~= "" and fabricPath or "not found"))
+            
+            -- Also try looking for fabric-ai (homebrew installation)
+            if fabricPath == "" then
+                fabricPath = hs.execute("which fabric-ai"):gsub("%s+", "")
+                log.i("Found fabric-ai in PATH: " .. (fabricPath ~= "" and fabricPath or "not found"))
+            end
         end
         
         -- If still not found, try common installation paths
@@ -55,7 +61,8 @@ function M.setup(config)
                 os.getenv("HOME") .. "/go/bin/fabric",  -- Go installation (most common)
                 os.getenv("HOME") .. "/.local/bin/fabric",
                 "/usr/local/bin/fabric",
-                "/opt/homebrew/bin/fabric"
+                "/opt/homebrew/bin/fabric",
+                "/opt/homebrew/bin/fabric-ai"  -- Homebrew installation
             }
             for _, path in ipairs(possiblePaths) do
                 if hs.fs.attributes(path) then
@@ -70,8 +77,11 @@ function M.setup(config)
             log.e([[
 Could not find fabric executable. Please:
 1. Install fabric: go install github.com/danielmiessler/fabric@latest
+   or with Homebrew: brew install fabric-ai
 2. Set the correct path in config.lua (fabric.fabricPath)
-Default installation path is: ~/go/bin/fabric
+Default installation paths are: 
+- Go: ~/go/bin/fabric
+- Homebrew: /opt/homebrew/bin/fabric-ai
             ]])
             return
         end
