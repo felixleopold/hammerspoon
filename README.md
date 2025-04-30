@@ -134,37 +134,6 @@ After installation, you should customize the configuration for your system:
    After making changes, reload your configuration with:
    - **⌘⌃⌥⇧R** (Command + Control + Option + Shift + R)
 
-## Configuration System
-
-This framework uses a two-file configuration system:
-
-1. **config_defaults.lua** - Contains default values and is part of the source code
-2. **config_user.lua** - Contains your personal settings that override the defaults
-
-When you update the framework, your personal settings in `config_user.lua` will be preserved.
-New features and settings will be added to `config_defaults.lua` and will be automatically available to you.
-
-You only need to add to `config_user.lua` the settings you want to customize. All other settings will use the defaults.
-
-### Migrating from the old config system
-
-If you're upgrading from a previous version that used `config.lua`, you'll need to manually migrate your settings:
-
-1. Copy the template to create your user config:
-   ```bash
-   cp ~/.hammerspoon/config_user.lua.template ~/.hammerspoon/config_user.lua
-   ```
-
-2. Open both files:
-   ```bash
-   open ~/.hammerspoon/config.lua
-   open ~/.hammerspoon/config_user.lua
-   ```
-
-3. Copy your customizations from `config.lua` to `config_user.lua`. You only need to copy the sections that differ from the defaults.
-
-4. Once you've confirmed everything works, you can delete your old `config.lua` file or keep it as a backup.
-
 ## Key Features
 
 ### Window Management
