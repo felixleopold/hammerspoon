@@ -48,7 +48,8 @@ local userConfig = {
     Override with your preferred applications
     ------------------------------------------]]
     applications = {
-        
+        -- Browser = "Safari", -- Primary browser
+        -- ...
     },
 
     --[[-----------------------------------------
