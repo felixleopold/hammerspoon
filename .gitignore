@@ -17,12 +17,13 @@ env/
 *.sqlite
 
 # User configurations (ignore)
-config.user.lua
+config_user.lua
 config.lua
 
 # Default configurations (don't ignore)
-!config.defaults.lua
-!config.user.lua.template
+!config_defaults.lua
+!config_user.lua.template
+!config_user.lua.sample
 
 # Clipboard Manager
 clipboard_files/

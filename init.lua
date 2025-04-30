@@ -69,15 +69,30 @@ local myWatcher = hs.pathwatcher.new(os.getenv("HOME") .. "/.hammerspoon", reloa
 log.i("Loading configuration...")
 local config = setup.getConfig()
 if not config then
-    log.e("Failed to load configuration")
-    return
+    log.e("Failed to load configuration, using empty configuration")
+    config = {
+        applications = {},
+        folders = {},
+        triggers = {},
+        shortcuts = {
+            general = {},
+            appShortcuts = {},
+            folderShortcuts = {},
+            windowManagement = {},
+            utils = {}
+        },
+        self = {
+            shortcuts = {}
+        }
+    }
+    hs.alert.show("Failed to load configuration. Check console for details.", 5)
 end
 
 -- Check if we're using the new configuration system
 if setup.usingNewConfigSystem then
     log.i("Using new configuration system")
     if setup.usingUserConfig then
-        log.i("User configuration loaded from config.user.lua")
+        log.i("User configuration loaded from config_user.lua")
     else
         log.i("Using default configuration (no user config found)")
     end
@@ -87,23 +102,42 @@ end
 
 -- Debug print the loaded configuration
 log.i("Configuration loaded successfully")
-log.d("General shortcuts: " .. hs.inspect(config.shortcuts.general))
+log.d("General shortcuts: " .. hs.inspect(config.shortcuts.general or {}))
 
 -- Use this config when setting up modules
 log.i("Setting up modules with configuration")
-application.setup(config)
-windowManagement.setup(config)
-fabric.setup(config)
-self.setup(config)
 
--- Initialize macro module
+-- Safely initialize modules with fallback for errors
+local function safeSetup(module, name)
+    local success, err = pcall(function() 
+        module.setup(config)
+    end)
+    if not success then
+        log.e("Failed to set up " .. name .. " module: " .. tostring(err))
+        hs.alert.show("Failed to initialize " .. name .. " module", 3)
+    else
+        log.i("Successfully set up " .. name .. " module")
+    end
+end
+
+-- Set up core modules with error handling
+safeSetup(application, "application")
+safeSetup(windowManagement, "window management")
+safeSetup(fabric, "fabric")
+safeSetup(self, "self")
+
+-- Initialize macro module if configuration permits
 log.i("Initializing macro module")
-macro.setup(config)
+if config.macros and config.macros.enabled ~= false then
+    safeSetup(macro, "macro")
+else
+    log.i("Macro module disabled in config")
+end
 
 -- Initialize clipboard if enabled
 if config.clipboard and config.clipboard.enabled then
     log.i("Initializing clipboard module")
-    clipboard.setup(config)
+    safeSetup(clipboard, "clipboard")
 else
     log.i("Clipboard module disabled in config")
 end
@@ -111,7 +145,10 @@ end
 -- Only initialize Minecraft if enabled in config
 if config and config.minecraft and config.minecraft.enabled then
     log.i("Initializing Minecraft module")
-    minecraft(config)
+    local success, err = pcall(function() minecraft(config) end)
+    if not success then
+        log.e("Failed to initialize Minecraft module: " .. tostring(err))
+    end
 else
     log.i("Minecraft module disabled in config")
 end

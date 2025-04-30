@@ -25,10 +25,10 @@ function M.deepMerge(target, source)
 end
 
 function M.getConfig()
-    -- Load default configuration
-    local ok, defaults = pcall(require, "config.defaults")
+    -- Load default configuration - fix path to not use dotted notation
+    local ok, defaults = pcall(require, "config_defaults")
     if not ok then
-        log.e("Failed to load config.defaults.lua")
+        log.e("Failed to load config.defaults.lua: " .. tostring(defaults))
         defaults = {}
         M.usingNewConfigSystem = false
     else
@@ -36,8 +36,8 @@ function M.getConfig()
         M.usingNewConfigSystem = true
     end
     
-    -- Load user configuration
-    local userOk, userConfig = pcall(require, "config.user")
+    -- Load user configuration - fix path to not use dotted notation
+    local userOk, userConfig = pcall(require, "config_user")
     
     -- Check if we're using user config or fallback to old config
     if not userOk then
@@ -47,8 +47,9 @@ function M.getConfig()
             log.i("Found old config.lua file, using as user config")
             userConfig = oldConfig
             M.usingUserConfig = false
+            return M.expandConfig(oldConfig) -- Use old config directly if new system isn't available
         else
-            log.w("No user configuration found")
+            log.w("No user configuration found: " .. tostring(userConfig))
             userConfig = {}
             M.usingUserConfig = false
         end
@@ -64,8 +65,23 @@ function M.getConfig()
             log.i("Using legacy configuration system with config.lua")
             return M.expandConfig(oldConfig)
         else
-            log.e("Failed to load any configuration")
-            return {}
+            log.e("Failed to load any configuration: " .. tostring(oldConfig))
+            -- Create a minimal config to prevent nil errors
+            return {
+                applications = {},
+                folders = {},
+                triggers = {},
+                shortcuts = {
+                    general = {},
+                    appShortcuts = {},
+                    folderShortcuts = {},
+                    windowManagement = {},
+                    utils = {}
+                },
+                self = {
+                    shortcuts = {}
+                }
+            }
         end
     end
     
