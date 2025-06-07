@@ -5,37 +5,39 @@ A modern, modular Hammerspoon configuration framework focused on productivity an
 ## Overview
 
 This framework is organized into several modules:
-- **Application Management**: Quick app switching and window control
-- **Window Management**: Precise window positioning including halves, thirds, and corners
-- **Internal Clipboard History**: Paste recent text items (`Ctrl+Shift+[1-9]`)
-- **Fabric AI Integration**: AI-powered text processing and automation
-- **Macro Recording**: Record and playback mouse and keyboard actions
-- **Left-Right Modifier Support**: Distinguish between left and right modifier keys
-- **Kanata Integration**: Visual menu bar indicator for Kanata keyboard modes
-- **Custom Shortcuts**: Self-organized system for personal additions
-- **Terminal Integration**: Quick terminal access from Finder
-- **Debug Tools**: Utilities for configuration and troubleshooting
+| Module | Description |
+| --- | --- |
+| **Application Management** | Quick app switching and window control |
+| **Window Management** | Precise window positioning including halves, thirds, and corners |
+| **Internal Clipboard History** | Paste recent text items |
+| **Fabric AI Integration** | AI-powered text processing and automation |
+| **Macro Recording** | Record and playback mouse and keyboard actions |
+| **Left-Right Modifier Support** | Distinguish between left and right modifier keys |
+| **Kanata Integration** | Visual menu bar indicator for Kanata keyboard modes |
+| **Custom Shortcuts** | Self-organized system for personal additions |
+| **Terminal Integration** | Quick terminal access from Finder |
+| **Debug Tools** | Utilities for configuration and troubleshooting |
 
 ## Project Structure
 
 ```
 ~/.hammerspoon/
-├── init.lua           # Main entry point
-├── config_defaults.lua # Default configuration (don't edit)
-├── config_user.lua    # User configuration (edit this)
-├── config_user.lua.template # Template for user configuration
-├── self.lua           # Custom user functions
-├── setup.lua          # Configuration processor
-├── application.lua    # App management
-├── windowManagement.lua  # Window control
-├── fabric.lua        # AI integration
-├── clipboard.lua     # Internal clipboard history
-├── macro.lua         # Macro recording and playback
-├── kanata.lua        # Kanata mode indicator
+├── init.lua                     # Main entry point
+├── config_defaults.lua          # Default configuration (don't edit)
+├── config_user.lua              # User configuration (edit this)
+├── config_user.lua.template     # Template for user configuration
+├── self.lua                     # Custom user functions
+├── setup.lua                    # Configuration processor
+├── application.lua              # App management
+├── windowManagement.lua         # Window control
+├── fabric.lua                   # AI integration
+├── clipboard.lua                # Internal clipboard history
+├── macro.lua                    # Macro recording and playback
+├── kanata.lua                   # Kanata mode indicator
 └── docs/
-    ├── SHORTCUTS.md      # Default shortcuts
-    ├── CHANGELOG.md      # Version history
-    └── KANATA.md         # Kanata integration guide
+    ├── SHORTCUTS.md             # Default shortcuts
+    ├── CHANGELOG.md             # Version history
+    └── KANATA.md                # Kanata integration guide
 ```
 
 ## Installation
