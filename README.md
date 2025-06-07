@@ -495,6 +495,4 @@ cp ~/config_user.lua.backup ~/.hammerspoon/config_user.lua
 
 - [SHORTCUTS.md](docs/SHORTCUTS.md) - Default keyboard shortcuts
 - [CHANGELOG.md](docs/CHANGELOG.md) - Version history
-- [LEFT_RIGHT_MODIFIERS.md](docs/LEFT_RIGHT_MODIFIERS.md) - Left-right modifier key documentation
-- [LEFT_RIGHT_MODIFIERS_DEBUG.md](docs/LEFT_RIGHT_MODIFIERS_DEBUG.md) - Debugging left-right modifier key functionality
 - [Hammerspoon Documentation](https://www.hammerspoon.org/docs/)
