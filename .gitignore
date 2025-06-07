@@ -1,6 +1,10 @@
 # Hammerspoon specific
 Spoons/
-docs/
+
+#Docs
+docs/KANATA.md
+docs/LEFT_RIGHT_MODIFIERS_DEBUG.md
+docs/LEFT_RIGHT_MODIFIERS.md
 
 # MacOS
 .DS_Store
