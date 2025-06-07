@@ -1,9 +1,33 @@
 local M = {}
 local log = hs.logger.new('Applications', 'debug')
 local setup = require("setup")
+local appGroups = require("appGroups")
 
 function M.setup(config)
     log.i("Setting up application shortcuts")
+    
+    -- Configure logging based on user settings
+    if config.debug then
+        local debugEnabled = false
+        
+        if config.debug.appLaunching then
+            log.i("Application launching debug logging enabled")
+            debugEnabled = true
+        end
+        
+        if config.debug.appFocusing then
+            log.i("Application focusing debug logging enabled")
+            debugEnabled = true
+        end
+        
+        -- Set log level based on whether any app-related debugging is enabled
+        if debugEnabled then
+            log.setLogLevel('debug')
+        else
+            log.setLogLevel('info')
+        end
+    end
+    
     log.d("Loaded configuration: " .. hs.inspect(config))
 
     -- Helper function to launch or focus applications
@@ -17,6 +41,94 @@ function M.setup(config)
         else
             -- Convert string to standard format for consistent handling
             appConfig = { name = appName }
+        end
+        
+        -- Special handling for Finder
+        if appConfig.name == "Finder" then
+            local frontApp = hs.application.frontmostApplication()
+            if frontApp and frontApp:name() == "Finder" then
+                -- Finder is already frontmost, show all Finder windows
+                log.i("Finder is already frontmost, showing all Finder windows")
+                local finder = hs.application.get("Finder")
+                if finder then
+                    local windows = finder:allWindows()
+                    local visibleWindows = {}
+                    
+                    -- Collect all valid Finder windows
+                    for _, win in ipairs(windows) do
+                        local title = win:title() or ""
+                        local role = win:role() or ""
+                        local subrole = win:subrole() or ""
+                        
+                        -- Only include actual Finder windows (not dialogs or special windows)
+                        if title ~= "" and 
+                           role == "AXWindow" and 
+                           subrole == "AXStandardWindow" and
+                           win:isStandard() then
+                            table.insert(visibleWindows, win)
+                            log.d(string.format("Found valid Finder window: '%s'", title))
+                        else
+                            log.d(string.format("Skipping window: title='%s', role='%s', subrole='%s', standard=%s", 
+                                title, role, subrole, tostring(win:isStandard())))
+                        end
+                    end
+                    
+                    if #visibleWindows > 0 then
+                        log.i(string.format("Found %d Finder windows to show", #visibleWindows))
+                        
+                        -- Get screen frame for positioning
+                        local screen = hs.screen.mainScreen()
+                        local screenFrame = screen:frame()
+                        
+                        -- Calculate grid layout based on number of windows
+                        local cols = math.ceil(math.sqrt(#visibleWindows))
+                        local rows = math.ceil(#visibleWindows / cols)
+                        
+                        local windowWidth = screenFrame.w / cols
+                        local windowHeight = screenFrame.h / rows
+                        
+                        -- Position windows in a grid
+                        for i, win in ipairs(visibleWindows) do
+                            -- Unminimize and show the window first
+                            if win:isMinimized() then
+                                win:unminimize()
+                            end
+                            
+                            -- Calculate grid position
+                            local col = (i - 1) % cols
+                            local row = math.floor((i - 1) / cols)
+                            
+                            local x = screenFrame.x + (col * windowWidth)
+                            local y = screenFrame.y + (row * windowHeight)
+                            
+                            -- Set window frame
+                            local newFrame = {
+                                x = x,
+                                y = y,
+                                w = windowWidth,
+                                h = windowHeight
+                            }
+                            
+                            win:setFrame(newFrame)
+                            win:raise()
+                            
+                            log.d(string.format("Positioned window '%s' at grid position (%d,%d)", 
+                                win:title() or "Untitled", col, row))
+                        end
+                        
+                        -- Focus the first window
+                        if visibleWindows[1] then
+                            visibleWindows[1]:focus()
+                        end
+                        
+                        hs.alert.show(string.format("📁 Showing %d Finder windows", #visibleWindows), 1.5)
+                    else
+                        log.i("No valid Finder windows found to show")
+                        hs.alert.show("📁 No Finder windows to show", 1.5)
+                    end
+                end
+                return
+            end
         end
         
         -- Special handling for Minecraft (Java)
@@ -189,6 +301,32 @@ function M.setup(config)
         end
     end
 
+    -- Set up app groups
+    if config.appGroups then
+        log.i("Setting up application groups")
+        appGroups.setup(config)
+        
+        -- Set up app group shortcuts
+        for groupName, shortcut in pairs(config.shortcuts.appGroupShortcuts) do
+            local groupConfig = shortcut.groupConfig
+            if groupConfig then
+                log.i(string.format("Setting up app group shortcut for '%s': %s to cycle through %s", 
+                    groupName, 
+                    hs.inspect(shortcut), 
+                    table.concat(groupConfig.apps, ", ")))
+                
+                bindHotkey(shortcut, function()
+                    log.i(string.format("Triggered app group '%s' via shortcut %s", groupName, hs.inspect(shortcut)))
+                    appGroups.launchGroupApp(groupName, groupConfig, config)
+                end)
+            else
+                log.w("No group configuration found for app group shortcut: " .. groupName)
+            end
+        end
+    else
+        log.i("No application groups configured")
+    end
+
     -- Set up general shortcuts first
     if config.shortcuts.general then
         log.i("Setting up general shortcuts: " .. hs.inspect(config.shortcuts.general))
@@ -214,6 +352,19 @@ function M.setup(config)
                         openInEditor(path, editor)
                     else
                         log.e("Missing configuration for Hammerspoon editor shortcut", {
+                            path = path,
+                            editor = editor
+                        })
+                    end
+                elseif shortcut.action == "openKanataConfig" then
+                    log.i("Triggered: Open Kanata config in editor")
+                    local path = config.folders.kanata
+                    local editor = config.applications.Editor
+                    if path and editor then
+                        log.d(string.format("Opening Kanata config: path=%s, editor=%s", path, editor))
+                        openInEditor(path, editor)
+                    else
+                        log.e("Missing configuration for Kanata editor shortcut", {
                             path = path,
                             editor = editor
                         })

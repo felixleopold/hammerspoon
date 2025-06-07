@@ -35,7 +35,9 @@ local defaults = {
 	triggers = {
 		-- app = { "ctrl", "alt", "cmd"}, -- For launching applications (⌘⌃⌥)
 		-- folder = { "cmd", "shift" }, -- For opening folders (⌘⇧)
-		-- window = { "alt" }, -- For window management (⌥)
+		-- window = { "alt" }, -- For window management (⌥) - will use either left or right alt
+		-- lwindow = { "lalt" }, -- For window management with left alt only
+		-- rwindow = { "ralt" }, -- For window management with right alt only
 		-- screen = { "cmd", "alt" }, -- For screen management (⌘⌥)
 		-- pattern = { "ctrl", "alt" }, -- For fabric patterns (⌃⌥)
 	}, 
@@ -163,7 +165,30 @@ local defaults = {
     Configure debug options for various features
     ------------------------------------------]]
 	debug = {
-		-- symlinkCreation = true, -- Set to true to enable detailed logging for symlink creation
+		-- -- Window and keyboard management
+		-- windowManagement = true, -- Set to true to enable detailed logging for window management operations
+		-- leftRightModifier = true, -- Set to true to enable detailed logging for left/right modifier detection
+		
+		-- -- File and system operations
+		-- symlinkCreation = false, -- Set to true to enable detailed logging for symlink creation
+		-- fileOperations = false, -- Set to true to enable detailed logging for file operations
+		
+		-- -- Application management
+		-- appLaunching = false, -- Set to true to enable detailed logging for application launching
+		-- appFocusing = false, -- Set to true to enable detailed logging for application focusing
+		
+		-- -- Clipboard and macros
+		-- clipboard = false, -- Set to true to enable detailed logging for clipboard operations
+		-- macro = false, -- Set to true to enable detailed logging for macro recording and playback
+		
+		-- -- Fabric AI integration
+		-- fabric = false, -- Set to true to enable detailed logging for Fabric pattern execution
+		
+		-- -- Config and startup
+		-- configLoading = false, -- Set to true to enable detailed logging for configuration loading
+		
+		-- -- Minecraft integration
+		-- minecraft = false, -- Set to true to enable detailed logging for Minecraft integration
 	},
 
 	--[[-----------------------------------------

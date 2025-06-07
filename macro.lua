@@ -10,6 +10,20 @@ local CIRCLE_SIZE = 20  -- Size of the circle in pixels
 local CIRCLE_DURATION = 0.3  -- How long the circle appears in seconds
 local MIN_DELAY = 0.01  -- Minimum delay between events (seconds)
 
+-- Configure debug logging based on user settings
+local function configureLogging(config)
+    if config and config.debug and config.debug.macro ~= nil then
+        if config.debug.macro then
+            log.setLogLevel('debug')
+            log.i("Macro debug logging enabled")
+        else
+            log.setLogLevel('info')
+        end
+    else
+        log.setLogLevel('info') -- Default to info level
+    end
+end
+
 -- UI Constants
 local EDITOR_WIDTH = 800
 local EDITOR_HEIGHT = 600
@@ -1328,6 +1342,9 @@ function M.setup(cfg)
     
     -- Save the config
     config = cfg
+    
+    -- Configure logging based on debug settings
+    configureLogging(config)
     
     -- Load existing macros
     loadMacros()

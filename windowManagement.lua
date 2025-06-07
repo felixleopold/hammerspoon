@@ -1,5 +1,6 @@
 local M = {}
 local log = hs.logger.new('WindowManagement', 'debug')
+local leftRightModifier = require("leftRightModifier")
 
 -- Initialize module with configuration
 function M.setup(config)
@@ -20,9 +21,33 @@ function M.setup(config)
         return
     end
 
+    -- Configure logging based on user settings
+    if config.debug and config.debug.windowManagement ~= nil then
+        if config.debug.windowManagement then
+            log.setLogLevel('debug')
+            log.i("Window management debug logging enabled")
+        else
+            log.setLogLevel('info')
+        end
+    end
+    
+    -- Configure logging for left/right modifier module
+    leftRightModifier.configureLogging(config)
+
     local shortcuts = config.shortcuts.windowManagement
     log.i("Loaded window management shortcuts: " .. hs.inspect(shortcuts))
-    log.i("Available triggers: " .. hs.inspect(config.triggers))
+    log.d("Available triggers: " .. hs.inspect(config.triggers))
+
+    -- Dump detailed info about window triggers
+    if config.triggers.window then
+        log.d("Window trigger modifiers: " .. hs.inspect(config.triggers.window))
+    end
+    if config.triggers.lwindow then
+        log.d("Left window trigger modifiers: " .. hs.inspect(config.triggers.lwindow))
+    end
+    if config.triggers.rwindow then
+        log.d("Right window trigger modifiers: " .. hs.inspect(config.triggers.rwindow))
+    end
 
     -- Helper function to check if window is on the left/right side of screen
     local function isWindowOnSide(win, side)
@@ -216,188 +241,141 @@ function M.setup(config)
         
         win:setFrame(frame)
     end
+    
+    -- Helper function to bind shortcuts with optional left/right modifier detection
+    local function bindWindowShortcut(shortcutName, shortcutConfig, actionFn)
+        if not shortcutConfig then
+            log.w("No " .. shortcutName .. " window shortcut configured")
+            return
+        end
+        
+        log.i("Setting up " .. shortcutName .. " window shortcut")
+        log.i("Mods: " .. hs.inspect(shortcutConfig.mods))
+        log.i("Key: " .. shortcutConfig.key)
+        
+        -- Check if we need to use left/right specific detection
+        local usesLeftRightSpecific = false
+        for _, mod in ipairs(shortcutConfig.mods) do
+            if mod:sub(1,1) == "l" or mod:sub(1,1) == "r" then
+                usesLeftRightSpecific = true
+                log.i("Found left/right specific modifier: " .. mod)
+                break
+            end
+        end
+        
+        if usesLeftRightSpecific then
+            log.i("Using left/right specific modifier detection for " .. shortcutName)
+            local id = leftRightModifier.bind(shortcutConfig.mods, shortcutConfig.key, function()
+                log.i("LEFT/RIGHT SPECIFIC: Triggered " .. shortcutName)
+                actionFn()
+            end)
+            if not id then
+                log.e("Failed to bind left/right specific shortcut for " .. shortcutName)
+            else
+                log.i("Successfully bound left/right specific shortcut for " .. shortcutName .. " with ID " .. id)
+            end
+        else
+            -- Use regular Hammerspoon hotkey binding
+            log.i("Using regular hotkey binding for " .. shortcutName)
+            hs.hotkey.bind(shortcutConfig.mods, shortcutConfig.key, function()
+                log.i("REGULAR: Triggered " .. shortcutName)
+                actionFn()
+            end)
+        end
+    end
 
     -- Bind window movement shortcuts
-    if shortcuts.left then
-        log.i("Setting up left window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.left.mods))
-        log.i("Key: " .. shortcuts.left.key)
-        hs.hotkey.bind(shortcuts.left.mods, shortcuts.left.key, function()
-            log.i("Triggered: Move window left")
-            moveWindow("left")
-        end)
-    else
-        log.w("No left window shortcut configured")
-    end
-
-    if shortcuts.right then
-        log.i("Setting up right window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.right.mods))
-        log.i("Key: " .. shortcuts.right.key)
-        hs.hotkey.bind(shortcuts.right.mods, shortcuts.right.key, function()
-            log.i("Triggered: Move window right")
-            moveWindow("right")
-        end)
-    else
-        log.w("No right window shortcut configured")
-    end
-
-    if shortcuts.top then
-        log.i("Setting up top window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.top.mods))
-        log.i("Key: " .. shortcuts.top.key)
-        hs.hotkey.bind(shortcuts.top.mods, shortcuts.top.key, function()
-            log.i("Triggered: Move window up")
-            moveWindow("up")
-        end)
-    else
-        log.w("No top window shortcut configured")
-    end
-
-    if shortcuts.bottom then
-        log.i("Setting up bottom window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.bottom.mods))
-        log.i("Key: " .. shortcuts.bottom.key)
-        hs.hotkey.bind(shortcuts.bottom.mods, shortcuts.bottom.key, function()
-            log.i("Triggered: Move window down")
-            moveWindow("down")
-        end)
-    else
-        log.w("No bottom window shortcut configured")
-    end
-
-    if shortcuts.center then
-        log.i("Setting up center window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.center.mods))
-        log.i("Key: " .. shortcuts.center.key)
-        hs.hotkey.bind(shortcuts.center.mods, shortcuts.center.key, function()
-            log.i("Triggered: Center window")
-            moveWindow("center")
-        end)
-    else
-        log.w("No center window shortcut configured")
-    end
-
-    if shortcuts.full then
-        log.i("Setting up maximize window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.full.mods))
-        log.i("Key: " .. shortcuts.full.key)
-        hs.hotkey.bind(shortcuts.full.mods, shortcuts.full.key, function()
-            log.i("Triggered: Maximize window")
-            moveWindow("maximize")
-        end)
-    else
-        log.w("No maximize window shortcut configured")
-    end
+    bindWindowShortcut("left", shortcuts.left, function()
+        log.i("Triggered: Move window left")
+        moveWindow("left")
+    end)
+    
+    bindWindowShortcut("right", shortcuts.right, function()
+        log.i("Triggered: Move window right")
+        moveWindow("right")
+    end)
+    
+    bindWindowShortcut("top", shortcuts.top, function()
+        log.i("Triggered: Move window up")
+        moveWindow("up")
+    end)
+    
+    bindWindowShortcut("bottom", shortcuts.bottom, function()
+        log.i("Triggered: Move window down")
+        moveWindow("down")
+    end)
+    
+    bindWindowShortcut("center", shortcuts.center, function()
+        log.i("Triggered: Center window")
+        moveWindow("center")
+    end)
+    
+    bindWindowShortcut("full", shortcuts.full, function()
+        log.i("Triggered: Maximize window")
+        moveWindow("maximize")
+    end)
 
     -- Add new shortcuts for thirds
-    if shortcuts.third1 then
-        log.i("Setting up first third window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.third1.mods))
-        log.i("Key: " .. shortcuts.third1.key)
-        hs.hotkey.bind(shortcuts.third1.mods, shortcuts.third1.key, function()
-            log.i("Triggered: Move window to first third")
-            moveWindow("third1")
-        end)
-    else
-        log.w("No first third window shortcut configured")
-    end
-
-    if shortcuts.third2 then
-        log.i("Setting up middle third window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.third2.mods))
-        log.i("Key: " .. shortcuts.third2.key)
-        hs.hotkey.bind(shortcuts.third2.mods, shortcuts.third2.key, function()
-            log.i("Triggered: Move window to middle third")
-            moveWindow("third2")
-        end)
-    else
-        log.w("No middle third window shortcut configured")
-    end
-
-    if shortcuts.third3 then
-        log.i("Setting up last third window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.third3.mods))
-        log.i("Key: " .. shortcuts.third3.key)
-        hs.hotkey.bind(shortcuts.third3.mods, shortcuts.third3.key, function()
-            log.i("Triggered: Move window to last third")
-            moveWindow("third3")
-        end)
-    else
-        log.w("No last third window shortcut configured")
-    end
-
-    if shortcuts.twoThirdsLeft then
-        log.i("Setting up two-thirds left window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.twoThirdsLeft.mods))
-        log.i("Key: " .. shortcuts.twoThirdsLeft.key)
-        hs.hotkey.bind(shortcuts.twoThirdsLeft.mods, shortcuts.twoThirdsLeft.key, function()
-            log.i("Triggered: Move window to two-thirds left")
-            moveWindow("twoThirdsLeft")
-        end)
-    else
-        log.w("No two-thirds left window shortcut configured")
-    end
-
-    if shortcuts.twoThirdsRight then
-        log.i("Setting up two-thirds right window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.twoThirdsRight.mods))
-        log.i("Key: " .. shortcuts.twoThirdsRight.key)
-        hs.hotkey.bind(shortcuts.twoThirdsRight.mods, shortcuts.twoThirdsRight.key, function()
-            log.i("Triggered: Move window to two-thirds right")
-            moveWindow("twoThirdsRight")
-        end)
-    else
-        log.w("No two-thirds right window shortcut configured")
-    end
+    bindWindowShortcut("third1", shortcuts.third1, function()
+        log.i("Triggered: Move window to first third")
+        moveWindow("third1")
+    end)
+    
+    bindWindowShortcut("third2", shortcuts.third2, function()
+        log.i("Triggered: Move window to middle third")
+        moveWindow("third2")
+    end)
+    
+    bindWindowShortcut("third3", shortcuts.third3, function()
+        log.i("Triggered: Move window to last third")
+        moveWindow("third3")
+    end)
+    
+    bindWindowShortcut("twoThirdsLeft", shortcuts.twoThirdsLeft, function()
+        log.i("Triggered: Move window to two-thirds left")
+        moveWindow("twoThirdsLeft")
+    end)
+    
+    bindWindowShortcut("twoThirdsRight", shortcuts.twoThirdsRight, function()
+        log.i("Triggered: Move window to two-thirds right")
+        moveWindow("twoThirdsRight")
+    end)
 
     -- Add new shortcuts for corners and halves
-    if shortcuts.topLeft then
-        log.i("Setting up top left corner window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.topLeft.mods))
-        log.i("Key: " .. shortcuts.topLeft.key)
-        hs.hotkey.bind(shortcuts.topLeft.mods, shortcuts.topLeft.key, function()
-            log.i("Triggered: Move window to top left corner")
-            moveWindow("topLeft")
+    bindWindowShortcut("topLeft", shortcuts.topLeft, function()
+        log.i("Triggered: Move window to top left corner")
+        moveWindow("topLeft")
+    end)
+    
+    bindWindowShortcut("topRight", shortcuts.topRight, function()
+        log.i("Triggered: Move window to top right corner")
+        moveWindow("topRight")
+    end)
+    
+    bindWindowShortcut("bottomLeft", shortcuts.bottomLeft, function()
+        log.i("Triggered: Move window to bottom left corner")
+        moveWindow("bottomLeft")
+    end)
+    
+    bindWindowShortcut("bottomRight", shortcuts.bottomRight, function()
+        log.i("Triggered: Move window to bottom right corner")
+        moveWindow("bottomRight")
+    end)
+
+    -- Add test for left control key
+    if shortcuts.testLeft then
+        bindWindowShortcut("testLeft", shortcuts.testLeft, function()
+            log.i("Left control key shortcut activated successfully")
+            hs.alert.show("Left Control + T working! (Window management)", 2)
         end)
-    else
-        log.w("No top left corner window shortcut configured")
     end
 
-    if shortcuts.topRight then
-        log.i("Setting up top right corner window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.topRight.mods))
-        log.i("Key: " .. shortcuts.topRight.key)
-        hs.hotkey.bind(shortcuts.topRight.mods, shortcuts.topRight.key, function()
-            log.i("Triggered: Move window to top right corner")
-            moveWindow("topRight")
+    -- Add test for right control key
+    if shortcuts.rightTest then
+        bindWindowShortcut("rightTest", shortcuts.rightTest, function()
+            log.i("Right modifier key shortcut activated successfully")
+            hs.alert.show("Right modifier key working", 1)
         end)
-    else
-        log.w("No top right corner window shortcut configured")
-    end
-
-    if shortcuts.bottomLeft then
-        log.i("Setting up bottom left corner window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.bottomLeft.mods))
-        log.i("Key: " .. shortcuts.bottomLeft.key)
-        hs.hotkey.bind(shortcuts.bottomLeft.mods, shortcuts.bottomLeft.key, function()
-            log.i("Triggered: Move window to bottom left corner")
-            moveWindow("bottomLeft")
-        end)
-    else
-        log.w("No bottom left corner window shortcut configured")
-    end
-
-    if shortcuts.bottomRight then
-        log.i("Setting up bottom right corner window shortcut")
-        log.i("Mods: " .. hs.inspect(shortcuts.bottomRight.mods))
-        log.i("Key: " .. shortcuts.bottomRight.key)
-        hs.hotkey.bind(shortcuts.bottomRight.mods, shortcuts.bottomRight.key, function()
-            log.i("Triggered: Move window to bottom right corner")
-            moveWindow("bottomRight")
-        end)
-    else
-        log.w("No bottom right corner window shortcut configured")
     end
 
     log.i("Window management setup complete")

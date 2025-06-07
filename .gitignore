@@ -32,3 +32,7 @@ clipboard_history.json
 # Macro Manager
 macros/
 macros.json
+
+# Shell scripts
+kanata_mode_copied-to-dot-bin
+install_kanata_mode.sh

@@ -107,6 +107,7 @@ function M.expandConfig(config)
         },
         shortcuts = {
             appShortcuts = {},
+            appGroupShortcuts = {},
             folderShortcuts = {},
             windowManagement = {},
             utils = {},
@@ -122,7 +123,13 @@ function M.expandConfig(config)
         -- Add clipboard configuration
         clipboard = config.clipboard,
         -- Add macro configuration
-        macros = config.macros
+        macros = config.macros,
+        -- Add app groups configuration
+        appGroups = config.appGroups,
+        -- Add kanata configuration
+        kanata = config.kanata,
+        -- Add debug configuration
+        debug = config.debug
     }
 
     -- Process self-organized shortcuts
@@ -173,6 +180,40 @@ function M.expandConfig(config)
         }
     end
 
+    -- Expand application group shortcuts
+    if config.shortcuts.appGroups then
+        log.i("Processing app group shortcuts from shortcuts.appGroups")
+        for _, shortcut in ipairs(config.shortcuts.appGroups) do
+            local groupName = shortcut.group
+            local groupConfig = config.appGroups[groupName]
+            if groupConfig then
+                expanded.shortcuts.appGroupShortcuts[groupName] = {
+                    mods = config.triggers.app,
+                    key = shortcut.key,
+                    groupConfig = groupConfig
+                }
+                log.d(string.format("Added app group shortcut: %s -> %s", groupName, shortcut.key))
+            else
+                log.w(string.format("App group '%s' referenced in shortcuts but not defined in appGroups", groupName))
+            end
+        end
+    elseif config.appGroups then
+        -- Fallback to old method for backward compatibility
+        log.i("Processing app group shortcuts from appGroups (legacy method)")
+        for groupName, groupConfig in pairs(config.appGroups) do
+            if groupConfig.key then
+                expanded.shortcuts.appGroupShortcuts[groupName] = {
+                    mods = config.triggers.app,
+                    key = groupConfig.key,
+                    groupConfig = groupConfig
+                }
+                log.d(string.format("Added app group shortcut (legacy): %s -> %s", groupName, groupConfig.key))
+            else
+                log.w(string.format("App group '%s' has no key defined", groupName))
+            end
+        end
+    end
+
     -- Expand folder shortcuts
     for _, shortcut in ipairs(config.shortcuts.folders) do
         expanded.shortcuts.folderShortcuts[shortcut.path] = {
@@ -186,9 +227,19 @@ function M.expandConfig(config)
         log.i(string.format("Expanding window shortcut '%s': trigger=%s, key=%s", 
             name, shortcut.trigger, shortcut.key))
         
-        local mods = config.triggers[shortcut.trigger]
+        local triggerName = shortcut.trigger
+        
+        -- Handle special cases for left/right specific window triggers
+        if triggerName == "lwindow" or triggerName == "rwindow" then
+            log.i("Using left/right specific trigger: " .. triggerName)
+        elseif not config.triggers[triggerName] then
+            log.e(string.format("No trigger found for '%s' in config.triggers", triggerName))
+            goto continue
+        end
+        
+        local mods = config.triggers[triggerName]
         if not mods then
-            log.e(string.format("No trigger found for '%s' in config.triggers", shortcut.trigger))
+            log.e(string.format("No modifiers defined for trigger '%s'", triggerName))
             goto continue
         end
         

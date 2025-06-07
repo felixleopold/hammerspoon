@@ -29,7 +29,9 @@ local defaults = {
 	triggers = {
 		app = { "ctrl", "alt", "cmd"}, -- For launching applications (⌘⌃⌥)
 		folder = { "cmd", "shift" }, -- For opening folders (⌘⇧)
-		window = { "alt" }, -- For window management (⌥)
+		window = { "alt" }, -- For window management (⌥) - will use either left or right
+		lwindow = { "lalt" }, -- For window management with left alt only
+		rwindow = { "ralt" }, -- For window management with right alt only
 		screen = { "cmd", "alt" }, -- For screen management (⌘⌥)
 		pattern = { "ctrl", "alt" }, -- For fabric patterns (⌃⌥)
 	}, 
@@ -55,6 +57,31 @@ local defaults = {
 		Finder = "Finder", -- File manager
 		WhatsApp = "WhatsApp", -- Messaging
 		Settings = "System Settings", -- System preferences
+	},
+
+	--[[-----------------------------------------
+    Application Groups
+    Define groups of applications that can be cycled through with a single shortcut
+    Each group can have two modes:
+    - "recent": Prioritizes running apps, cycles through them by most recent usage
+    - "preset": Always follows the defined order regardless of running state
+    
+    Settings:
+    - launchIfNotRunning: If true, will launch apps that aren't running. If false, only cycles through running apps.
+    ------------------------------------------]]
+	appGroups = {
+		-- Example browser group
+		-- browsers = {
+		-- 	apps = { "Browser", "Browser2" }, -- List of app names from applications section
+		-- 	mode = "recent", -- "recent" or "preset"
+		-- 	launchIfNotRunning = true, -- Launch apps if they're not running
+		-- },
+		-- Example editor group
+		-- editors = {
+		-- 	apps = { "Editor", "Editor2" },
+		-- 	mode = "preset",
+		-- 	launchIfNotRunning = true,
+		-- },
 	},
 
 	--[[-----------------------------------------
@@ -91,6 +118,12 @@ local defaults = {
 			{ app = "Settings", key = "P" }, -- System Settings
 		},
 
+		-- Application group shortcuts (ctrl + alt + cmd + key)
+		appGroups = {
+			-- { group = "browsers", key = "B" }, -- Cycle through browsers
+			-- { group = "editors", key = "E" }, -- Cycle through editors
+		},
+
 		-- Folder shortcuts (cmd + shift + key)
 		folders = {
 			{ path = "home", key = "H" }, -- Home
@@ -102,7 +135,6 @@ local defaults = {
 
 		-- General shortcuts
 		general = {
-			{ mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "R", action = "reloadHammerspoonConfig" }, -- Reload Hammerspoon configuration
 			{ mods = { "cmd" }, key = ".", action = "openInTerminal" }, -- Open current Finder path in terminal
@@ -135,10 +167,10 @@ local defaults = {
 			twoThirdsRight = { trigger = "window", key = "5" }, -- Two thirds on the right
 
 			-- Corner window management (alt + key)
-			topLeft = { trigger = "window", key = "Q" }, -- Top left corner
-			topRight = { trigger = "window", key = "E" }, -- Top right corner
-			bottomLeft = { trigger = "window", key = "Z" }, -- Bottom left corner
-			bottomRight = { trigger = "window", key = "V" }, -- Bottom right corner
+			-- topLeft = { trigger = "window", key = "Q" }, -- Top left corner
+			-- topRight = { trigger = "window", key = "E" }, -- Top right corner
+			-- bottomLeft = { trigger = "window", key = "Z" }, -- Bottom left corner
+			-- bottomRight = { trigger = "window", key = "V" }, -- Bottom right corner
 			top = { trigger = "window", key = "W" }, -- Top half
 			bottom = { trigger = "window", key = "S" }, -- Bottom half
 		},
@@ -157,7 +189,34 @@ local defaults = {
     Configure debug options for various features
     ------------------------------------------]]
 	debug = {
-		symlinkCreation = true, -- Set to true to enable detailed logging for symlink creation
+		-- Window and keyboard management
+		windowManagement = false, -- Set to true to enable detailed logging for window management operations
+		leftRightModifier = false, -- Set to true to enable detailed logging for left/right modifier detection
+		
+		-- File and system operations
+		symlinkCreation = false, -- Set to true to enable detailed logging for symlink creation
+		fileOperations = false, -- Set to true to enable detailed logging for file operations
+		
+		-- Application management
+		appLaunching = false, -- Set to true to enable detailed logging for application launching
+		appFocusing = false, -- Set to true to enable detailed logging for application focusing
+		appGroups = false, -- Set to true to enable detailed logging for app groups
+		
+		-- Clipboard and macros
+		clipboard = false, -- Set to true to enable detailed logging for clipboard operations
+		macro = false, -- Set to true to enable detailed logging for macro recording and playback
+		
+		-- Fabric AI integration
+		fabric = false, -- Set to true to enable detailed logging for Fabric pattern execution
+		
+		-- Config and startup
+		configLoading = false, -- Set to true to enable detailed logging for configuration loading
+		
+		-- Minecraft integration
+		minecraft = false, -- Set to true to enable detailed logging for Minecraft integration
+		
+		-- Kanata integration
+		kanata = false, -- Set to true to enable detailed logging for Kanata integration
 	},
 
 	--[[-----------------------------------------
@@ -258,6 +317,19 @@ local defaults = {
 				key = "F",
 			},
 		},
+	},
+
+	--[[-----------------------------------------
+    Kanata Integration
+    Configure Kanata mode indicator and status file monitoring
+    Set enabled = false to disable all Kanata features
+    ------------------------------------------]]
+	kanata = {
+		enabled = true, -- Set to false to disable Kanata features
+		debug = false, -- Set to true to enable detailed logging for Kanata features
+		defaultMode = "normal", -- Default mode on startup (normal, vim, typing)
+		statusFile = "~/.config/kanata/hammerspoon_status", -- File to read/write current mode
+		kanataLayerCommand = nil, -- Command to execute when changing layers from menu bar (e.g., "~/.bin/kanata-layer")
 	},
 
 	--[[-----------------------------------------

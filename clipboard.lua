@@ -7,6 +7,20 @@ local maxHistorySize = 9
 local filesDir = os.getenv("HOME") .. "/.hammerspoon/clipboard_files/"
 local historyFile = os.getenv("HOME") .. "/.hammerspoon/clipboard_history.json"
 
+-- Configure logger based on debug settings
+function clipboard.configureLogging(config)
+    if config and config.debug and config.debug.clipboard ~= nil then
+        if config.debug.clipboard then
+            log.setLogLevel('debug')
+            log.i("Clipboard debug logging enabled")
+        else
+            log.setLogLevel('info')
+        end
+    else
+        log.setLogLevel('info') -- Default to info level
+    end
+end
+
 -- Ensure the files directory exists
 function ensureFilesDirectoryExists()
     local attrib = hs.fs.attributes(filesDir)
@@ -727,6 +741,9 @@ end
 
 -- Set up the module
 function clipboard.setup(config)
+    -- Configure logging first
+    clipboard.configureLogging(config)
+    
     if not config.clipboard or not config.clipboard.enabled then
         log.i("Clipboard module disabled in config")
         return

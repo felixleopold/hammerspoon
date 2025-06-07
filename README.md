@@ -10,6 +10,8 @@ This framework is organized into several modules:
 - **Internal Clipboard History**: Paste recent text items (`Ctrl+Shift+[1-9]`)
 - **Fabric AI Integration**: AI-powered text processing and automation
 - **Macro Recording**: Record and playback mouse and keyboard actions
+- **Left-Right Modifier Support**: Distinguish between left and right modifier keys
+- **Kanata Integration**: Visual menu bar indicator for Kanata keyboard modes
 - **Custom Shortcuts**: Self-organized system for personal additions
 - **Terminal Integration**: Quick terminal access from Finder
 - **Debug Tools**: Utilities for configuration and troubleshooting
@@ -29,17 +31,148 @@ This framework is organized into several modules:
 ├── fabric.lua        # AI integration
 ├── clipboard.lua     # Internal clipboard history
 ├── macro.lua         # Macro recording and playback
+├── kanata.lua        # Kanata mode indicator
 └── docs/
     ├── SHORTCUTS.md      # Default shortcuts
-    └── CHANGELOG.md      # Version history
+    ├── CHANGELOG.md      # Version history
+    └── KANATA.md         # Kanata integration guide
 ```
 
 ## Installation
 
-### Prerequisites
+### Quick Installation (Recommended)
 
-- macOS 10.14 or later
-- [Homebrew](https://brew.sh/)
+Run the automated installation script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/main/install.sh | bash
+```
+
+Or download and run locally:
+
+```bash
+wget https://raw.githubusercontent.com/felixleopold/hammerspoon/main/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+---
+
+### Post-Installation Setup
+
+#### 1. Grant Accessibility Permissions
+
+When you first launch Hammerspoon, macOS will prompt you to grant accessibility permissions:
+
+1. Go to **System Settings** > **Privacy & Security** > **Accessibility**
+![Accessibility Settings](docs/images/acessibility1.png)
+2. Enable **Hammerspoon** if it's not already enabled
+![Enable Hammerspoon](docs/images/acessibility2.png)
+3. You may need to restart Hammerspoon after granting permissions
+
+#### 2. Fabric AI Setup
+
+Fabric AI provides powerful text processing capabilities. To set it up:
+
+##### Run Fabric Setup
+```bash
+# Open a new terminal window to load the fabric alias
+fabric --setup
+```
+
+![Terminal Setup](docs/images/terminal.png)
+
+This will guide you through setting up directories and API keys.
+
+##### Get Required API Keys
+
+**Groq API Key (Free & Required)**
+
+Groq provides fast, free AI inference perfect for text processing:
+
+1. Visit [https://console.groq.com/keys](https://console.groq.com/keys)
+2. **Login with your Google account**
+![Groq Login](docs/images/login_groq.png)
+3. Navigate to the API Keys management page
+![Groq API Management](docs/images/manage_groq.png)
+4. Click **"Create API Key"**
+![Create Groq API Key](docs/images/create_groq.png)
+5. Enter a name for your key (e.g., "Hammerspoon Fabric")
+6. Click **"Copy"** to copy the API key
+![Copy Groq API Key](docs/images/copy_groq.png)
+7. Paste it into the **Groq API key section** when running `fabric --setup`
+
+**YouTube API Key (Optional)**
+
+For YouTube-related features (video transcription, etc.):
+
+1. Visit [https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com](https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com)
+2. Click **"Enable"** to enable the YouTube Data API v3
+![Enable YouTube API](docs/images/Enable_yt_api.png)
+3. Go to **"Credentials"** in the left sidebar
+![YouTube API Credentials](docs/images/Credentials_yt_api.png)
+4. Click **"Create Credentials"** and select **"API Key"**
+![Create YouTube API Credentials](docs/images/Create-Credentials_yt_api.png)
+![YouTube API Key Generated](docs/images/key_yt_api.png)
+6. Click **"Copy"** to copy the API key
+![Copy YouTube API Key](docs/images/copy_yt_api.png)
+7. Paste it into the **YouTube API key section** when running `fabric --setup`
+
+##### Fabric Configuration
+
+During `fabric --setup`, you'll be prompted to:
+- Set up directories (accept defaults)
+- Configure AI providers (choose Groq for free usage)
+- Enter your API keys
+- Set default models
+
+**Recommended Settings:**
+- **Default Provider**: Groq
+- **Default Model**: llama-3.1-70b-versatile (good balance of speed and quality)
+
+### Initial Configuration
+
+After installation, you should customize the configuration for your system:
+
+1. **Create your user configuration file**:
+   ```bash
+   cp ~/.hammerspoon/config_user.lua.template ~/.hammerspoon/config_user.lua
+   open ~/.hammerspoon/config_user.lua
+   ```
+
+2. **Update Application Definitions**:
+   Edit the `applications` section in `config_user.lua` to match the applications you have installed:
+
+   ```lua
+   applications = {
+       Browser = "Safari", -- Change to your primary browser
+       Editor = "Visual Studio Code", -- Change to your preferred editor
+       Terminal = "Terminal", -- Change to your terminal app
+       -- Add more applications as needed
+   }
+   ```
+
+   You can now also use an extended format for applications that need special handling:
+
+   ```lua
+   Emacs = {
+       name = "Emacs.app",
+       bundleID = "org.gnu.Emacs",
+       path = "/Applications/Emacs.app" -- Full path if installed in a non-standard location
+   },
+   ```
+
+3. **Customize Shortcuts**:
+   Modify the shortcut keys in your `config_user.lua` to match your preferences.
+
+4. **Reload Configuration**:
+   After making changes, reload your configuration with:
+   - **⌘⌃⌥⇧R** (Command + Control + Option + Shift + R)
+
+---
+
+## Manual Installation
+If you prefer to install manually:
 
 #### Installing Homebrew
 Follow the installation instructions provided on the official [Homebrew website](https://brew.sh/)  
@@ -47,8 +180,6 @@ or directly execute the command:
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
-
-### Step-by-Step Installation
 
 1. **Install Hammerspoon**:
    ```bash
@@ -95,58 +226,27 @@ or directly execute the command:
    open ~/.hammerspoon/config_user.lua
    ```
 
-## Initial Configuration
-
-After installation, you should customize the configuration for your system:
-
-1. **Create your user configuration file**:
-   ```bash
-   cp ~/.hammerspoon/config_user.lua.template ~/.hammerspoon/config_user.lua
-   open ~/.hammerspoon/config_user.lua
-   ```
-
-2. **Update Application Definitions**:
-   Edit the `applications` section in `config_user.lua` to match the applications you have installed:
-
-   ```lua
-   applications = {
-       Browser = "Safari", -- Change to your primary browser
-       Editor = "Visual Studio Code", -- Change to your preferred editor
-       Terminal = "Terminal", -- Change to your terminal app
-       -- Add more applications as needed
-   }
-   ```
-
-   You can now also use an extended format for applications that need special handling:
-
-   ```lua
-   Emacs = {
-       name = "Emacs.app",
-       bundleID = "org.gnu.Emacs",
-       path = "/Applications/Emacs.app" -- Full path if installed in a non-standard location
-   },
-   ```
-
-3. **Customize Shortcuts**:
-   Modify the shortcut keys in your `config_user.lua` to match your preferences.
-
-4. **Reload Configuration**:
-   After making changes, reload your configuration with:
-   - **⌘⌃⌥⇧R** (Command + Control + Option + Shift + R)
-
 ## Key Features
 
 ### Window Management
 
-The framework includes advanced window management features:
+The framework includes advanced window management features with **seamless left-right modifier support**:
 
-- **Basic Positioning**:
-  - **⌥A**: Left half of screen
-  - **⌥D**: Right half of screen
-  - **⌥W**: Top half of screen
-  - **⌥S**: Bottom half of screen
-  - **⌥C**: Center window
-  - **⌥F**: Full screen
+**Key Feature**: Use Left Control for window management while preserving all normal system shortcuts (Ctrl+C copy, Ctrl+V paste, etc.)
+
+- **Basic Positioning** (Left Control only):
+  - **Left Ctrl + A**: Left half of screen
+  - **Left Ctrl + D**: Right half of screen
+  - **Left Ctrl + W**: Top half of screen
+  - **Left Ctrl + S**: Bottom half of screen
+  - **Left Ctrl + C**: Center window
+  - **Left Ctrl + F**: Full screen
+
+- **System Shortcuts Still Work**:
+  - **Left Ctrl + C**: Copy (normal system function)
+  - **Left Ctrl + V**: Paste (normal system function)
+  - **Left Ctrl + Z**: Undo (normal system function)
+  - **Right Ctrl + [any key]**: Normal system shortcuts
 
 - **Screen Management**:
   - **⌘⌥A**: Move to previous screen
@@ -189,6 +289,27 @@ Execute a fabric pattern call on the current clipboard content with **⌃⌥** (
 ### Internal Clipboard History
 
 Access the last 9 copied text items with **⌃⇧1** through **⌃⇧9**
+
+### Kanata Integration
+
+Visual menu bar indicator showing current Kanata keyboard mode:
+
+- **◯ Empty Circle**: Normal mode
+- **◆ Diamond**: Vim mode  
+- **● Filled Circle**: Typing mode
+
+Update from terminal:
+```bash
+# Set mode (creates menu bar indicator)
+kanata-mode normal
+kanata-mode vim
+kanata-mode typing
+
+# Check current mode
+kanata-mode
+```
+
+The indicator automatically updates when the status file changes, making it perfect for integration with your actual Kanata configuration. See [docs/KANATA.md](docs/KANATA.md) for detailed setup instructions.
 
 ## Advanced Configuration
 
@@ -259,32 +380,119 @@ git pull
 
 ## Troubleshooting
 
-1. Check the Hammerspoon Console for errors (Help > Console in Hammerspoon menu)
-2. Verify your configuration in `config_user.lua`
-3. Look for log messages from specific modules
-4. Ensure all required applications are installed
-5. If everything fails, try resetting Hammerspoon:
+### General Issues
+
+1. **Check the Hammerspoon Console** for errors (Help > Console in Hammerspoon menu)
+2. **Verify your configuration** in `config_user.lua`
+3. **Look for log messages** from specific modules
+4. **Ensure all required applications** are installed and properly named in your config
+
+### Fabric AI Issues
+
+**Fabric shortcuts not working (⌃⌥R, ⌃⌥M):**
+
+1. **Check if Fabric is installed:**
    ```bash
-   # Backup your custom configuration
-   cp ~/.hammerspoon/config_user.lua ~/config_user.lua.backup
-   
-   # Reset Hammerspoon
-   rm -rf ~/.hammerspoon
-   git clone https://github.com/felixleopold/hammerspoon.git ~/.hammerspoon
-   
-   # Restore your configuration
-   cp ~/config_user.lua.backup ~/.hammerspoon/config_user.lua
+   which fabric
+   # or
+   which fabric-ai
    ```
 
-## Contributing
+2. **Test Fabric directly:**
+   ```bash
+   echo "test text" | fabric --pattern correct
+   ```
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+3. **Check API keys:**
+   ```bash
+   fabric --setup
+   # Re-enter your API keys if needed
+   ```
+
+4. **Verify Fabric configuration:**
+   ```bash
+   cat ~/.config/fabric/.env
+   # Should contain your API keys
+   ```
+
+**Common Fabric Error Messages:**
+
+- **"No API key found"**: Run `fabric --setup` and enter your Groq API key
+- **"Pattern not found"**: Check if patterns are installed in `~/.config/fabric/patterns/`
+- **"Connection error"**: Check your internet connection and API key validity
+- **"Rate limit exceeded"**: Wait a few minutes or check your API usage
+
+**Reinstall Fabric patterns:**
+```bash
+# If patterns are missing or corrupted
+cd ~/.hammerspoon
+rsync -a fabric-patterns/ ~/.config/fabric/patterns/
+```
+
+### Accessibility Permissions
+
+If shortcuts aren't working:
+
+1. **System Settings** > **Privacy & Security** > **Accessibility**
+2. **Remove Hammerspoon** from the list (click the minus button)
+3. **Restart Hammerspoon** - it will prompt for permissions again
+4. **Grant permissions** and test functionality
+
+### Application Shortcuts Not Working
+
+1. **Check application names** in your `config_user.lua`
+2. **Use exact application names** as they appear in Applications folder
+3. **For non-standard apps**, use the extended format:
+   ```lua
+   MyApp = {
+       name = "MyApp.app",
+       bundleID = "com.company.myapp",
+       path = "/Applications/MyApp.app"
+   }
+   ```
+
+### Window Management Issues
+
+1. **Left Control not working**: Check if you have other software intercepting Ctrl key
+2. **Windows not positioning correctly**: Some apps don't respond to window management
+3. **Multiple monitors**: Ensure your monitor setup is stable before using screen management
+
+### Complete Reset
+
+If everything fails, try resetting Hammerspoon:
+
+```bash
+# Backup your custom configuration
+cp ~/.hammerspoon/config_user.lua ~/config_user.lua.backup
+
+# Reset Hammerspoon
+rm -rf ~/.hammerspoon
+
+# Reinstall using the automated script
+curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/main/install.sh | bash
+
+# Restore your configuration
+cp ~/config_user.lua.backup ~/.hammerspoon/config_user.lua
+
+# Reload configuration
+# Press ⌘⌃⌥⇧R in Hammerspoon
+```
+
+### Getting Help
+
+1. **Check the logs** in Hammerspoon Console
+2. **Test individual components** to isolate issues
+3. **Verify prerequisites** are installed (Homebrew, Fabric, etc.)
+4. **Create an issue** on GitHub with:
+   - Your macOS version
+   - Hammerspoon version
+   - Error messages from console
+   - Steps to reproduce the problem
 
 ## See Also
 
 - [SHORTCUTS.md](docs/SHORTCUTS.md) - Default keyboard shortcuts
 - [CHANGELOG.md](docs/CHANGELOG.md) - Version history
+- [LEFT_RIGHT_MODIFIERS.md](docs/LEFT_RIGHT_MODIFIERS.md) - Left-right modifier key documentation
+- [LEFT_RIGHT_MODIFIERS_DEBUG.md](docs/LEFT_RIGHT_MODIFIERS_DEBUG.md) - Debugging left-right modifier key functionality
 - [Hammerspoon Documentation](https://www.hammerspoon.org/docs/)
