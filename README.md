@@ -43,7 +43,15 @@ A modular Hammerspoon configuration framework focused on providing as many usefu
 Run the automated installation script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install.sh | bash
+```
+
+Or download and run locally:
+
+```bash
+curl -O https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install.sh
+chmod +x install.sh
+./install.sh
 ```
 
 ---
@@ -454,7 +462,7 @@ cp ~/.hammerspoon/config_user.lua ~/config_user.lua.backup
 rm -rf ~/.hammerspoon
 
 # Reinstall using the automated script
-curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install.sh | bash
 
 # Restore your configuration
 cp ~/config_user.lua.backup ~/.hammerspoon/config_user.lua
