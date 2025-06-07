@@ -1,22 +1,18 @@
 # Hammerspoon Configuration Framework
 
-A modern, modular Hammerspoon configuration framework focused on productivity and extensibility. This framework provides a structured way to manage your Hammerspoon configuration with easy customization options.
+A modular Hammerspoon configuration framework focused on providing as many usefull keyboard shortcuts as possible. All the main features I NEED on my Macbook.
 
 ## Overview
 
-This framework is organized into several modules:
 | Module | Description |
 | --- | --- |
-| **Application Management** | Quick app switching and window control |
-| **Window Management** | Precise window positioning including halves, thirds, and corners |
-| **Internal Clipboard History** | Paste recent text items |
-| **Fabric AI Integration** | AI-powered text processing and automation |
-| **Macro Recording** | Record and playback mouse and keyboard actions |
-| **Left-Right Modifier Support** | Distinguish between left and right modifier keys |
-| **Kanata Integration** | Visual menu bar indicator for Kanata keyboard modes |
-| **Custom Shortcuts** | Self-organized system for personal additions |
-| **Terminal Integration** | Quick terminal access from Finder |
-| **Debug Tools** | Utilities for configuration and troubleshooting |
+| **Application Management** | Quick app opening and switching with dedicated shortcuts for each app |
+| **Window Management** | Fast window positioning and management with keyboard shortcuts |
+| **Internal Clipboard History** | Paste recent items directly with keyboard shortcuts, even supporting images |
+| **Fabric AI Integration** | AI integration for features like, correct, improve, fact-check, convert to LaTeX and many more |
+| **Macro Recording** | Record Mouse and Keyboard strokes and play them back with the exact or modified timing |
+| **Kanata Integration** | Visual menu bar indicator for Kanata keyboard layers |
+| **Finder Integration** | Open the current folder in Terminal or Editor with keyboard shortcut |
 
 ## Project Structure
 
@@ -48,14 +44,6 @@ Run the automated installation script:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/main/install.sh | bash
-```
-
-Or download and run locally:
-
-```bash
-wget https://raw.githubusercontent.com/felixleopold/hammerspoon/main/install.sh
-chmod +x install.sh
-./install.sh
 ```
 
 ---
@@ -246,12 +234,6 @@ The framework includes advanced window management features with **seamless left-
   - **Left Ctrl + C**: Center window
   - **Left Ctrl + F**: Full screen
 
-- **System Shortcuts Still Work**:
-  - **Left Ctrl + C**: Copy (normal system function)
-  - **Left Ctrl + V**: Paste (normal system function)
-  - **Left Ctrl + Z**: Undo (normal system function)
-  - **Right Ctrl + [any key]**: Normal system shortcuts
-
 - **Screen Management**:
   - **⌘⌥A**: Move to previous screen
   - **⌘⌥D**: Move to next screen
@@ -398,7 +380,6 @@ git pull
 1. **Check if Fabric is installed:**
    ```bash
    which fabric
-   # or
    which fabric-ai
    ```
 
@@ -410,14 +391,14 @@ git pull
 3. **Check API keys:**
    ```bash
    fabric --setup
-   # Re-enter your API keys if needed
    ```
+   Re-enter your API keys if needed
 
 4. **Verify Fabric configuration:**
    ```bash
    cat ~/.config/fabric/.env
-   # Should contain your API keys
    ```
+   Should contain your API keys
 
 **Common Fabric Error Messages:**
 
