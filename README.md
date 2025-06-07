@@ -136,7 +136,6 @@ After installation, you should customize the configuration for your system:
 
 1. **Create your user configuration file**:
    ```bash
-   cp ~/.hammerspoon/config_user.lua.template ~/.hammerspoon/config_user.lua
    open ~/.hammerspoon/config_user.lua
    ```
 
@@ -146,8 +145,6 @@ After installation, you should customize the configuration for your system:
    ```lua
    applications = {
        Browser = "Safari", -- Change to your primary browser
-       Editor = "Visual Studio Code", -- Change to your preferred editor
-       Terminal = "Terminal", -- Change to your terminal app
        -- Add more applications as needed
    }
    ```
@@ -223,8 +220,13 @@ or directly execute the command:
 
 6. **Configure your setup**:
    ```bash
+   cp ~/.hammerspoon/config_user.lua.template ~/.hammerspoon/config_user.lua
    open ~/.hammerspoon/config_user.lua
    ```
+
+### Post-Installation Setup
+[Post-Installation Setup](#post-installation-setup)
+
 
 ## Key Features
 
