@@ -89,7 +89,7 @@ Default installation paths are:
         -- Build the fabric command
         local command
         -- Choose model proactively
-        local chosenModel = pattern.model or config.fabric.defaultModel or "llama-3.1-70b-versatile"
+        local chosenModel = pattern.model or config.fabric.defaultModel or "openai/gpt-oss-120b"
         local chosenVendor = "Groq"
         if pattern.youtube then
             -- For YouTube patterns
