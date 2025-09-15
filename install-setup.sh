@@ -278,6 +278,13 @@ setup_fabric_patterns() {
 	step "Installing Fabric patterns"
 	"${RUN_AS_USER[@]}" mkdir -p "$TARGET_HOME/.config/fabric/patterns"
 	local src_dir="$TARGET_HOME/.hammerspoon/fabric-patterns"
+	if [ ! -d "$src_dir" ]; then
+		# Try updating repo if it exists
+		if [ -d "$TARGET_HOME/.hammerspoon/.git" ]; then
+			info "Refreshing repo to ensure patterns are present"
+			"${RUN_AS_USER[@]}" git -C "$TARGET_HOME/.hammerspoon" pull --rebase --autostash >/dev/null 2>&1 || true
+		fi
+	fi
 	if [ -d "$src_dir" ]; then
 		"${RUN_AS_USER[@]}" rsync -a "$src_dir/" "$TARGET_HOME/.config/fabric/patterns/"
 		"${RUN_AS_USER[@]}" rm -rf "$src_dir"
@@ -288,7 +295,9 @@ setup_fabric_patterns() {
 			"${RUN_AS_USER[@]}" rsync -a "$(pwd)/fabric-patterns/" "$TARGET_HOME/.config/fabric/patterns/"
 			info "Installed Fabric patterns from current directory"
 		else
-			warn "fabric-patterns directory not found in repo"
+			warn "fabric-patterns directory not found. Looked in: $src_dir and $(pwd)/fabric-patterns"
+			# Debug listing to help diagnose
+			ls -la "$TARGET_HOME/.hammerspoon" >/dev/null 2>&1 || true
 		fi
 	fi
 }
@@ -309,6 +318,8 @@ write_fabric_env() {
 
 	# Before key prompts
 	open_help_links
+	local in_groq=""
+	local in_yt=""
 	need_input "Groq API Key (recommended, press Enter to skip):"
 	read -r -p "> " in_groq </dev/tty || true
 	need_input "YouTube API Key (optional, press Enter to skip):"
@@ -332,6 +343,7 @@ configure_fabric_model() {
 	"${RUN_AS_USER[@]}" mkdir -p "$cfgdir"
 	local provider="Groq"
 	local model="llama-3.1-70b-versatile"
+	local in_model=""
 	need_input "Default model (press Enter to accept $model):"
 	read -r -p "> " in_model </dev/tty || true
 	model=${in_model:-$model}
