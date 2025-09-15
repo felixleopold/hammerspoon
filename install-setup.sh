@@ -375,9 +375,9 @@ open_help_links() {
 	step "Opening help links in your default browser (you can follow along)"
 	echo
 	echo "Opening browser windows for:"
-	echo "• Groq API Key setup"
-	echo "• YouTube API Key setup" 
-	echo "• README with detailed instructions and screenshots"
+	echo "- Groq API Key setup"
+	echo "- YouTube API Key setup"
+	echo "- README with detailed instructions and screenshots"
 	echo
 	# Use the target user's launch services to open in default browser
 	"${RUN_AS_USER[@]}" open -g "https://console.groq.com/keys" || true
@@ -386,10 +386,10 @@ open_help_links() {
 	"${RUN_AS_USER[@]}" open -g "https://github.com/felixleopold/hammerspoon/blob/config/README.md#get-required-api-keys" || true
 	
 	echo
-	echo "If browser windows didn't open, you can manually visit these links:"
-	echo "• Groq API Key: https://console.groq.com/keys"
-	echo "• YouTube API Key: https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com"
-	echo "• README Instructions: https://github.com/felixleopold/hammerspoon/blob/config/README.md#fabric-ai-setup"
+	echo "If browser windows didn't open, open these links manually:" 
+	printf "%s\n" "https://console.groq.com/keys"
+	printf "%s\n" "https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com"
+	printf "%s\n" "https://github.com/felixleopold/hammerspoon/blob/config/README.md#fabric-ai-setup"
 	echo
 }
 
@@ -421,7 +421,6 @@ main() {
 	echo "- Clone the configuration into ~/.hammerspoon"
 	echo "- Create and customize your config_user.lua"
 	echo "- Configure Fabric API keys and defaults"
-	echo "- Open guides for getting API keys with screenshots"
 	echo "- Launch Hammerspoon and open Accessibility settings"
 	echo
 	if [ "$IS_ROOT" -eq 1 ]; then
@@ -445,11 +444,7 @@ main() {
 	setup_fabric_patterns
 	write_fabric_env
 	configure_fabric_model
-	run_fabric_setup
-
-	if confirm "Open step-by-step key setup guides in your browser now?"; then
-		open_help_links
-	fi
+	# run_fabric_setup is redundant once keys and defaults are set; skipping
 
 	# Launch Hammerspoon and open Accessibility pane automatically
 	step "Launching Hammerspoon and opening Accessibility settings"
