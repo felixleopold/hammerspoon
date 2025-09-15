@@ -253,11 +253,8 @@ defaults.fabric = defaults.fabric or {}\
 defaults.fabric.fabricPath = "'"$fabpath"'"\
 \
 return defaults|g' "$cfg"
-	fi
-	info "Wrote overrides to config_user.lua (backup created)"
-	else
-		warn "Skipped modifying config_user.lua; you can set apps later in that file"
-	fi
+		fi
+		info "Wrote overrides to config_user.lua (backup created)"
 }
 
 install_hammerspoon() {
