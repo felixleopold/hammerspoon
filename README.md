@@ -13,6 +13,7 @@ A modular Hammerspoon configuration framework focused on providing as many usefu
 | **Macro Recording & Editor** | Record mouse/keyboard, edit timing in a visual editor, and play back |
 | **Mouse Speed Finder** | Analyze pointing performance and suggest/apply optimal mouse/trackpad speed |
 | **Kanata Integration** | Visual menu bar indicator for Kanata keyboard layers |
+| **Telemetry (Optional)** | Local hotkey usage tracking with optional server POST |
 | **Finder Integration** | Open the current folder in Terminal or Editor with keyboard shortcut |
 
 ## Project Structure
@@ -346,6 +347,23 @@ Analyze your pointing performance and get suggestions to increase or decrease mo
 - Shows a brief report and suggests a change after every N clicks (configurable)
 - Lets you apply the suggested speed immediately and verifies it was set
 - Toggle and report shortcuts are configurable under `mousespeedfinder.shortcuts`
+
+### Telemetry (Optional)
+
+Track hotkey usage locally (and optionally to your server):
+
+```lua
+telemetry = {
+    enabled = true,
+    username = nil, -- optional identifier
+    serverUrl = nil, -- optional; if set, events are POSTed
+    includeAppName = true,
+}
+```
+
+Notes:
+- Local log: `~/.hammerspoon/telemetry_events.jsonl`
+- Enable via installer or set the block above in `config_user.lua`
 
 Enable in your `config_user.lua`:
 

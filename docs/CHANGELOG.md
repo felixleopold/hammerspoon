@@ -1,21 +1,25 @@
 # Changelog
 
-## [1.7.1] - 2025-09-15
+## [1.8.0] - 2025-09-15
 
 ### Added
-- **Second-layer Application Shortcuts**: Added support for a Shift-activated app layer
+- **Second-layer Application Shortcuts**: Shift-activated app layer
   - New trigger `triggers.app2 = { "ctrl", "alt", "cmd", "shift" }`
   - New config section `shortcuts.apps2` for defining second-layer app hotkeys
   - Works alongside existing `apps` without conflicts; includes telemetry labels
-  - Example:
-    ```lua
-    shortcuts = {
-      apps2 = {
-        { app = "Browser", key = "B" },
-        { app = "Editor", key = "E" },
-      },
-    }
-    ```
+- **Optional Telemetry**: Local hotkey usage tracking (privacy-first)
+  - Logs to `~/.hammerspoon/telemetry_events.jsonl`
+  - Can optionally POST to your server (disabled by default)
+  - Enable via `telemetry` section in `config_user.lua` or through the installer
+
+### Improved
+- **Mouse Speed Finder**: Better defaults and messaging for suggestions
+  - Clearer next steps in alerts; safer default thresholds
+  - Minor polish to toggle/report shortcuts in docs
+
+### Fixed
+- **Macros**: Reliability improvements when opening the editor from the chooser
+  - Reduced edge cases where the timing editor wouldn’t attach to the last macro
 
 ## [1.7.0] - 2025-01-06
 
