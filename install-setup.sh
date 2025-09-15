@@ -341,17 +341,35 @@ configure_fabric_model() {
 	step "Selecting Fabric defaults"
 	local cfgdir="$TARGET_HOME/.config/fabric"
 	"${RUN_AS_USER[@]}" mkdir -p "$cfgdir"
-	local provider="Groq"
+	local vendor="Groq"
 	local model="llama-3.1-70b-versatile"
 	local in_model=""
 	need_input "Default model (press Enter to accept $model):"
 	read -r -p "> " in_model </dev/tty || true
 	model=${in_model:-$model}
 	{
-		echo "PROVIDER=$provider"
+		echo "DEFAULT_VENDOR=$vendor"
 		echo "DEFAULT_MODEL=$model"
 	} | "${RUN_AS_USER[@]}" tee "$cfgdir/defaults" >/dev/null
 	info "Fabric defaults saved"
+
+	# Ensure .env also contains vendor and model for fabric-ai
+	local envfile="$cfgdir/.env"
+	"${RUN_AS_USER[@]}" touch "$envfile"
+	# Update or append DEFAULT_VENDOR
+	if grep -q '^DEFAULT_VENDOR=' "$envfile" 2>/dev/null; then
+		"${RUN_AS_USER[@]}" sed -i '' "s/^DEFAULT_VENDOR=.*/DEFAULT_VENDOR=$vendor/" "$envfile"
+	else
+		"${RUN_AS_USER[@]}" /bin/sh -c "printf '%s\n' 'DEFAULT_VENDOR=$vendor' >> '$envfile'"
+	fi
+	# Update or append DEFAULT_MODEL
+	if grep -q '^DEFAULT_MODEL=' "$envfile" 2>/dev/null; then
+		"${RUN_AS_USER[@]}" sed -i '' "s/^DEFAULT_MODEL=.*/DEFAULT_MODEL=$model/" "$envfile"
+	else
+		"${RUN_AS_USER[@]}" /bin/sh -c "printf '%s\n' 'DEFAULT_MODEL=$model' >> '$envfile'"
+	fi
+	"${RUN_AS_USER[@]}" chmod 600 "$envfile" || true
+	info "Updated $envfile with default vendor and model"
 }
 
 run_fabric_setup() {

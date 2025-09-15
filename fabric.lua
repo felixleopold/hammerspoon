@@ -45,14 +45,14 @@ function M.setup(config)
         
         -- If configured path doesn't work, try to find it
         if fabricPath == "" then
+            fabricPath = hs.execute("which fabric-ai"):gsub("%s+", "")
+            if fabricPath ~= "" then
+                log.i("Found fabric-ai in PATH: " .. fabricPath)
+            end
+        end
+        if fabricPath == "" then
             fabricPath = hs.execute("which fabric"):gsub("%s+", "")
             log.i("Found fabric in PATH: " .. (fabricPath ~= "" and fabricPath or "not found"))
-            
-            -- Also try looking for fabric-ai (homebrew installation)
-            if fabricPath == "" then
-                fabricPath = hs.execute("which fabric-ai"):gsub("%s+", "")
-                log.i("Found fabric-ai in PATH: " .. (fabricPath ~= "" and fabricPath or "not found"))
-            end
         end
         
         -- If still not found, try common installation paths
@@ -88,19 +88,26 @@ Default installation paths are:
         
         -- Build the fabric command
         local command
+        -- Choose model proactively
+        local chosenModel = pattern.model or config.fabric.defaultModel or "llama-3.1-70b-versatile"
+        local chosenVendor = "Groq"
         if pattern.youtube then
             -- For YouTube patterns
-            command = string.format('%s -y "%s" --stream --pattern %s',
+            command = string.format('%s -y "%s" --vendor %s --model %s --stream --pattern %s',
                 fabricPath,
                 clipboardContent:gsub('"', '\\"'),  -- Escape quotes in URL
+                chosenVendor,
+                chosenModel,
                 pattern.id)
         else
             -- For regular patterns
-            local baseCommand = string.format('echo "%s" | %s --pattern %s',
+            local baseCommand = string.format('echo "%s" | %s --pattern %s --vendor %s --model %s',
                 clipboardContent:gsub('"', '\\"'),
                 fabricPath,
-                pattern.id)
-            
+                pattern.id,
+                chosenVendor,
+                chosenModel)
+
             -- Handle pattern variables
             if pattern.variables then
                 for varName, defaultValue in pairs(pattern.variables) do
@@ -115,7 +122,6 @@ Default installation paths are:
                     end
                 end
             end
-            
             command = baseCommand
         end
         
