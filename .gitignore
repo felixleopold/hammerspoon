@@ -1,3 +1,19 @@
+# macOS
+.DS_Store
+
+# User-specific Hammerspoon data
+clipboard_history.json
+clipboard_files/
+macros.json
+config_user.lua
+Spoons/
+
+# Backups and temp files
+*.backup.*
+*.bak
+*~
+.#*
+
 # Hammerspoon specific
 Spoons/
 

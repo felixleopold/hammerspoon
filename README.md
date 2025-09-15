@@ -10,7 +10,8 @@ A modular Hammerspoon configuration framework focused on providing as many usefu
 | **Window Management** | Fast window positioning and management with keyboard shortcuts |
 | **Internal Clipboard History** | Paste recent items directly with keyboard shortcuts, even supporting images |
 | **Fabric AI Integration** | AI integration for features like, correct, improve, fact-check, convert to LaTeX and many more |
-| **Macro Recording** | Record Mouse and Keyboard strokes and play them back with the exact or modified timing |
+| **Macro Recording & Editor** | Record mouse/keyboard, edit timing in a visual editor, and play back |
+| **Mouse Speed Finder** | Analyze pointing performance and suggest/apply optimal mouse/trackpad speed |
 | **Kanata Integration** | Visual menu bar indicator for Kanata keyboard layers |
 | **Finder Integration** | Open the current folder in Terminal or Editor with keyboard shortcut |
 
@@ -38,7 +39,25 @@ A modular Hammerspoon configuration framework focused on providing as many usefu
 
 ## Installation
 
-### Quick Installation (Recommended)
+### Guided Installation (Recommended)
+
+One-line guided install that walks you through prerequisites, API keys, app defaults, and sets up Fabric patterns:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install-setup.sh | bash
+```
+
+What this does:
+- Installs Homebrew (if missing), Hammerspoon, and Fabric
+- Clones this repo into `~/.hammerspoon`
+- Copies `config_user.lua.template` to `config_user.lua` (if missing)
+- Guides you to set primary apps (browser, editor, terminal)
+- Opens help links to create Groq and YouTube API keys
+- Writes Fabric `.env` with your keys and installs patterns
+
+---
+
+### Quick Installation (Manual post-install setup)
 
 Run the automated installation script:
 
@@ -263,22 +282,66 @@ Open specific Finder folders with **⌘⇧** (Command + Shift) plus a key:
 - **⌘⇧X**: Close all Finder windows
 - **⌘⇧W**: Close all windows of currect application except for the focused one
 
-### Macro Recording and Playback
+### Macro Recording, Chooser, and Timing Editor
 
-The framework includes a macro recording and playback system:
+The framework includes a macro recording and playback system, plus a chooser and a visual timing editor:
 
 - **⌥⌘[**: Start/stop recording a macro (toggle)
 - **⌥⌘]**: Play the most recently saved macro
 - **⌥⌘\\**: Open the macro chooser to select and play any saved macro
+ - In the chooser, hold **⌥** (Option) when selecting to open the timing editor instead of playing
+ - **⌥⌘E**: Open the timing editor directly for the last-selected or most recent macro
 
-When recording, red circles will appear around your mouse cursor whenever you click, and a "Recording Macro..." indicator will be displayed on screen. When playing back a macro, blue circles will highlight the cursor actions.
+When recording, red circles will appear around your mouse cursor whenever you click, and a "Recording Macro..." indicator will be displayed. When playing back, blue circles will highlight clicks.
+
+The timing editor provides a web-based UI to adjust event timings precisely and apply a global playback speed. After edits, timings are persisted to `~/.hammerspoon/macros.json`.
+
+Notes:
+- The chooser remembers the last selected macro for quick playback
+- Up to 10 macros are stored (oldest removed when full)
 
 The system records mouse movements, clicks, and keyboard inputs with accurate timing. Up to 10 macros can be saved, with the oldest ones being automatically replaced when this limit is reached.
 
-### Fabric Shorctus
+### Fabric Shortcuts
 Execute a fabric pattern call on the current clipboard content with **⌃⌥** (Control + Option) plus a key:
 - **⌃⌥R**: Correct Pattern
 - **⌃⌥M**: Markdown Pattern
+
+You can also open a pattern chooser with **⌘⌥⇧P** (configurable via `fabric.chooserTrigger`/`fabric.chooserKey`).
+
+Recommended defaults (free): Provider Groq, Model `llama-3.1-70b-versatile`.
+
+### App Groups (cycle through related apps)
+
+Define app groups in `config_user.lua` and bind them under `shortcuts.appGroups` to cycle quickly through related apps. Example:
+
+```lua
+appGroups = {
+    browsers = { apps = { "Browser", "Browser2" }, mode = "recent", launchIfNotRunning = true },
+}
+shortcuts = {
+    appGroups = {
+        { group = "browsers", key = "B" },
+    },
+}
+```
+
+### Mouse Speed Finder
+
+Analyze your pointing performance and get suggestions to increase or decrease mouse/trackpad speed, with one-click apply:
+
+- Shows a brief report and suggests a change after every N clicks (configurable)
+- Lets you apply the suggested speed immediately and verifies it was set
+- Toggle and report shortcuts are configurable under `mousespeedfinder.shortcuts`
+
+Enable in your `config_user.lua`:
+
+```lua
+mousespeedfinder = {
+    enabled = true,
+    device = "auto", -- or "mouse" | "trackpad"
+}
+```
 
 ### Internal Clipboard History
 
