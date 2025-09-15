@@ -70,7 +70,8 @@ persist_brew_shellenv() {
 
 confirm() {
 	local prompt="$1"
-	read -r -p "$prompt [y/N]: " ans || true
+	# When script is piped to bash, stdin is the script. Read from TTY instead.
+	read -r -p "$prompt [y/N]: " ans </dev/tty || true
 	[[ "$ans" =~ ^[Yy]$ ]]
 }
 
@@ -154,13 +155,13 @@ ensure_user_config() {
 set_app_defaults() {
 	local cfg="$HOME/.hammerspoon/config_user.lua"
 	step "Configuring app defaults"
-	read -r -p "Primary Browser [Safari/Chrome/Arc/Brave] (default: Safari): " primary_browser || true
+	read -r -p "Primary Browser [Safari/Chrome/Arc/Brave] (default: Safari): " primary_browser </dev/tty || true
 	primary_browser=${primary_browser:-Safari}
-	read -r -p "Secondary Browser (default: Chrome): " secondary_browser || true
+	read -r -p "Secondary Browser (default: Chrome): " secondary_browser </dev/tty || true
 	secondary_browser=${secondary_browser:-Chrome}
-	read -r -p "Code Editor [Visual Studio Code/Sublime Text] (default: Visual Studio Code): " editor || true
+	read -r -p "Code Editor [Visual Studio Code/Sublime Text] (default: Visual Studio Code): " editor </dev/tty || true
 	editor=${editor:-Visual Studio Code}
-	read -r -p "Terminal [Terminal/iTerm] (default: Terminal): " terminal || true
+	read -r -p "Terminal [Terminal/iTerm] (default: Terminal): " terminal </dev/tty || true
 	terminal=${terminal:-Terminal}
 
 	# Detect Fabric binary to set path override (optional)
@@ -180,8 +181,8 @@ set_app_defaults() {
 	local telemetry_username=""
 	local telemetry_server=""
 	if [ "$telemetry_enabled" = "true" ]; then
-		read -r -p "Telemetry username (optional, press enter to skip): " telemetry_username || true
-		read -r -p "Telemetry server URL (optional, e.g. http://localhost:3000/api/hammerspoon/usage): " telemetry_server || true
+		read -r -p "Telemetry username (optional, press enter to skip): " telemetry_username </dev/tty || true
+		read -r -p "Telemetry server URL (optional, e.g. http://localhost:3000/api/hammerspoon/usage): " telemetry_server </dev/tty || true
 	fi
 
 	# Decide whether to overwrite
@@ -287,8 +288,8 @@ write_fabric_env() {
 		yt_key=$(grep '^YOUTUBE_API_KEY=' "$envfile" | sed 's/^YOUTUBE_API_KEY=//') || true
 	fi
 
-	read -r -p "Groq API Key (leave blank to keep current): " in_groq || true
-	read -r -p "YouTube API Key (optional): " in_yt || true
+	read -r -p "Groq API Key (leave blank to keep current): " in_groq </dev/tty || true
+	read -r -p "YouTube API Key (optional): " in_yt </dev/tty || true
 
 	groq_key=${in_groq:-$groq_key}
 	yt_key=${in_yt:-$yt_key}
@@ -308,7 +309,7 @@ configure_fabric_model() {
 	"${RUN_AS_USER[@]}" mkdir -p "$cfgdir"
 	local provider="Groq"
 	local model="llama-3.1-70b-versatile"
-	read -r -p "Default model (enter to accept $model): " in_model || true
+	read -r -p "Default model (enter to accept $model): " in_model </dev/tty || true
 	model=${in_model:-$model}
 	{
 		echo "PROVIDER=$provider"
@@ -335,7 +336,7 @@ final_notes() {
 	echo
 	echo "We opened the Accessibility settings for you."
 	echo "Please ensure Hammerspoon is enabled there, then press Enter here to continue."
-	read -r -p "Press Enter once Accessibility is granted..." _ || true
+	read -r -p "Press Enter once Accessibility is granted..." _ </dev/tty || true
 	echo "You can reload Hammerspoon with ⌘⌃⌥⇧R (or via menu)."
 }
 

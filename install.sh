@@ -109,7 +109,7 @@ clone_repository() {
     
     if [ -d "$HOME/.hammerspoon" ]; then
         print_warning "~/.hammerspoon directory already exists"
-        read -p "Do you want to backup and replace it? (y/N): " -n 1 -r
+        read -p "Do you want to backup and replace it? (y/N): " -n 1 -r </dev/tty
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             mv "$HOME/.hammerspoon" "$HOME/.hammerspoon.backup.$(date +%Y%m%d_%H%M%S)"
@@ -183,13 +183,13 @@ setup_user_config() {
 configure_telemetry() {
     print_step "Telemetry (optional)"
     local cfg="$HOME/.hammerspoon/config_user.lua"
-    read -p "Enable optional hotkey usage telemetry (writes local JSONL; can also POST to your server)? (y/N): " -n 1 -r
+    read -p "Enable optional hotkey usage telemetry (writes local JSONL; can also POST to your server)? (y/N): " -n 1 -r </dev/tty
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         local username=""
         local server=""
-        read -p "Telemetry username (optional): " username
-        read -p "Telemetry server URL (optional, e.g. http://localhost:3000/api/hammerspoon/usage): " server
+        read -p "Telemetry username (optional): " username </dev/tty
+        read -p "Telemetry server URL (optional, e.g. http://localhost:3000/api/hammerspoon/usage): " server </dev/tty
         # Insert telemetry block before return defaults if present
         if grep -q "return defaults" "$cfg"; then
             tmpfile="$(mktemp)"
@@ -243,7 +243,7 @@ interactive_followups() {
     # Open Accessibility pane for granting permissions
     print_step "Opening Accessibility settings..."
     "${RUN_AS_USER[@]}" open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" || true
-    read -r -p "Enable Hammerspoon in Accessibility, then press Enter to continue..." _ || true
+    read -r -p "Enable Hammerspoon in Accessibility, then press Enter to continue..." _ </dev/tty || true
 
     # Open README sections with screenshots for API keys
     print_step "Opening README sections for API keys and setup (with screenshots)..."
@@ -253,7 +253,7 @@ interactive_followups() {
     # Prompt user to run fabric --setup (new terminal recommended)
     echo
     print_status "Open a new terminal so the 'fabric' alias is active."
-    read -r -p "Then run 'fabric --setup' and complete prompts. Press Enter here when done..." _ || true
+    read -r -p "Then run 'fabric --setup' and complete prompts. Press Enter here when done..." _ </dev/tty || true
 
     print_status "You can edit your config at ~/.hammerspoon/config_user.lua and reload with ⌘⌃⌥⇧R."
 }
@@ -272,7 +272,7 @@ main() {
     echo "- Create a user config if missing"
     echo "- Launch Hammerspoon and guide final steps"
     echo
-    read -r -p "Proceed? [y/N]: " ans || true
+    read -r -p "Proceed? [y/N]: " ans </dev/tty || true
     if [[ ! "$ans" =~ ^[Yy]$ ]]; then
         print_error "Installation cancelled"
         exit 1
