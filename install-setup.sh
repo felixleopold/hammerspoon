@@ -16,6 +16,58 @@ step() { echo -e "${BLUE}[STEP]${NC} $1"; }
 
 CONFIG_CREATED=0
 
+# Determine the real target user and home, even if invoked with sudo
+IS_ROOT=0
+if [ "$(id -u)" -eq 0 ]; then
+	IS_ROOT=1
+fi
+TARGET_USER=${SUDO_USER:-$(id -un)}
+# Resolve target user's home reliably
+TARGET_HOME=$(eval echo "~${TARGET_USER}")
+# Run commands as the target user, preserving HOME
+RUN_AS_USER=""
+if [ "$IS_ROOT" -eq 1 ]; then
+	RUN_AS_USER=(sudo -u "$TARGET_USER" -H)
+fi
+
+# Append a line to a file if it's not already present
+append_line_if_absent() {
+	local file="$1"
+	local line="$2"
+	mkdir -p "$(dirname "$file")"
+	if [ ! -f "$file" ] || ! grep -Fqx "$line" "$file" 2>/dev/null; then
+		printf '%s\n' "$line" >> "$file"
+		info "Updated ${file}"
+	fi
+}
+
+# Ensure brew is available in PATH for this process and future shells
+ensure_brew_path_now() {
+	if command -v brew >/dev/null 2>&1; then
+		return 0
+	fi
+	# Common locations
+	if [ -x "/opt/homebrew/bin/brew" ]; then
+		eval "$('/opt/homebrew/bin/brew' shellenv)" || true
+	elif [ -x "/usr/local/bin/brew" ]; then
+		eval "$('/usr/local/bin/brew' shellenv)" || true
+	fi
+}
+
+persist_brew_shellenv() {
+	# Prefer zsh on modern macOS; also update bash profile for completeness
+	local brew_bin
+	brew_bin=$(command -v brew || true)
+	if [ -z "$brew_bin" ]; then
+		# Assume Apple Silicon default if not yet on PATH
+		brew_bin="/opt/homebrew/bin/brew"
+	fi
+	local line="eval \"$($brew_bin shellenv 2>/dev/null || echo '/opt/homebrew/bin/brew shellenv')\""
+	# Write to the target user's profiles
+	append_line_if_absent "$TARGET_HOME/.zprofile" "$line"
+	append_line_if_absent "$TARGET_HOME/.bash_profile" "$line"
+}
+
 confirm() {
 	local prompt="$1"
 	read -r -p "$prompt [y/N]: " ans || true
@@ -34,21 +86,27 @@ install_homebrew() {
 		info "Homebrew is already installed"
 		return
 	fi
-	step "Installing Homebrew"
-	/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-	info "Homebrew installed"
+	step "Installing Homebrew (this can take several minutes)"
+	"${RUN_AS_USER[@]}" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+	# Make brew available now and for future shells
+	ensure_brew_path_now || true
+	"${RUN_AS_USER[@]}" bash -lc 'eval "$(brew shellenv)" >/dev/null 2>&1 || true'
+	persist_brew_shellenv
+	info "Homebrew installed and PATH configured"
 }
 
 install_pkg() {
 	local pkg="$1"
+	ensure_brew_path_now || true
 	if brew list --formula "$pkg" >/dev/null 2>&1 || brew list --cask "$pkg" >/dev/null 2>&1; then
 		info "$pkg already installed"
 		return
 	fi
+	step "Installing $pkg (this may take a moment)"
 	if brew info --cask "$pkg" >/dev/null 2>&1; then
-		brew install --cask "$pkg"
+		"${RUN_AS_USER[@]}" brew install --cask "$pkg"
 	else
-		brew install "$pkg"
+		"${RUN_AS_USER[@]}" brew install "$pkg"
 	fi
 }
 
@@ -79,7 +137,7 @@ clone_repo() {
 			exit 1
 		fi
 	fi
-	git clone "$repo" "$dest"
+	"${RUN_AS_USER[@]}" git clone "$repo" "$dest"
 	info "Cloned repository"
 }
 
@@ -87,7 +145,7 @@ ensure_user_config() {
 	local tpl="$HOME/.hammerspoon/config_user.lua.template"
 	local cfg="$HOME/.hammerspoon/config_user.lua"
 	if [ ! -f "$cfg" ]; then
-		cp "$tpl" "$cfg"
+		"${RUN_AS_USER[@]}" cp "$tpl" "$cfg"
 		info "Created user config from template"
 		CONFIG_CREATED=1
 	fi
@@ -197,18 +255,18 @@ install_fabric() {
 		install_pkg fabric-ai || true
 	fi
 	# Alias for convenience
-	if ! grep -q "alias fabric='fabric-ai'" "$HOME/.zshrc" 2>/dev/null; then
-		echo "alias fabric='fabric-ai'" >> "$HOME/.zshrc"
-		info "Added alias fabric -> fabric-ai to ~/.zshrc"
+	if ! grep -q "alias fabric='fabric-ai'" "$TARGET_HOME/.zshrc" 2>/dev/null; then
+		"${RUN_AS_USER[@]}" /bin/sh -c "printf '%s\n' \"alias fabric='fabric-ai'\" >> '$TARGET_HOME/.zshrc'"
+		info "Added alias fabric -> fabric-ai to $TARGET_HOME/.zshrc"
 	fi
 }
 
 setup_fabric_patterns() {
 	step "Installing Fabric patterns"
-	mkdir -p "$HOME/.config/fabric/patterns"
+	"${RUN_AS_USER[@]}" mkdir -p "$HOME/.config/fabric/patterns"
 	if [ -d "$HOME/.hammerspoon/fabric-patterns" ]; then
-		rsync -a "$HOME/.hammerspoon/fabric-patterns/" "$HOME/.config/fabric/patterns/"
-		rm -rf "$HOME/.hammerspoon/fabric-patterns"
+		"${RUN_AS_USER[@]}" rsync -a "$HOME/.hammerspoon/fabric-patterns/" "$HOME/.config/fabric/patterns/"
+		"${RUN_AS_USER[@]}" rm -rf "$HOME/.hammerspoon/fabric-patterns"
 		info "Installed Fabric patterns"
 	else
 		warn "fabric-patterns directory not found in repo"
@@ -219,7 +277,7 @@ write_fabric_env() {
 	step "Configuring Fabric API keys"
 	local envdir="$HOME/.config/fabric"
 	local envfile="$envdir/.env"
-	mkdir -p "$envdir"
+	"${RUN_AS_USER[@]}" mkdir -p "$envdir"
 
 	# Existing values preserved
 	local groq_key=""
@@ -239,15 +297,15 @@ write_fabric_env() {
 		echo "# Fabric env configured by install-setup.sh"
 		[ -n "$groq_key" ] && echo "GROQ_API_KEY=$groq_key"
 		[ -n "$yt_key" ] && echo "YOUTUBE_API_KEY=$yt_key"
-	} > "$envfile"
-	chmod 600 "$envfile"
+	} | "${RUN_AS_USER[@]}" tee "$envfile" >/dev/null
+	"${RUN_AS_USER[@]}" chmod 600 "$envfile"
 	info "Wrote $envfile"
 }
 
 configure_fabric_model() {
 	step "Selecting Fabric defaults"
 	local cfgdir="$HOME/.config/fabric"
-	mkdir -p "$cfgdir"
+	"${RUN_AS_USER[@]}" mkdir -p "$cfgdir"
 	local provider="Groq"
 	local model="llama-3.1-70b-versatile"
 	read -r -p "Default model (enter to accept $model): " in_model || true
@@ -255,7 +313,7 @@ configure_fabric_model() {
 	{
 		echo "PROVIDER=$provider"
 		echo "DEFAULT_MODEL=$model"
-	} > "$cfgdir/defaults"
+	} | "${RUN_AS_USER[@]}" tee "$cfgdir/defaults" >/dev/null
 	info "Fabric defaults saved"
 }
 
@@ -264,6 +322,9 @@ open_help_links() {
 	local browser_cmd="open"
 	$browser_cmd "https://console.groq.com/keys"
 	$browser_cmd "https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com"
+	# README sections with screenshots
+	$browser_cmd "https://github.com/felixleopold/hammerspoon/blob/config/README.md#fabric-ai-setup"
+	$browser_cmd "https://github.com/felixleopold/hammerspoon/blob/config/README.md#get-required-api-keys"
 }
 
 final_notes() {
@@ -272,14 +333,35 @@ final_notes() {
 	echo -e "${GREEN} Guided setup complete${NC}"
 	echo -e "${GREEN}========================================${NC}"
 	echo
-	echo "Next steps:"
-	echo "1) Open a new terminal so the 'fabric' alias is active"
-	echo "2) Launch Hammerspoon: open -a Hammerspoon"
-	echo "3) Grant Accessibility in System Settings > Privacy & Security > Accessibility"
-	echo "4) Reload config (⌘⌃⌥⇧R)"
+	echo "We opened the Accessibility settings for you."
+	echo "Please ensure Hammerspoon is enabled there, then press Enter here to continue."
+	read -r -p "Press Enter once Accessibility is granted..." _ || true
+	echo "You can reload Hammerspoon with ⌘⌃⌥⇧R (or via menu)."
 }
 
 main() {
+	# Preflight summary and confirmation
+	echo -e "${GREEN}========================================${NC}"
+	echo -e "${GREEN} Hammerspoon Configuration - Guided Setup${NC}"
+	echo -e "${GREEN}========================================${NC}"
+	echo
+	echo "This script will:"
+	echo "- Install Homebrew (if missing) and configure your shell PATH"
+	echo "- Install Hammerspoon and Fabric via Homebrew"
+	echo "- Clone the configuration into ~/.hammerspoon"
+	echo "- Create and customize your config_user.lua"
+	echo "- Configure Fabric API keys and defaults"
+	echo "- Open guides for getting API keys with screenshots"
+	echo "- Launch Hammerspoon and open Accessibility settings"
+	echo
+	if [ "$IS_ROOT" -eq 1 ]; then
+		warn "Running under sudo; Homebrew and user files will be installed as $TARGET_USER"
+	fi
+	if ! confirm "Proceed with installation?"; then
+		err "Cancelled by user"
+		exit 1
+	fi
+
 	step "Prerequisites"
 	install_homebrew
 	require_cmd brew || exit 1
@@ -297,6 +379,11 @@ main() {
 	if confirm "Open step-by-step key setup guides in your browser now?"; then
 		open_help_links
 	fi
+
+	# Launch Hammerspoon and open Accessibility pane automatically
+	step "Launching Hammerspoon and opening Accessibility settings"
+	"${RUN_AS_USER[@]}" open -a Hammerspoon || true
+	open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" || true
 
 	final_notes
 }

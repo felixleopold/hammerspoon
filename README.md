@@ -42,11 +42,15 @@ A modular Hammerspoon configuration framework focused on providing as many usefu
 
 ### Guided Installation (Easy Setup)
 
-One-line guided install that walks you through prerequisites, API keys, app defaults, and sets up Fabric patterns:
+One-line guided install that walks you through prerequisites, API keys, app defaults, and sets up Fabric patterns.
+
+If your environment requires admin elevation (common on fresh systems), run with sudo so Homebrew and apps can be installed properly for your user:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install-setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install-setup.sh | sudo bash
 ```
+
+What you'll see first: a summary of actions, a confirmation prompt, and progress notes. The script will open the Accessibility settings and wait for you to enable Hammerspoon, and it will open README sections with screenshots for API keys.
 
 What this does:
 - Installs Homebrew (if missing), Hammerspoon, and Fabric
@@ -63,7 +67,7 @@ What this does:
 Run the automated installation script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install.sh | sudo bash
 ```
 
 Or download and run locally:
@@ -71,7 +75,7 @@ Or download and run locally:
 ```bash
 curl -O https://raw.githubusercontent.com/felixleopold/hammerspoon/config/install.sh
 chmod +x install.sh
-./install.sh
+sudo ./install.sh
 ```
 
 ---
@@ -244,6 +248,11 @@ or directly execute the command:
 
 ### Post-Installation Setup
 [Post-Installation Setup](#post-installation-setup)
+
+Quick links to guided sections with screenshots:
+
+- Groq key: see [Fabric AI Setup](#fabric-ai-setup) and [Get Required API Keys](#get-required-api-keys)
+- YouTube key: see [Get Required API Keys](#get-required-api-keys)
 
 
 ## Key Features

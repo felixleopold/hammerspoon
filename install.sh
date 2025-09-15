@@ -12,6 +12,24 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Sudo-aware user resolution
+IS_ROOT=0
+if [ "$(id -u)" -eq 0 ]; then IS_ROOT=1; fi
+TARGET_USER=${SUDO_USER:-$(id -un)}
+TARGET_HOME=$(eval echo "~${TARGET_USER}")
+RUN_AS_USER=()
+if [ "$IS_ROOT" -eq 1 ]; then RUN_AS_USER=(sudo -u "$TARGET_USER" -H); fi
+
+# Helper to append a literal line to a file if absent
+append_line_if_absent() {
+    local file="$1"; shift
+    local line="$1"
+    mkdir -p "$(dirname "$file")"
+    if [ ! -f "$file" ] || ! grep -Fqx "$line" "$file" 2>/dev/null; then
+        printf '%s\n' "$line" >> "$file"
+    fi
+}
+
 # Function to print colored output
 print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -36,22 +54,51 @@ command_exists() {
 
 # Function to check if Homebrew is installed
 check_homebrew() {
-    if ! command_exists brew; then
-        print_error "Homebrew is not installed!"
-        echo "Please install Homebrew first by running:"
-        echo '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    if command_exists brew; then
+        print_status "Homebrew is installed ✓"
+        return
+    fi
+    # Try common brew locations and add to current PATH
+    if [ -x "/opt/homebrew/bin/brew" ]; then
+        eval "$('/opt/homebrew/bin/brew' shellenv)" || true
+    elif [ -x "/usr/local/bin/brew" ]; then
+        eval "$('/usr/local/bin/brew' shellenv)" || true
+    fi
+    if command_exists brew; then
+        print_status "Homebrew found and added to PATH ✓"
+        return
+    fi
+    print_warning "Homebrew is not installed. Installing now (this may take several minutes)..."
+    "${RUN_AS_USER[@]}" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    # Persist brew path for future shells
+    local brew_bin
+    brew_bin=$(command -v brew || true)
+    if [ -z "$brew_bin" ]; then
+        brew_bin="/opt/homebrew/bin/brew"
+    fi
+    # Write literal shellenv eval so it runs in user shells
+    local line_z='eval "$('"$brew_bin"' shellenv)"'
+    append_line_if_absent "$TARGET_HOME/.zprofile" "$line_z"
+    append_line_if_absent "$TARGET_HOME/.bash_profile" "$line_z"
+    # Make brew available to this process
+    if [ -x "$brew_bin" ]; then
+        eval "$("$brew_bin" shellenv)" || true
+        print_status "Homebrew installed and PATH configured ✓"
+    else
+        print_error "Failed to install Homebrew automatically. Please install manually from https://brew.sh and re-run."
         exit 1
     fi
-    print_status "Homebrew is installed ✓"
 }
 
 # Function to install Hammerspoon
 install_hammerspoon() {
     print_step "Installing Hammerspoon..."
-    if brew list hammerspoon &>/dev/null; then
+    local brew_bin
+    brew_bin=$(command -v brew || echo /opt/homebrew/bin/brew)
+    if "$brew_bin" list hammerspoon &>/dev/null; then
         print_status "Hammerspoon is already installed ✓"
     else
-        brew install hammerspoon
+        "${RUN_AS_USER[@]}" "$brew_bin" install hammerspoon
         print_status "Hammerspoon installed successfully ✓"
     fi
 }
@@ -80,20 +127,26 @@ clone_repository() {
 # Function to install Fabric AI
 install_fabric() {
     print_step "Installing Fabric AI..."
-    
+    local brew_bin
+    brew_bin=$(command -v brew || echo /opt/homebrew/bin/brew)
     if command_exists fabric-ai; then
         print_status "Fabric AI is already installed ✓"
     else
-        brew install fabric-ai
+        "${RUN_AS_USER[@]}" "$brew_bin" install fabric-ai || true
         print_status "Fabric AI installed successfully ✓"
     fi
     
+    # Ensure Homebrew shellenv is persisted so fabric is on PATH in new shells
+    if [ -x "$brew_bin" ]; then
+        local line_z='eval "$('"$brew_bin"' shellenv)"'
+        append_line_if_absent "$TARGET_HOME/.zprofile" "$line_z"
+    fi
     # Add alias to .zshrc if it doesn't exist
-    if ! grep -q "alias fabric='fabric-ai'" ~/.zshrc 2>/dev/null; then
-        echo "alias fabric='fabric-ai'" >> ~/.zshrc
-        print_status "Added fabric alias to ~/.zshrc ✓"
+    if ! grep -q "alias fabric='fabric-ai'" "$TARGET_HOME/.zshrc" 2>/dev/null; then
+        "${RUN_AS_USER[@]}" /bin/sh -c "printf '%s\n' \"alias fabric='fabric-ai'\" >> '$TARGET_HOME/.zshrc'"
+        print_status "Added fabric alias to $TARGET_HOME/.zshrc ✓"
     else
-        print_status "Fabric alias already exists in ~/.zshrc ✓"
+        print_status "Fabric alias already exists in $TARGET_HOME/.zshrc ✓"
     fi
 }
 
@@ -175,64 +228,34 @@ launch_hammerspoon() {
     print_status "Hammerspoon launched ✓"
 }
 
-# Function to print next steps
-print_next_steps() {
+# Function to guide and wait for user actions interactively
+interactive_followups() {
     echo
     echo -e "${GREEN}========================================${NC}"
-    echo -e "${GREEN}  Installation Complete! Next Steps:${NC}"
+    echo -e "${GREEN}  Installation Complete! Finalizing...${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo
-    
-    echo -e "${BLUE}1. Grant Hammerspoon Accessibility Permissions:${NC}"
-    echo "   - When prompted, grant Hammerspoon accessibility permissions in System Settings"
-    echo "   - Go to System Settings > Privacy & Security > Accessibility"
-    echo "   - Enable Hammerspoon if it's not already enabled"
+
+    # Launch Hammerspoon
+    print_step "Launching Hammerspoon..."
+    "${RUN_AS_USER[@]}" open -a Hammerspoon || true
+
+    # Open Accessibility pane for granting permissions
+    print_step "Opening Accessibility settings..."
+    "${RUN_AS_USER[@]}" open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" || true
+    read -r -p "Enable Hammerspoon in Accessibility, then press Enter to continue..." _ || true
+
+    # Open README sections with screenshots for API keys
+    print_step "Opening README sections for API keys and setup (with screenshots)..."
+    "${RUN_AS_USER[@]}" open "https://github.com/felixleopold/hammerspoon/blob/config/README.md#fabric-ai-setup" || true
+    "${RUN_AS_USER[@]}" open "https://github.com/felixleopold/hammerspoon/blob/config/README.md#get-required-api-keys" || true
+
+    # Prompt user to run fabric --setup (new terminal recommended)
     echo
-    
-    echo -e "${BLUE}2. Setup Fabric AI (Required for AI features):${NC}"
-    echo "   - Open a new terminal window (to load the fabric alias)"
-    echo "   - Run: fabric --setup"
-    echo "   - Follow the prompts to set up your directories and API keys"
-    echo
-    
-    echo -e "${BLUE}3. Get API Keys:${NC}"
-    echo
-    echo -e "${YELLOW}   Groq API Key (Free):${NC}"
-    echo "   - Visit: https://console.groq.com/keys"
-    echo "   - Login with your Google account"
-    echo "   - Click 'Create API Key'"
-    echo "   - Enter a name for your key"
-    echo "   - Click 'Copy' to copy the API key"
-    echo "   - Paste it into the Groq API key section when running 'fabric --setup'"
-    echo
-    
-    echo -e "${YELLOW}   YouTube API Key (Optional, for YouTube features):${NC}"
-    echo "   - Visit: https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com"
-    echo "   - Click 'Enable' to enable the YouTube Data API v3"
-    echo "   - Go to 'Credentials' in the left sidebar"
-    echo "   - Click 'Create Credentials' and select 'API Key'"
-    echo "   - Click 'Copy' to copy the API key"
-    echo "   - Paste it into the YouTube API key section when running 'fabric --setup'"
-    echo
-    
-    echo -e "${BLUE}4. Customize Your Configuration:${NC}"
-    echo "   - Edit: ~/.hammerspoon/config_user.lua"
-    echo "   - Update application definitions to match your installed apps"
-    echo "   - Customize shortcuts to your preferences"
-    echo
-    
-    echo -e "${BLUE}5. Reload Configuration:${NC}"
-    echo "   - Press: ⌘⌃⌥⇧R (Command + Control + Option + Shift + R)"
-    echo "   - Or restart Hammerspoon"
-    echo
-    
-    echo -e "${GREEN}Quick Start Commands:${NC}"
-    echo "   fabric --setup          # Setup Fabric AI with API keys"
-    echo "   open ~/.hammerspoon/config_user.lua  # Edit configuration"
-    echo
-    
-    echo -e "${GREEN}For more information, see the README.md file in ~/.hammerspoon/${NC}"
-    echo
+    print_status "Open a new terminal so the 'fabric' alias is active."
+    read -r -p "Then run 'fabric --setup' and complete prompts. Press Enter here when done..." _ || true
+
+    print_status "You can edit your config at ~/.hammerspoon/config_user.lua and reload with ⌘⌃⌥⇧R."
 }
 
 # Main installation process
@@ -242,6 +265,18 @@ main() {
     echo -e "${GREEN}        Automated Installation${NC}"
     echo -e "${GREEN}========================================${NC}"
     echo
+    echo "This script will:"
+    echo "- Ensure Homebrew is installed and in your PATH"
+    echo "- Install Hammerspoon and Fabric"
+    echo "- Clone this repo to ~/.hammerspoon"
+    echo "- Create a user config if missing"
+    echo "- Launch Hammerspoon and guide final steps"
+    echo
+    read -r -p "Proceed? [y/N]: " ans || true
+    if [[ ! "$ans" =~ ^[Yy]$ ]]; then
+        print_error "Installation cancelled"
+        exit 1
+    fi
     
     # Check prerequisites
     check_homebrew
@@ -255,8 +290,8 @@ main() {
     configure_telemetry
     launch_hammerspoon
     
-    # Show next steps
-    print_next_steps
+    # Interactive follow-ups and waits
+    interactive_followups
 }
 
 # Run main function
