@@ -124,6 +124,10 @@ function M.expandConfig(config)
         clipboard = config.clipboard,
         -- Add macro configuration
         macros = config.macros,
+        -- Add mouse speed finder configuration
+        mousespeedfinder = config.mousespeedfinder,
+        -- Add telemetry configuration
+        telemetry = config.telemetry,
         -- Add app groups configuration
         appGroups = config.appGroups,
         -- Add kanata configuration
@@ -172,12 +176,25 @@ function M.expandConfig(config)
         log.w("No general shortcuts found in config")
     end
 
-    -- Expand application shortcuts
+    -- Expand application shortcuts (primary layer)
     for _, shortcut in ipairs(config.shortcuts.apps) do
         expanded.shortcuts.appShortcuts[shortcut.app] = {
             mods = config.triggers.app,
             key = shortcut.key
         }
+    end
+
+    -- Expand application shortcuts (second layer)
+    if config.shortcuts.apps2 and config.triggers.app2 then
+        for _, shortcut in ipairs(config.shortcuts.apps2) do
+            -- Allow overriding same app with different key in second layer
+            local name = shortcut.app
+            expanded.shortcuts.appShortcuts2 = expanded.shortcuts.appShortcuts2 or {}
+            expanded.shortcuts.appShortcuts2[name] = {
+                mods = config.triggers.app2,
+                key = shortcut.key
+            }
+        end
     end
 
     -- Expand application group shortcuts

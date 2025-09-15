@@ -2,6 +2,7 @@ local M = {}
 local log = hs.logger.new('Applications', 'debug')
 local setup = require("setup")
 local appGroups = require("appGroups")
+local telemetry = require("telemetry")
 
 function M.setup(config)
     log.i("Setting up application shortcuts")
@@ -24,7 +25,7 @@ function M.setup(config)
         if debugEnabled then
             log.setLogLevel('debug')
         else
-            log.setLogLevel('info')
+            log.setLogLevel('warning')
         end
     end
     
@@ -286,18 +287,38 @@ function M.setup(config)
         end)
     end
 
-    -- Set up application shortcuts
+    -- Set up application shortcuts (primary layer)
     for name, shortcut in pairs(config.shortcuts.appShortcuts) do
         local appConfig = config.applications[name]
         if appConfig then
             local appDisplay = type(appConfig) == "table" and appConfig.name or appConfig
             log.i("Setting up shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. appDisplay)
+            -- Register telemetry label for app launch
+            telemetry.registerHotkeyLabel(shortcut.mods, shortcut.key, "app:" .. tostring(appDisplay))
             bindHotkey(shortcut, function() 
                 log.i("Launching " .. appDisplay .. " via shortcut " .. hs.inspect(shortcut))
                 launchOrFocus(appConfig)
             end)
         else
             log.w("No application defined for shortcut: " .. name .. ". Please check your configuration.")
+        end
+    end
+
+    -- Set up application shortcuts (second layer)
+    if config.shortcuts.appShortcuts2 then
+        for name, shortcut in pairs(config.shortcuts.appShortcuts2) do
+            local appConfig = config.applications[name]
+            if appConfig then
+                local appDisplay = type(appConfig) == "table" and appConfig.name or appConfig
+                log.i("Setting up SECOND-LAYER shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to launch " .. appDisplay)
+                telemetry.registerHotkeyLabel(shortcut.mods, shortcut.key, "app2:" .. tostring(appDisplay))
+                bindHotkey(shortcut, function()
+                    log.i("Launching (layer2) " .. appDisplay .. " via shortcut " .. hs.inspect(shortcut))
+                    launchOrFocus(appConfig)
+                end)
+            else
+                log.w("No application defined for second-layer shortcut: " .. name .. ". Please check your configuration.")
+            end
         end
     end
 
@@ -315,6 +336,8 @@ function M.setup(config)
                     hs.inspect(shortcut), 
                     table.concat(groupConfig.apps, ", ")))
                 
+                -- Register telemetry label for app group
+                telemetry.registerHotkeyLabel(shortcut.mods, shortcut.key, "appGroup:" .. tostring(groupName))
                 bindHotkey(shortcut, function()
                     log.i(string.format("Triggered app group '%s' via shortcut %s", groupName, hs.inspect(shortcut)))
                     appGroups.launchGroupApp(groupName, groupConfig, config)
@@ -341,6 +364,8 @@ function M.setup(config)
                 goto continue
             end
 
+            -- Register telemetry label for general action
+            telemetry.registerHotkeyLabel(shortcut.mods, shortcut.key, "general:" .. tostring(shortcut.action))
             bindHotkey(shortcut, function()
                 log.i("Triggered general shortcut: " .. shortcut.action)
                 if shortcut.action == "openHammerspoonConfig" then
@@ -764,6 +789,8 @@ function M.setup(config)
         if path then
             path = expandPath(path)
             log.d("Setting up folder shortcut for " .. name .. ": " .. hs.inspect(shortcut) .. " to open " .. path)
+            -- Register telemetry label for folder open
+            telemetry.registerHotkeyLabel((shortcut.mods or config.triggers.folder), shortcut.key, "folder:" .. tostring(name))
             -- Use custom modifiers if provided, otherwise use default folder modifiers
             local mods = shortcut.mods or config.triggers.folder
             bindHotkey({mods = mods, key = shortcut.key}, function()
@@ -853,7 +880,9 @@ function M.setup(config)
                 shortcut.action, 
                 table.concat(shortcut.mods, "+"), 
                 shortcut.key))
-            
+            -- Register telemetry label for utility action
+            telemetry.registerHotkeyLabel(shortcut.mods, shortcut.key, "utils:" .. tostring(shortcut.action))
+
             bindHotkey({mods = shortcut.mods, key = shortcut.key}, function()
                 if shortcut.action == "closeFinderWindows" then
                     local finder = hs.application.get("Finder")

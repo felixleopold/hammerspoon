@@ -3,7 +3,7 @@
 This document lists all the default keyboard shortcuts available in the Hammerspoon Configuration Framework. These shortcuts are defined in `config_defaults.lua` and can be customized in your `config_user.lua` file.
 
 ## Application Shortcuts
-All app shortcuts use `⌃⌥⌘` (Ctrl+Option+Cmd) as base modifier
+All app shortcuts use `⌃⌥⌘` (Ctrl+Option+Cmd) as base modifier. A second layer is available with `⌃⌥⌘⇧` (Ctrl+Option+Cmd+Shift).
 
 | Shortcut | Application | Description |
 |----------|-------------|-------------|
@@ -18,6 +18,25 @@ All app shortcuts use `⌃⌥⌘` (Ctrl+Option+Cmd) as base modifier
 | ⌃⌥⌘F | Finder | File manager (default: Finder) |
 | ⌃⌥⌘W | WhatsApp | Messaging app (default: WhatsApp) |
 | ⌃⌥⌘P | Settings | System preferences (default: System Settings) |
+
+### Second-layer Application Shortcuts (⌃⌥⌘⇧)
+
+Define second-layer shortcuts under `shortcuts.apps2` in your config. Example defaults are empty; here is how it looks when configured:
+
+| Shortcut | Application | Description |
+|----------|-------------|-------------|
+| ⌃⌥⌘⇧B | Browser | Second-layer mapping to Browser |
+| ⌃⌥⌘⇧E | Editor | Second-layer mapping to Editor |
+
+To configure:
+```lua
+shortcuts = {
+  apps2 = {
+    { app = "Browser", key = "B" },
+    { app = "Editor", key = "E" },
+  }
+}
+```
 
 ## Application Groups
 Application group shortcuts use `⌃⌥⌘` (Ctrl+Option+Cmd) as base modifier

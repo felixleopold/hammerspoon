@@ -28,6 +28,7 @@ local defaults = {
     ------------------------------------------]]
 	triggers = {
 		app = { "ctrl", "alt", "cmd"}, -- For launching applications (⌘⌃⌥)
+		app2 = { "ctrl", "alt", "cmd", "shift" }, -- Second layer for apps (⌘⌃⌥⇧)
 		folder = { "cmd", "shift" }, -- For opening folders (⌘⇧)
 		window = { "alt" }, -- For window management (⌥) - will use either left or right
 		lwindow = { "lalt" }, -- For window management with left alt only
@@ -118,6 +119,12 @@ local defaults = {
 			{ app = "Settings", key = "P" }, -- System Settings
 		},
 
+		-- Second-layer application shortcuts (ctrl + alt + cmd + shift + key)
+		apps2 = {
+			-- { app = "Browser", key = "B" }, -- Example second layer
+			-- { app = "Editor", key = "E" }, -- Example second layer
+		},
+
 		-- Application group shortcuts (ctrl + alt + cmd + key)
 		appGroups = {
 			-- { group = "browsers", key = "B" }, -- Cycle through browsers
@@ -192,6 +199,7 @@ local defaults = {
 		-- Window and keyboard management
 		windowManagement = false, -- Set to true to enable detailed logging for window management operations
 		leftRightModifier = false, -- Set to true to enable detailed logging for left/right modifier detection
+		mousespeedfinder = false, -- Set to true to enable detailed logging for mouse speed finder
 		
 		-- File and system operations
 		symlinkCreation = false, -- Set to true to enable detailed logging for symlink creation
@@ -393,6 +401,46 @@ local defaults = {
             }
         }
     },
+
+    --[[-----------------------------------------
+    Mouse Speed Finder
+    Analyze pointing performance and suggest speed adjustments
+    ------------------------------------------]]
+    mousespeedfinder = {
+        enabled = false, -- Set to true to enable mouse speed suggestions
+        device = "auto", -- "auto" | "mouse" | "trackpad"
+        minDistancePx = 30, -- Ignore very small moves
+        overshootThreshold = 12, -- Pixels beyond target considered overshoot
+        microAdjustWindowMs = 180, -- Window to count corrections near click
+        idleThresholdMs = 300, -- Idle gap that starts a new gesture
+        maxPointsPerGesture = 250, -- Cap points per gesture
+        clicksPerBatch = 40, -- Analyze and suggest every N clicks
+        scalingStep = 0.10, -- Suggested change amount
+        minScaling = 0.50, -- Lower bound when suggesting
+        maxScaling = 5.00, -- Upper bound when suggesting
+        overshootHighRate = 0.30, -- If overshoot rate > this, suggest decreasing speed
+        overshootLowRate = 0.05, -- If overshoot rate < this and slow, suggest increasing
+        timePerPixelSlowMs = 1.00, -- If median ms/px slower than this, consider slow
+        alert = true, -- Show suggestion alerts
+        shortcuts = {
+            toggle = { mods = { "cmd", "alt", "shift" }, key = "U" }, -- Toggle on/off
+            report = { mods = { "cmd", "alt", "shift" }, key = "Y" }, -- Show recent stats
+        },
+    },
+
+	--[[-----------------------------------------
+	Telemetry (Hotkey Usage Tracking)
+	Privacy-first, disabled by default. When enabled, records hotkey presses
+	locally to a JSONL file and can optionally POST to your server.
+	------------------------------------------]]
+	telemetry = {
+		enabled = false, -- Set true to enable tracking
+		username = nil, -- Optional username identifier
+		serverUrl = "https://hammerspoon.felixmrak.com/api/hammerspoon/usage", -- Optional: e.g. "http://localhost:3000/api/hammerspoon/usage"
+		token = "ZtcxUDsRbHSgje4NMgjQ099gTyhdM4JV259jFk2W", -- Optional: send X-Hspo-Token header (or use HSPO_TOKEN env)
+		includeAppName = true, -- Include frontmost app name with each event
+		eventsFile = "~/.hammerspoon/telemetry_events.jsonl" -- Local JSONL log
+	},
 }
 
 return defaults 

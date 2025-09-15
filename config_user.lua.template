@@ -34,6 +34,7 @@ local defaults = {
     ------------------------------------------]]
 	triggers = {
 		-- app = { "ctrl", "alt", "cmd"}, -- For launching applications (⌘⌃⌥)
+		-- app2 = { "ctrl", "alt", "cmd", "shift" }, -- Second layer for apps (⌘⌃⌥⇧)
 		-- folder = { "cmd", "shift" }, -- For opening folders (⌘⇧)
 		-- window = { "alt" }, -- For window management (⌥) - will use either left or right alt
 		-- lwindow = { "lalt" }, -- For window management with left alt only
@@ -97,6 +98,12 @@ local defaults = {
 			-- { app = "Finder", key = "F" }, -- Finder
 			-- { app = "WhatsApp", key = "W" }, -- WhatsApp
 			-- { app = "Settings", key = "P" }, -- System Settings
+		},
+
+		-- Second-layer application shortcuts (ctrl + alt + cmd + shift + key)
+		apps2 = {
+			-- { app = "Browser", key = "B" }, -- Example second layer
+			-- { app = "Editor", key = "E" },
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
@@ -180,6 +187,7 @@ local defaults = {
 		-- -- Clipboard and macros
 		-- clipboard = false, -- Set to true to enable detailed logging for clipboard operations
 		-- macro = false, -- Set to true to enable detailed logging for macro recording and playback
+		-- mousespeedfinder = false, -- Set to true to enable detailed logging for mouse speed finder
 		
 		-- -- Fabric AI integration
 		-- fabric = false, -- Set to true to enable detailed logging for Fabric pattern execution
@@ -352,6 +360,45 @@ local defaults = {
         --     }
         -- }
     },
+
+	--[[-----------------------------------------
+	    Mouse Speed Finder
+	    Analyze pointing performance and suggest speed adjustments
+	    ------------------------------------------]]
+	    mousespeedfinder = {
+	        -- enabled = false, -- Enable to collect data and show suggestions
+	        -- device = "auto", -- "auto" | "mouse" | "trackpad"
+	        -- minDistancePx = 30,
+	        -- overshootThreshold = 12,
+	        -- microAdjustWindowMs = 180,
+	        -- idleThresholdMs = 300,
+	        -- maxPointsPerGesture = 250,
+	        -- clicksPerBatch = 40, -- 20 to 100 recommended
+	        -- scalingStep = 0.10,
+	        -- minScaling = 0.50,
+	        -- maxScaling = 5.00,
+	        -- overshootHighRate = 0.30,
+	        -- overshootLowRate = 0.05,
+	        -- timePerPixelSlowMs = 1.00,
+	        -- alert = true,
+	        -- shortcuts = {
+	        --     toggle = { mods = { "cmd", "alt", "shift" }, key = "U" },
+	        --     report = { mods = { "cmd", "alt", "shift" }, key = "Y" },
+	        -- },
+	    },
+
+	    --[[-----------------------------------------
+	    Telemetry (Hotkey Usage Tracking)
+	    Disabled by default. Enable to track hotkey usage locally or send to your server.
+	    ------------------------------------------]]
+	    telemetry = {
+			enabled = false, -- Set true to enable tracking
+			username = nil, -- Optional username identifier
+			serverUrl = "https://hammerspoon.felixmrak.com/api/hammerspoon/usage", -- Optional: e.g. "http://localhost:3000/api/hammerspoon/usage"
+			token = "ZtcxUDsRbHSgje4NMgjQ099gTyhdM4JV259jFk2W", -- Optional: send X-Hspo-Token header (or use HSPO_TOKEN env)
+			includeAppName = true, -- Include frontmost app name with each event
+			eventsFile = "~/.hammerspoon/telemetry_events.jsonl" -- Local JSONL log
+	    },
 }
 
 return defaults 

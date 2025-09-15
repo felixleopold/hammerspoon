@@ -39,7 +39,7 @@ A modular Hammerspoon configuration framework focused on providing as many usefu
 
 ## Installation
 
-### Guided Installation (Recommended)
+### Guided Installation (Easy Setup)
 
 One-line guided install that walks you through prerequisites, API keys, app defaults, and sets up Fabric patterns:
 
@@ -57,7 +57,7 @@ What this does:
 
 ---
 
-### Quick Installation (Manual post-install setup)
+### Quick Installation with Manual post-install setup (Recommended)
 
 Run the automated installation script:
 
@@ -271,6 +271,19 @@ Launch or focus applications with **⌃⌥⌘** (Control + Option + Command) plu
 - **⌃⌥⌘Z**: Primary browser
 - **⌃⌥⌘C**: Primary editor
 - *And more defined in your configuration*
+
+You can also define a second application layer with **⌃⌥⌘⇧** (Control + Option + Command + Shift):
+
+```lua
+-- In your config_user.lua
+shortcuts = {
+  apps2 = {
+    { app = "Browser", key = "B" },
+    { app = "Editor", key = "E" },
+  }
+}
+```
+This uses the `triggers.app2 = { "ctrl", "alt", "cmd", "shift" }` combination by default.
 
 Open specific Finder folders with **⌘⇧** (Command + Shift) plus a key:
 - **⌘⇧A**: Applications Folder

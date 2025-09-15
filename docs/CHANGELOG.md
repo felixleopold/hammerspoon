@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.7.1] - 2025-09-15
+
+### Added
+- **Second-layer Application Shortcuts**: Added support for a Shift-activated app layer
+  - New trigger `triggers.app2 = { "ctrl", "alt", "cmd", "shift" }`
+  - New config section `shortcuts.apps2` for defining second-layer app hotkeys
+  - Works alongside existing `apps` without conflicts; includes telemetry labels
+  - Example:
+    ```lua
+    shortcuts = {
+      apps2 = {
+        { app = "Browser", key = "B" },
+        { app = "Editor", key = "E" },
+      },
+    }
+    ```
+
 ## [1.7.0] - 2025-01-06
 
 ### Added
