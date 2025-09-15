@@ -8,11 +8,15 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+MAGENTA='\033[0;35m'
 
 info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 err()  { echo -e "${RED}[ERROR]${NC} $1"; }
 step() { echo -e "${BLUE}[STEP]${NC} $1"; }
+
+# Clear input cue to make it obvious the script is waiting for user input
+need_input() { echo -e "${MAGENTA}[INPUT]${NC} $1" > /dev/tty 2>/dev/null || echo "$1"; }
 
 CONFIG_CREATED=0
 
@@ -70,20 +74,26 @@ persist_brew_shellenv() {
 
 confirm() {
 	local prompt="$1"
+	local default="${2:-yes}"
 	local ans=""
 	# Allow non-interactive override
 	if [ "${AUTO_YES:-}" = "1" ] || [ "${YES:-}" = "1" ]; then
 		return 0
 	fi
-	# Print prompt to TTY if available
+	local hint="[Y/n]"
+	[ "$default" = "no" ] && hint="[y/N]"
 	if [ -r /dev/tty ] && [ -w /dev/tty ]; then
-		printf "%s [y/N]: " "$prompt" > /dev/tty
-		IFS= read -r ans < /dev/tty || true
-	else
-		# No TTY available (e.g., piped without a terminal) – default to Yes
-		ans="y"
+		printf "%s %s (auto-continue in 3s) " "$prompt" "$hint" > /dev/tty
+		IFS= read -r -n 1 -t 3 ans < /dev/tty || true
+		printf "\n" > /dev/tty
 	fi
-	[[ "$ans" =~ ^[Yy]$ ]]
+	if [ -z "$ans" ]; then
+		[ "$default" = "yes" ] && return 0 || return 1
+	fi
+	if [[ "$ans" =~ ^[Yy]$ ]]; then
+		return 0
+	fi
+	return 1
 }
 
 require_cmd() {
@@ -134,7 +144,7 @@ backup_dir() {
 }
 
 clone_repo() {
-	local dest="$HOME/.hammerspoon"
+	local dest="$TARGET_HOME/.hammerspoon"
 	local repo="https://github.com/felixleopold/hammerspoon.git"
 	if [ -d "$dest/.git" ]; then
 		info "Repository already present in $dest"
@@ -142,7 +152,7 @@ clone_repo() {
 	fi
 	if [ -d "$dest" ]; then
 		warn "$dest exists"
-		if confirm "Backup and replace existing ~/.hammerspoon?"; then
+		if confirm "Backup and replace existing ~/.hammerspoon?" no; then
 			backup_dir "$dest"
 		else
 			err "Cancelled by user"
@@ -154,8 +164,8 @@ clone_repo() {
 }
 
 ensure_user_config() {
-	local tpl="$HOME/.hammerspoon/config_user.lua.template"
-	local cfg="$HOME/.hammerspoon/config_user.lua"
+	local tpl="$TARGET_HOME/.hammerspoon/config_user.lua.template"
+	local cfg="$TARGET_HOME/.hammerspoon/config_user.lua"
 	if [ ! -f "$cfg" ]; then
 		"${RUN_AS_USER[@]}" cp "$tpl" "$cfg"
 		info "Created user config from template"
@@ -164,15 +174,19 @@ ensure_user_config() {
 }
 
 set_app_defaults() {
-	local cfg="$HOME/.hammerspoon/config_user.lua"
+	local cfg="$TARGET_HOME/.hammerspoon/config_user.lua"
 	step "Configuring app defaults"
-	read -r -p "Primary Browser [Safari/Chrome/Arc/Brave] (default: Safari): " primary_browser </dev/tty || true
+	need_input "Primary Browser [Safari/Chrome/Arc/Brave] (default: Safari):"
+	read -r -p "> " primary_browser </dev/tty || true
 	primary_browser=${primary_browser:-Safari}
-	read -r -p "Secondary Browser (default: Chrome): " secondary_browser </dev/tty || true
+	need_input "Secondary Browser (default: Chrome):"
+	read -r -p "> " secondary_browser </dev/tty || true
 	secondary_browser=${secondary_browser:-Chrome}
-	read -r -p "Code Editor [Visual Studio Code/Sublime Text] (default: Visual Studio Code): " editor </dev/tty || true
+	need_input "Code Editor [Visual Studio Code/Sublime Text] (default: Visual Studio Code):"
+	read -r -p "> " editor </dev/tty || true
 	editor=${editor:-Visual Studio Code}
-	read -r -p "Terminal [Terminal/iTerm] (default: Terminal): " terminal </dev/tty || true
+	need_input "Terminal [Terminal/iTerm] (default: Terminal):"
+	read -r -p "> " terminal </dev/tty || true
 	terminal=${terminal:-Terminal}
 
 	# Detect Fabric binary to set path override (optional)
@@ -186,18 +200,17 @@ set_app_defaults() {
 	# Telemetry opt-in
 	step "Telemetry (optional)"
 	local telemetry_enabled="false"
-	if confirm "Enable optional hotkey usage telemetry (writes local JSONL; can also POST to your server)?"; then
+	if confirm "Enable optional hotkey usage telemetry (writes local JSONL; can also POST to your server)?" no; then
 		telemetry_enabled="true"
 	fi
 	local telemetry_username=""
-	local telemetry_server=""
 	if [ "$telemetry_enabled" = "true" ]; then
-		read -r -p "Telemetry username (optional, press enter to skip): " telemetry_username </dev/tty || true
-		read -r -p "Telemetry server URL (optional, e.g. http://localhost:3000/api/hammerspoon/usage): " telemetry_server </dev/tty || true
+		need_input "Telemetry username (optional, press Enter to skip):"
+		read -r -p "> " telemetry_username </dev/tty || true
 	fi
 
 	# Decide whether to overwrite
-	if [ "$CONFIG_CREATED" -eq 1 ] || confirm "Write a minimal overrides file to config_user.lua (backup first)?"; then
+	if [ "$CONFIG_CREATED" -eq 1 ] || confirm "Write a minimal overrides file to config_user.lua (backup first)?" no; then
 		backup_dir "$cfg"
 		# Write minimal overrides file
 		cat > "$cfg" <<'EOF'
@@ -212,7 +225,6 @@ local defaults = {
     telemetry = {
         enabled = __TELEMETRY_ENABLED__,
         username = __TELEMETRY_USERNAME__,
-        serverUrl = __TELEMETRY_SERVER__,
         includeAppName = true,
     },
 }
@@ -228,17 +240,13 @@ EOF
 		else
 			sed -i '' "s|__TELEMETRY_ENABLED__|false|g" "$cfg"
 		fi
-		# Username and server need to be proper Lua nil or quoted
+		# Username needs to be proper Lua nil or quoted
 		if [ -n "$telemetry_username" ]; then
 			sed -i '' "s|__TELEMETRY_USERNAME__|\"${telemetry_username}\"|g" "$cfg"
 		else
 			sed -i '' "s|__TELEMETRY_USERNAME__|nil|g" "$cfg"
 		fi
-		if [ -n "$telemetry_server" ]; then
-			sed -i '' "s|__TELEMETRY_SERVER__|\"${telemetry_server}\"|g" "$cfg"
-		else
-			sed -i '' "s|__TELEMETRY_SERVER__|nil|g" "$cfg"
-		fi
+		# serverUrl comes from defaults if present; not prompted here
 
 		# If we detected a Fabric path, add it as an override by appending a small block before the return
 		if [ -n "$fabpath" ]; then
@@ -275,19 +283,25 @@ install_fabric() {
 
 setup_fabric_patterns() {
 	step "Installing Fabric patterns"
-	"${RUN_AS_USER[@]}" mkdir -p "$HOME/.config/fabric/patterns"
-	if [ -d "$HOME/.hammerspoon/fabric-patterns" ]; then
-		"${RUN_AS_USER[@]}" rsync -a "$HOME/.hammerspoon/fabric-patterns/" "$HOME/.config/fabric/patterns/"
-		"${RUN_AS_USER[@]}" rm -rf "$HOME/.hammerspoon/fabric-patterns"
+	"${RUN_AS_USER[@]}" mkdir -p "$TARGET_HOME/.config/fabric/patterns"
+	local src_dir="$TARGET_HOME/.hammerspoon/fabric-patterns"
+	if [ -d "$src_dir" ]; then
+		"${RUN_AS_USER[@]}" rsync -a "$src_dir/" "$TARGET_HOME/.config/fabric/patterns/"
+		"${RUN_AS_USER[@]}" rm -rf "$src_dir"
 		info "Installed Fabric patterns"
 	else
-		warn "fabric-patterns directory not found in repo"
+		if [ -d "$(pwd)/fabric-patterns" ]; then
+			"${RUN_AS_USER[@]}" rsync -a "$(pwd)/fabric-patterns/" "$TARGET_HOME/.config/fabric/patterns/"
+			info "Installed Fabric patterns from current directory"
+		else
+			warn "fabric-patterns directory not found in repo"
+		fi
 	fi
 }
 
 write_fabric_env() {
 	step "Configuring Fabric API keys"
-	local envdir="$HOME/.config/fabric"
+	local envdir="$TARGET_HOME/.config/fabric"
 	local envfile="$envdir/.env"
 	"${RUN_AS_USER[@]}" mkdir -p "$envdir"
 
@@ -299,8 +313,10 @@ write_fabric_env() {
 		yt_key=$(grep '^YOUTUBE_API_KEY=' "$envfile" | sed 's/^YOUTUBE_API_KEY=//') || true
 	fi
 
-	read -r -p "Groq API Key (leave blank to keep current): " in_groq </dev/tty || true
-	read -r -p "YouTube API Key (optional): " in_yt </dev/tty || true
+	need_input "Groq API Key (leave blank to keep current):"
+	read -r -p "> " in_groq </dev/tty || true
+	need_input "YouTube API Key (optional):"
+	read -r -p "> " in_yt </dev/tty || true
 
 	groq_key=${in_groq:-$groq_key}
 	yt_key=${in_yt:-$yt_key}
@@ -316,11 +332,12 @@ write_fabric_env() {
 
 configure_fabric_model() {
 	step "Selecting Fabric defaults"
-	local cfgdir="$HOME/.config/fabric"
+	local cfgdir="$TARGET_HOME/.config/fabric"
 	"${RUN_AS_USER[@]}" mkdir -p "$cfgdir"
 	local provider="Groq"
 	local model="llama-3.1-70b-versatile"
-	read -r -p "Default model (enter to accept $model): " in_model </dev/tty || true
+	need_input "Default model (press Enter to accept $model):"
+	read -r -p "> " in_model </dev/tty || true
 	model=${in_model:-$model}
 	{
 		echo "PROVIDER=$provider"
@@ -332,11 +349,11 @@ configure_fabric_model() {
 open_help_links() {
 	step "Opening help links (you can follow along)"
 	local browser_cmd="open"
-	$browser_cmd "https://console.groq.com/keys"
-	$browser_cmd "https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com"
+	"${RUN_AS_USER[@]}" $browser_cmd "https://console.groq.com/keys"
+	"${RUN_AS_USER[@]}" $browser_cmd "https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com"
 	# README sections with screenshots
-	$browser_cmd "https://github.com/felixleopold/hammerspoon/blob/config/README.md#fabric-ai-setup"
-	$browser_cmd "https://github.com/felixleopold/hammerspoon/blob/config/README.md#get-required-api-keys"
+	"${RUN_AS_USER[@]}" $browser_cmd "https://github.com/felixleopold/hammerspoon/blob/config/README.md#fabric-ai-setup"
+	"${RUN_AS_USER[@]}" $browser_cmd "https://github.com/felixleopold/hammerspoon/blob/config/README.md#get-required-api-keys"
 }
 
 final_notes() {
@@ -346,8 +363,8 @@ final_notes() {
 	echo -e "${GREEN}========================================${NC}"
 	echo
 	echo "We opened the Accessibility settings for you."
-	echo "Please ensure Hammerspoon is enabled there, then press Enter here to continue."
-	read -r -p "Press Enter once Accessibility is granted..." _ </dev/tty || true
+	need_input "Enable Hammerspoon in Accessibility, then press Enter here to continue."
+	read -r -p "> " _ </dev/tty || true
 	echo "You can reload Hammerspoon with ⌘⌃⌥⇧R (or via menu)."
 }
 

@@ -1,6 +1,3 @@
-# macOS
-.DS_Store
-
 # User-specific Hammerspoon data
 clipboard_history.json
 clipboard_files/
@@ -15,9 +12,6 @@ telemetry_events.jsonl
 *~
 .#*
 
-# Hammerspoon specific
-Spoons/
-
 #Docs
 docs/KANATA.md
 docs/LEFT_RIGHT_MODIFIERS_DEBUG.md
@@ -27,11 +21,6 @@ docs/LEFT_RIGHT_MODIFIERS.md
 .DS_Store
 venv/
 env/
-
-# Lua specific
-*.o
-*.so
-*.dylib
 
 # Logs and databases
 *.log
