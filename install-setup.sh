@@ -283,6 +283,7 @@ setup_fabric_patterns() {
 		"${RUN_AS_USER[@]}" rm -rf "$src_dir"
 		info "Installed Fabric patterns"
 	else
+		# Fallback: copy from current working directory if present
 		if [ -d "$(pwd)/fabric-patterns" ]; then
 			"${RUN_AS_USER[@]}" rsync -a "$(pwd)/fabric-patterns/" "$TARGET_HOME/.config/fabric/patterns/"
 			info "Installed Fabric patterns from current directory"
@@ -307,11 +308,10 @@ write_fabric_env() {
 	fi
 
 	# Before key prompts
-	step "Opening README instructions for API keys in your default browser"
 	open_help_links
-	need_input "Groq API Key (leave blank to keep current):"
+	need_input "Groq API Key (recommended, press Enter to skip):"
 	read -r -p "> " in_groq </dev/tty || true
-	need_input "YouTube API Key (optional):"
+	need_input "YouTube API Key (optional, press Enter to skip):"
 	read -r -p "> " in_yt </dev/tty || true
 
 	groq_key=${in_groq:-$groq_key}
@@ -342,13 +342,43 @@ configure_fabric_model() {
 	info "Fabric defaults saved"
 }
 
+run_fabric_setup() {
+	step "Launching Fabric setup in Terminal"
+	# Try to run in Terminal.app; fall back to iTerm; otherwise just print instructions
+	if command -v osascript >/dev/null 2>&1; then
+		"${RUN_AS_USER[@]}" osascript <<'OSA' || true
+	tell application "Terminal"
+		activate
+		do script "fabric --setup"
+	end tell
+OSA
+	else
+		warn "Could not launch Terminal automatically. Please run: fabric --setup"
+	fi
+	need_input "Complete Fabric setup in the opened Terminal, then press Enter here to continue."
+	read -r -p "> " _ </dev/tty || true
+}
+
 open_help_links() {
-	step "Opening help links (you can follow along)"
+	step "Opening help links in your default browser (you can follow along)"
+	echo
+	echo "Opening browser windows for:"
+	echo "• Groq API Key setup"
+	echo "• YouTube API Key setup" 
+	echo "• README with detailed instructions and screenshots"
+	echo
 	# Use the target user's launch services to open in default browser
 	"${RUN_AS_USER[@]}" open -g "https://console.groq.com/keys" || true
 	"${RUN_AS_USER[@]}" open -g "https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com" || true
 	"${RUN_AS_USER[@]}" open -g "https://github.com/felixleopold/hammerspoon/blob/config/README.md#fabric-ai-setup" || true
 	"${RUN_AS_USER[@]}" open -g "https://github.com/felixleopold/hammerspoon/blob/config/README.md#get-required-api-keys" || true
+	
+	echo
+	echo "If browser windows didn't open, you can manually visit these links:"
+	echo "• Groq API Key: https://console.groq.com/keys"
+	echo "• YouTube API Key: https://console.cloud.google.com/marketplace/product/google/youtube.googleapis.com"
+	echo "• README Instructions: https://github.com/felixleopold/hammerspoon/blob/config/README.md#fabric-ai-setup"
+	echo
 }
 
 final_notes() {
@@ -403,6 +433,7 @@ main() {
 	setup_fabric_patterns
 	write_fabric_env
 	configure_fabric_model
+	run_fabric_setup
 
 	if confirm "Open step-by-step key setup guides in your browser now?"; then
 		open_help_links
@@ -411,7 +442,7 @@ main() {
 	# Launch Hammerspoon and open Accessibility pane automatically
 	step "Launching Hammerspoon and opening Accessibility settings"
 	"${RUN_AS_USER[@]}" open -a Hammerspoon || true
-	open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" || true
+	"${RUN_AS_USER[@]}" open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility" || true
 
 	final_notes
 }
