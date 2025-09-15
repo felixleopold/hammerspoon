@@ -1,5 +1,5 @@
--- Initialize logger
-local log = hs.logger.new('MyConfig', 'debug')
+-- Initialize logger (default quiet)
+local log = hs.logger.new('MyConfig', 'warning')
 
 -- Set the path for Hammerspoon files
 package.path = package.path .. ";" .. os.getenv("HOME") .. "/.hammerspoon/?.lua"
@@ -10,17 +10,49 @@ local windowManagement = require("windowManagement")
 local fabric = require("fabric")
 local setup = require("setup")
 local version = require("version")
+local telemetry = require("telemetry")
 local self = require("self")
 local inspectWindows = require("inspect_windows")
 local minecraft = require("minecraft")
 local clipboard = require("clipboard")
 local macro = require("macro")
+local mousespeedfinder = require("mousespeedfinder")
 local leftRightModifier = require("leftRightModifier")
 local kanata = require("kanata")
 local appGroups = require("appGroups")
 
 -- Disable animation for window movements
 hs.window.animationDuration = 0
+-- Global Hammerspoon URL event bridge for webviews
+hs.urlevent.bind("macroUpdated", function(eventName, params)
+    -- Params contains 'data' URL-encoded JSON from the webview
+    local macroModule = require("macro")
+    local data = params and params["data"]
+    if not data then return end
+    local ok, payload = pcall(function() return hs.json.decode(hs.http.urlDecode(data)) end)
+    if not ok or not payload then return end
+    if payload.events and #payload.events > 0 then
+        -- Delegate to macro module if it exposes an updater; otherwise set via settings
+        if macroModule and macroModule._applyEditorUpdate then
+            macroModule._applyEditorUpdate(payload)
+        else
+            hs.settings.set("macro.pendingEditorUpdate", payload)
+        end
+    end
+end)
+
+hs.urlevent.bind("updateEventTimings", function(eventName, params)
+    local macroModule = require("macro")
+    local data = params and params["data"]
+    if not data then return end
+    local ok, payload = pcall(function() return hs.json.decode(hs.http.urlDecode(data)) end)
+    if not ok or not payload then return end
+    if payload.eventData and macroModule and macroModule._applyEditorTimingUpdate then
+        macroModule._applyEditorTimingUpdate(payload.eventData)
+    else
+        hs.settings.set("macro.pendingTimingUpdate", payload)
+    end
+end)
 
 -- Custom alert styling
 local ALERT_STYLE = {
@@ -103,16 +135,23 @@ else
     log.w("Using legacy configuration system (config.lua)")
 end
 
--- Debug print the loaded configuration
-log.i("Configuration loaded successfully")
-log.d("General shortcuts: " .. hs.inspect(config.shortcuts.general or {}))
-
--- Debug kanata configuration
-log.i("Kanata config check: " .. hs.inspect(config.kanata))
-if config.kanata then
-    log.i("Kanata enabled: " .. tostring(config.kanata.enabled))
+-- Debug print the loaded configuration only when enabled
+if config and config.debug and config.debug.configLoading then
+    log.setLogLevel('debug')
+    log.i("Configuration loaded successfully")
+    log.d("General shortcuts: " .. hs.inspect(config.shortcuts.general or {}))
 else
-    log.e("Kanata config is nil!")
+    log.setLogLevel('warning')
+end
+
+-- Kanata config logging only when enabled
+if config and config.debug and config.debug.kanata then
+    log.i("Kanata config check: " .. hs.inspect(config.kanata))
+    if config.kanata then
+        log.i("Kanata enabled: " .. tostring(config.kanata.enabled))
+    else
+        log.e("Kanata config is nil!")
+    end
 end
 
 -- Use this config when setting up modules
@@ -130,6 +169,9 @@ local function safeSetup(module, name)
         log.i("Successfully set up " .. name .. " module")
     end
 end
+
+-- Initialize telemetry first (so it can wrap hotkey.bind before others register)
+safeSetup(telemetry, "telemetry")
 
 -- Set up core modules with error handling
 safeSetup(application, "application")
@@ -170,6 +212,14 @@ if config.kanata and config.kanata.enabled then
     safeSetup(kanata, "kanata")
 else
     log.i("Kanata module disabled in config")
+end
+
+-- Initialize Mouse Speed Finder if enabled
+if config.mousespeedfinder and config.mousespeedfinder.enabled then
+    log.i("Initializing Mouse Speed Finder module")
+    safeSetup(mousespeedfinder, "mousespeedfinder")
+else
+    log.i("Mouse Speed Finder disabled in config")
 end
 
 -- Set up hotkey to inspect windows (Cmd + Alt + Shift + I)

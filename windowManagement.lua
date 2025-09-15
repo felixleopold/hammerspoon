@@ -265,6 +265,8 @@ function M.setup(config)
         
         if usesLeftRightSpecific then
             log.i("Using left/right specific modifier detection for " .. shortcutName)
+            -- Register telemetry label for window action with left/right specific mods
+            require("telemetry").registerHotkeyLabel(shortcutConfig.mods, shortcutConfig.key, "window:" .. shortcutName)
             local id = leftRightModifier.bind(shortcutConfig.mods, shortcutConfig.key, function()
                 log.i("LEFT/RIGHT SPECIFIC: Triggered " .. shortcutName)
                 actionFn()
@@ -277,6 +279,8 @@ function M.setup(config)
         else
             -- Use regular Hammerspoon hotkey binding
             log.i("Using regular hotkey binding for " .. shortcutName)
+            -- Register telemetry label for window action
+            require("telemetry").registerHotkeyLabel(shortcutConfig.mods, shortcutConfig.key, "window:" .. shortcutName)
             hs.hotkey.bind(shortcutConfig.mods, shortcutConfig.key, function()
                 log.i("REGULAR: Triggered " .. shortcutName)
                 actionFn()

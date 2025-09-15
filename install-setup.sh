@@ -113,6 +113,19 @@ set_app_defaults() {
 		fabpath="$(command -v fabric)"
 	fi
 
+	# Telemetry opt-in
+	step "Telemetry (optional)"
+	local telemetry_enabled="false"
+	if confirm "Enable optional hotkey usage telemetry (writes local JSONL; can also POST to your server)?"; then
+		telemetry_enabled="true"
+	fi
+	local telemetry_username=""
+	local telemetry_server=""
+	if [ "$telemetry_enabled" = "true" ]; then
+		read -r -p "Telemetry username (optional, press enter to skip): " telemetry_username || true
+		read -r -p "Telemetry server URL (optional, e.g. http://localhost:3000/api/hammerspoon/usage): " telemetry_server || true
+	fi
+
 	# Decide whether to overwrite
 	if [ "$CONFIG_CREATED" -eq 1 ] || confirm "Write a minimal overrides file to config_user.lua (backup first)?"; then
 		backup_dir "$cfg"
@@ -126,6 +139,12 @@ local defaults = {
 		Editor = "__EDITOR__",
 		Terminal = "__TERMINAL__",
 	},
+    telemetry = {
+        enabled = __TELEMETRY_ENABLED__,
+        username = __TELEMETRY_USERNAME__,
+        serverUrl = __TELEMETRY_SERVER__,
+        includeAppName = true,
+    },
 }
 return defaults
 EOF
@@ -134,6 +153,22 @@ EOF
 		sed -i '' "s|__SECONDARY_BROWSER__|${secondary_browser}|g" "$cfg"
 		sed -i '' "s|__EDITOR__|${editor}|g" "$cfg"
 		sed -i '' "s|__TERMINAL__|${terminal}|g" "$cfg"
+		if [ "$telemetry_enabled" = "true" ]; then
+			sed -i '' "s|__TELEMETRY_ENABLED__|true|g" "$cfg"
+		else
+			sed -i '' "s|__TELEMETRY_ENABLED__|false|g" "$cfg"
+		fi
+		# Username and server need to be proper Lua nil or quoted
+		if [ -n "$telemetry_username" ]; then
+			sed -i '' "s|__TELEMETRY_USERNAME__|\"${telemetry_username}\"|g" "$cfg"
+		else
+			sed -i '' "s|__TELEMETRY_USERNAME__|nil|g" "$cfg"
+		fi
+		if [ -n "$telemetry_server" ]; then
+			sed -i '' "s|__TELEMETRY_SERVER__|\"${telemetry_server}\"|g" "$cfg"
+		else
+			sed -i '' "s|__TELEMETRY_SERVER__|nil|g" "$cfg"
+		fi
 
 		# If we detected a Fabric path, add it as an override by appending a small block before the return
 		if [ -n "$fabpath" ]; then

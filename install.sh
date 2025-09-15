@@ -126,6 +126,48 @@ setup_user_config() {
     fi
 }
 
+# Function to configure optional telemetry
+configure_telemetry() {
+    print_step "Telemetry (optional)"
+    local cfg="$HOME/.hammerspoon/config_user.lua"
+    read -p "Enable optional hotkey usage telemetry (writes local JSONL; can also POST to your server)? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        local username=""
+        local server=""
+        read -p "Telemetry username (optional): " username
+        read -p "Telemetry server URL (optional, e.g. http://localhost:3000/api/hammerspoon/usage): " server
+        # Insert telemetry block before return defaults if present
+        if grep -q "return defaults" "$cfg"; then
+            tmpfile="$(mktemp)"
+            awk -v u="$username" -v s="$server" '
+                BEGIN {inserted=0}
+                /return defaults/ && inserted==0 {
+                    print "    telemetry = {";
+                    print "        enabled = true,";
+                    if (length(u)>0) { printf "        username = \"%s\",\n", u } else { print "        username = nil," }
+                    if (length(s)>0) { printf "        serverUrl = \"%s\",\n", s } else { print "        serverUrl = nil," }
+                    print "        includeAppName = true,";
+                    print "    },";
+                    inserted=1
+                }
+                { print }
+            ' "$cfg" > "$tmpfile" && mv "$tmpfile" "$cfg"
+        else
+            cat >> "$cfg" <<EOF
+defaults.telemetry = {
+    enabled = true,
+    username = ${username:+"$username"},
+    serverUrl = ${server:+"$server"},
+}
+EOF
+        fi
+        print_status "Telemetry enabled in config_user.lua"
+    else
+        print_status "Telemetry not enabled"
+    fi
+}
+
 # Function to launch Hammerspoon
 launch_hammerspoon() {
     print_step "Launching Hammerspoon..."
@@ -210,6 +252,7 @@ main() {
     install_fabric
     setup_fabric_patterns
     setup_user_config
+    configure_telemetry
     launch_hammerspoon
     
     # Show next steps

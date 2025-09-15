@@ -1,5 +1,5 @@
 local M = {}
-local log = hs.logger.new('Macro', 'debug')
+local log = hs.logger.new('Macro', 'warning')
 
 -- Settings
 local MACROS_FILE = hs.fs.pathToAbsolute(os.getenv("HOME") .. "/.hammerspoon") .. "/macros.json"
@@ -17,10 +17,10 @@ local function configureLogging(config)
             log.setLogLevel('debug')
             log.i("Macro debug logging enabled")
         else
-            log.setLogLevel('info')
+            log.setLogLevel('warning')
         end
     else
-        log.setLogLevel('info') -- Default to info level
+        log.setLogLevel('warning') -- Default quiet
     end
 end
 
@@ -48,6 +48,8 @@ local config = nil  -- Will be set in setup()
 local editorUI = nil  -- Holds editor UI components
 local selectedEvent = nil
 local timeScale = 1.0  -- 1.0 = normal speed, 0.5 = half speed, 2.0 = double speed
+local lastSelectedMacroName = nil  -- Remembers last chooser selection
+local activeEditingMacro = nil -- Macro currently open in editor
 
 -- Function to load macros from file
 local function loadMacros()
@@ -333,6 +335,9 @@ local function stopRecording()
         end
         
         table.insert(macros, currentMacro)
+        -- Make newly recorded macro the last-selected default
+        lastSelectedMacroName = currentMacro.name
+        hs.settings.set("macro.lastSelectedName", lastSelectedMacroName)
         
         -- Save to file
         saveMacros()
@@ -491,6 +496,23 @@ local function playMacro(macro)
     end)
 end
 
+-- Resolve which macro to play by preference
+local function getMacroToPlay()
+    if #macros == 0 then return nil end
+
+    -- Prefer last selected in chooser if present
+    if lastSelectedMacroName and lastSelectedMacroName ~= "" then
+        for _, m in ipairs(macros) do
+            if m.name == lastSelectedMacroName then
+                return m
+            end
+        end
+    end
+
+    -- Fallback to most recently saved macro
+    return macros[#macros]
+end
+
 -- Function to create and show the timing editor
 local function showTimingEditor(macro)
     if not macro or not macro.events or #macro.events == 0 then
@@ -500,7 +522,11 @@ local function showTimingEditor(macro)
     
     -- Close existing editor if open
     if editorUI and editorUI.window then
-        editorUI.window:close()
+        if editorUI.window.close then
+            editorUI.window:close()
+        elseif editorUI.window.delete then
+            editorUI.window:delete()
+        end
         editorUI = nil
     end
     
@@ -677,7 +703,7 @@ local function showTimingEditor(macro)
         </head>
         <body>
             <div class="container">
-                <h1>Macro Editor</h1>
+                <h1 id="macro-name">Macro Editor</h1>
                 
                 <div class="macro-info">
                     <span id="macro-duration">Duration: 00:00.00</span>
@@ -777,6 +803,7 @@ local function showTimingEditor(macro)
                 // Initialize the editor with data from Hammerspoon
                 function initEditor(data) {
                     console.log("Initializing editor with:", data);
+                    document.getElementById('macro-name').innerText = `Macro Editor – ${data.name || 'Unnamed'}`;
                     document.getElementById('debug-info').style.display = 'block';
                     document.getElementById('debug-info').innerText = 
                         `Macro contains ${data.events.length} events, spanning ${data.events.length > 0 ? data.events[data.events.length-1].timestamp : 0} seconds`;
@@ -804,6 +831,9 @@ local function showTimingEditor(macro)
                     
                     // Display macro info
                     updateMacroInfo();
+                    if (typeof data.totalSeconds === 'number') {
+                        document.getElementById('macro-duration').innerText = `Duration: ${formatTime(data.totalSeconds)}`;
+                    }
                     
                     console.log("Editor initialization complete");
                 }
@@ -976,25 +1006,65 @@ local function showTimingEditor(macro)
                     document.getElementById('speed-up').addEventListener('click', function() {
                         window.playbackSpeed = Math.min(window.playbackSpeed + 0.1, 3.0);
                         document.getElementById('playback-speed').innerText = `${window.playbackSpeed.toFixed(1)}x`;
+                        updatePreviewDuration();
                     });
                     
                     // Slow down button
                     document.getElementById('slow-down').addEventListener('click', function() {
                         window.playbackSpeed = Math.max(window.playbackSpeed - 0.1, 0.1);
                         document.getElementById('playback-speed').innerText = `${window.playbackSpeed.toFixed(1)}x`;
+                        updatePreviewDuration();
                     });
                     
-                    // Apply button that sends updated event data back to Lua
+                    // Apply button that applies speed to delays and sends updated event data back to Lua
                     document.getElementById('apply-button').addEventListener('click', function() {
                         try {
+                            if (!Array.isArray(window.events) || window.events.length === 0) {
+                                throw new Error('No events to apply');
+                            }
+
+                            // Ensure delays exist
+                            recalculateDelays();
+
+                            // Apply playbackSpeed to delays to persist timing
+                            const minDelay = 0.01;
+                            let newTimestamp = 0;
+                            window.events[0].timestamp = 0;
+                            window.events[0].delay = 0;
+                            window.events[0].formattedDelay = '0.000';
+
+                            for (let i = 1; i < window.events.length; i++) {
+                                const originalDelay = typeof window.events[i].delay === 'number' ? window.events[i].delay : Math.max(minDelay, (window.events[i].timestamp - window.events[i-1].timestamp));
+                                const adjustedDelay = Math.max(minDelay, originalDelay / window.playbackSpeed);
+                                newTimestamp += adjustedDelay;
+                                window.events[i].delay = adjustedDelay;
+                                window.events[i].formattedDelay = adjustedDelay.toFixed(3);
+                                window.events[i].timestamp = newTimestamp;
+                                const minutes = Math.floor(newTimestamp / 60);
+                                const seconds = newTimestamp % 60;
+                                window.events[i].formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toFixed(2).padStart(5, '0')}`;
+                            }
+
                             // Prepare data to send back to Lua
                             const result = {
                                 events: window.events,
                                 playbackSpeed: window.playbackSpeed
                             };
-                            
-                            console.log("Sending updated data to Lua:", result);
-                            window.webkit.messageHandlers.macroUpdated.postMessage(JSON.stringify(result));
+
+                            console.log('Sending updated data to Lua via http:', result);
+                            fetch(`http://127.0.0.1:${window.hsServerPort}/macroUpdated`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(result)
+                            }).then(async (res) => {
+                                if (!res.ok) throw new Error('HTTP ' + res.status);
+                                const data = await res.json().catch(() => ({}));
+                                console.log('Saved macro:', data);
+                            }).catch(err => {
+                                console.error('Error sending to local server:', err);
+                                document.getElementById('debug-info').style.display = 'block';
+                                document.getElementById('debug-info').innerText = "Error applying changes: " + err.message;
+                            });
                         } catch (err) {
                             console.error("Error applying changes:", err);
                             document.getElementById('debug-info').style.display = 'block';
@@ -1020,7 +1090,7 @@ local function showTimingEditor(macro)
                     }
                 }
                 
-                // Update event markers after changing positions
+                // Update event markers after changing positions (local only; save occurs on Apply)
                 function updateAfterDrag() {
                     // Recalculate delays
                     recalculateDelays();
@@ -1030,23 +1100,30 @@ local function showTimingEditor(macro)
                     
                     // Update macro info display
                     updateMacroInfo();
-                    
-                    // Send data to Hammerspoon
-                    try {
-                        window.webkit.messageHandlers.updateEventTimings.postMessage({
-                            eventData: window.events
-                        });
-                    } catch (err) {
-                        console.error("Error sending timing data to Hammerspoon:", err);
-                    }
                 }
                 
+                // Live preview of adjusted duration with current speed
+                function updatePreviewDuration() {
+                    if (!Array.isArray(window.events) || window.events.length === 0) return;
+                    // Ensure delays are present
+                    recalculateDelays();
+                    let total = 0;
+                    for (let i = 1; i < window.events.length; i++) {
+                        const d = typeof window.events[i].delay === 'number' ? window.events[i].delay : 0;
+                        total += (d / (window.playbackSpeed || 1));
+                    }
+                    document.getElementById('macro-duration').innerText = `Duration: ${formatTime(total)}`;
+                }
+
                 // Make functions available to Hammerspoon
                 window.initEditor = initEditor;
             </script>
         </body>
         </html>
     ]]
+    
+    -- Track active macro for external messaging
+    activeEditingMacro = macro
     
     -- Load the HTML content
     editorUI.window = hs.webview.newBrowser(hs.geometry.rect(100, 100, EDITOR_WIDTH, EDITOR_HEIGHT))
@@ -1055,146 +1132,115 @@ local function showTimingEditor(macro)
     editorUI.window:allowTextEntry(true)
     editorUI.window:windowStyle({"titled", "closable", "resizable"})
     
-    -- Load the HTML content
-    editorUI.window:html(html)
-    
-    -- Set up message handlers
-    editorUI.window:windowCallback(function(action, webView)
-        if action == 'closing' then
-            editorUI = nil
+    -- Start a tiny local HTTP server dedicated to this editor instance
+    editorUI.server = hs.httpserver.new(false, false)
+    editorUI.server:setCallback(function(method, path, headers, body)
+        local function json(status, obj)
+            local payload = hs.json.encode(obj or {})
+            return payload, status, { ["Content-Type"] = "application/json", ["Access-Control-Allow-Origin"] = "*" }
         end
-    end)
-    
-    -- Handle messages from JavaScript
-    editorUI.window:navigationCallback(function(action, webView, params)
-        if action == 'didReceiveMessage' then
-            local message = params.body
-            local name = params.name
-            
-            if name == 'selectEvent' then
-                selectedEvent = message.selectedEvent + 1  -- Convert from 0-based to 1-based
-                log.d("Selected event " .. selectedEvent)
-            elseif name == 'updateEventTimings' then
-                -- Update event timings in the macro
-                for i, event in ipairs(message.eventData) do
-                    macro.events[i].timestamp = event.timestamp
-                    macro.events[i].delay = event.delay
-                    macro.events[i].formattedDelay = event.formattedDelay
-                    macro.events[i].formattedTime = event.formattedTime
-                end
-            elseif name == 'updateSpeed' then
-                timeScale = message.speed
-                log.d("Updated speed to " .. timeScale)
-            elseif name == 'applyChanges' then
-                -- Apply changes to the macro
-                for i, event in ipairs(message.eventData) do
-                    macro.events[i].timestamp = event.timestamp
-                    macro.events[i].delay = event.delay
-                    macro.events[i].formattedDelay = event.formattedDelay
-                    macro.events[i].formattedTime = event.formattedTime
-                end
-                
-                -- Update timing info
-                if #macro.events > 0 then
-                    macro.totalSeconds = macro.events[#macro.events].timestamp
-                    
-                    -- Format the duration
+        if method == "OPTIONS" then
+            return "", 204, { ["Access-Control-Allow-Origin"] = "*", ["Access-Control-Allow-Methods"] = "POST, OPTIONS", ["Access-Control-Allow-Headers"] = "Content-Type" }
+        end
+        if method == "POST" and path == "/macroUpdated" then
+            local ok, result = pcall(function() return hs.json.decode(body or "") end)
+            if not ok or not result then return json(400, { error = "invalid json" }) end
+            -- Apply full update
+            if result.events and #result.events > 0 then
+                macro.events = result.events
+                local lastEvent = macro.events[#macro.events]
+                if lastEvent and lastEvent.timestamp then
+                    macro.totalSeconds = lastEvent.timestamp
                     local minutes = math.floor(macro.totalSeconds / 60)
                     local seconds = macro.totalSeconds % 60
                     macro.duration = string.format("%02d:%05.2f", minutes, seconds)
                 end
-                
-                -- Save changes
-                saveMacros()
-                hs.alert.show("Macro timing updated")
-                
-                -- Close editor
-                if editorUI and editorUI.window then
-                    if editorUI.window.close then
-                        editorUI.window:close()
-                    elseif editorUI.window.delete then
-                        editorUI.window:delete()
-                    end
-                end
-                editorUI = nil
-            elseif name == 'playMacro' then
-                -- Play the current macro with modified timing
-                local tempMacro = hs.json.decode(hs.json.encode(macro))  -- Deep copy
-                
-                -- Apply speed multiplier
-                for i, event in ipairs(tempMacro.events) do
-                    if i > 1 then
-                        event.delay = event.delay / timeScale
-                    end
-                end
-                
-                -- Play the macro
-                playMacro(tempMacro)
-            elseif name == 'cancelEdit' then
-                -- Close without saving
-                if editorUI and editorUI.window then
-                    if editorUI.window.close then
-                        editorUI.window:close()
-                    elseif editorUI.window.delete then
-                        editorUI.window:delete()
-                    end
-                end
-                editorUI = nil
-            elseif name == 'macroUpdated' then
-                -- Parse the received JSON data
-                local success, result = pcall(function() return hs.json.decode(message) end)
-                
-                if not success or not result then
-                    log.e("Failed to parse macroUpdated data: " .. tostring(message))
-                    return
-                end
-                
-                log.d("Received macro update with " .. #(result.events or {}) .. " events")
-                
-                -- Update the macro events
-                if result.events and #result.events > 0 then
-                    macro.events = result.events
-                    
-                    -- Update timing info based on the last event's timestamp
-                    local lastEvent = macro.events[#macro.events]
-                    if lastEvent and lastEvent.timestamp then
-                        macro.totalSeconds = lastEvent.timestamp
-                        
-                        -- Format the duration
-                        local minutes = math.floor(macro.totalSeconds / 60)
-                        local seconds = macro.totalSeconds % 60
-                        macro.duration = string.format("%02d:%05.2f", minutes, seconds)
-                    end
-                end
-                
-                -- Update playback speed if provided
-                if result.playbackSpeed then
-                    timeScale = result.playbackSpeed
-                    log.d("Updated playback speed to " .. timeScale)
-                end
-                
-                -- Save changes
-                saveMacros()
-                hs.alert.show("Macro timing updated")
-                
-                -- Close editor
-                if editorUI and editorUI.window then
-                    if editorUI.window.close then
-                        editorUI.window:close()
-                    elseif editorUI.window.delete then
-                        editorUI.window:delete()
-                    end
-                end
-                editorUI = nil
             end
+            if result.playbackSpeed then timeScale = result.playbackSpeed end
+            saveMacros()
+            hs.alert.show("Macro timing updated")
+            -- Close editor and stop server
+            if editorUI and editorUI.window then
+                if editorUI.window.close then editorUI.window:close() elseif editorUI.window.delete then editorUI.window:delete() end
+            end
+            if editorUI and editorUI.server then editorUI.server:stop() end
+            editorUI = nil
+            return json(200, { ok = true })
+        elseif method == "POST" and path == "/updateEventTimings" then
+            local ok, result = pcall(function() return hs.json.decode(body or "") end)
+            if not ok or not result then return json(400, { error = "invalid json" }) end
+            if result.eventData then
+                for i, event in ipairs(result.eventData) do
+                    if macro.events[i] then
+                        macro.events[i].timestamp = event.timestamp
+                        macro.events[i].delay = event.delay
+                        macro.events[i].formattedDelay = event.formattedDelay
+                        macro.events[i].formattedTime = event.formattedTime
+                    end
+                end
+            end
+            return json(200, { ok = true })
+        else
+            return json(404, { error = "not found" })
         end
-        
+    end)
+    -- Pick a stable local port with simple fallback tries
+    local serverPort = nil
+    for _, p in ipairs({12765, 12766, 12767}) do
+        editorUI.server:setPort(p)
+        local ok = pcall(function() editorUI.server:start() end)
+        if ok then
+            serverPort = p
+            break
+        else
+            -- Ensure stopped before retry
+            pcall(function() editorUI.server:stop() end)
+        end
+    end
+    if not serverPort then
+        hs.alert.show("Failed to start editor bridge server")
+        return
+    end
+
+    -- Inject initialization data, including server port
+    editorUI.window:navigationCallback(function(action, webView)
+        if action == 'didFinishNavigation' then
+            local initData = hs.json.encode({
+                name = macro.name,
+                duration = macro.duration,
+                totalSeconds = macro.totalSeconds,
+                events = macro.events,
+                serverPort = serverPort
+            })
+            local script = string.format([[ (function(){ try { const data = %s; if (window.initEditor) { window.hsServerPort = data.serverPort; window.initEditor(data); } else { console.error('initEditor not found'); } } catch(e){ console.error('Init error:', e); } })(); ]], initData)
+            webView:evaluateJavaScript(script)
+        end
         return true
     end)
+
+    -- Load the HTML content (after handlers are registered)
+    editorUI.window:html(html)
     
-    -- Initialize the editor with macro data
-    local jsonData = hs.json.encode({events = macro.events})
-    editorUI.window:evaluateJavaScript([[
+    -- Set up window callback for closing
+    editorUI.window:windowCallback(function(action, webView)
+        if action == 'closing' then
+            if editorUI and editorUI.server then editorUI.server:stop() end
+            editorUI = nil
+        end
+    end)
+    
+    -- Prepare the editor's initial data payload
+    local jsonData = hs.json.encode({
+        name = macro.name,
+        duration = macro.duration,
+        totalSeconds = macro.totalSeconds,
+        events = macro.events
+    })
+    
+    -- Defer JS initialization to ensure DOM is ready
+    hs.timer.doAfter(0.4, function()
+        if not (editorUI and editorUI.window) then return end
+        editorUI.window:evaluateJavaScript([[
         // Initialize with proper error handling
         try {
             console.log("Initializing with data...");
@@ -1261,10 +1307,17 @@ local function showTimingEditor(macro)
             document.getElementById('debug-info').style.display = 'block';
             document.getElementById('debug-info').innerText = "Error initializing editor: " + e.message;
         }
-    ]])
+        ]])
+    end)
     
-    -- Show the window
+    -- Show the window and bring it to front
     editorUI.window:show()
+    if editorUI.window.bringToFront then
+        editorUI.window:bringToFront(true)
+    else
+        local hsApp = hs.application.get("Hammerspoon")
+        if hsApp then hsApp:activate(true) end
+    end
 end
 
 -- Function to show the macro chooser
@@ -1279,6 +1332,9 @@ local function showMacroChooser()
             local macroIndex = selection.index
             if macroIndex then
                 local macro = macros[macroIndex]
+                -- Remember this as the default for play
+                lastSelectedMacroName = macro and macro.name or nil
+                hs.settings.set("macro.lastSelectedName", lastSelectedMacroName)
                 
                 -- Check if the alt/option key is held down
                 local flags = hs.eventtap.checkKeyboardModifiers()
@@ -1314,7 +1370,12 @@ end
 -- Function to call the JavaScript initEditor function
 local function callInitEditor(macro)
     if editorUI and editorUI.window then
-        local jsonData = hs.json.encode({events = macro.events})
+        local jsonData = hs.json.encode({
+            name = macro.name,
+            duration = macro.duration,
+            totalSeconds = macro.totalSeconds,
+            events = macro.events
+        })
         local script = string.format([[
             try {
                 // Make sure the DOM is fully loaded
@@ -1348,6 +1409,8 @@ function M.setup(cfg)
     
     -- Load existing macros
     loadMacros()
+    -- Restore last selected macro name if available
+    lastSelectedMacroName = hs.settings.get("macro.lastSelectedName")
     
     -- Define macro configuration if not present
     if not config.macros then
@@ -1393,6 +1456,7 @@ function M.setup(cfg)
         if config.macros.shortcuts.record then
             local mods = config.macros.shortcuts.record.mods
             local key = config.macros.shortcuts.record.key
+            require("telemetry").registerHotkeyLabel(mods, key, "macro:recordToggle")
             hs.hotkey.bind(mods, key, function()
                 if isRecording then
                     stopRecording()
@@ -1408,10 +1472,14 @@ function M.setup(cfg)
         if config.macros.shortcuts.play then
             local mods = config.macros.shortcuts.play.mods
             local key = config.macros.shortcuts.play.key
+            require("telemetry").registerHotkeyLabel(mods, key, "macro:play")
             hs.hotkey.bind(mods, key, function()
-                if #macros > 0 then
-                    -- Play the most recently added macro
-                    playMacro(macros[#macros])
+                local macroToPlay = getMacroToPlay()
+                if macroToPlay then
+                    -- Persist last played selection
+                    lastSelectedMacroName = macroToPlay.name
+                    hs.settings.set("macro.lastSelectedName", lastSelectedMacroName)
+                    playMacro(macroToPlay)
                 else
                     hs.alert.show("No macros available to play")
                 end
@@ -1424,6 +1492,7 @@ function M.setup(cfg)
         if config.macros.shortcuts.chooser then
             local mods = config.macros.shortcuts.chooser.mods
             local key = config.macros.shortcuts.chooser.key
+            require("telemetry").registerHotkeyLabel(mods, key, "macro:chooser")
             hs.hotkey.bind(mods, key, function()
                 showMacroChooser()
             end)
@@ -1435,10 +1504,11 @@ function M.setup(cfg)
         if config.macros.shortcuts.editor then
             local mods = config.macros.shortcuts.editor.mods
             local key = config.macros.shortcuts.editor.key
+            require("telemetry").registerHotkeyLabel(mods, key, "macro:editor")
             hs.hotkey.bind(mods, key, function()
-                if #macros > 0 then
-                    -- Edit the most recently added macro
-                    showTimingEditor(macros[#macros])
+                local macroToPlay = getMacroToPlay()
+                if macroToPlay then
+                    showTimingEditor(macroToPlay)
                 else
                     hs.alert.show("No macros available to edit")
                 end
@@ -1459,11 +1529,13 @@ function M.setup(cfg)
             end
         end)
         
-        -- Option + Command + ] to play the most recent macro
+        -- Option + Command + ] to play last selected or most recent macro
         hs.hotkey.bind({"alt", "cmd"}, "]", function()
-            if #macros > 0 then
-                -- Play the most recently added macro
-                playMacro(macros[#macros])
+            local macroToPlay = getMacroToPlay()
+            if macroToPlay then
+                lastSelectedMacroName = macroToPlay.name
+                hs.settings.set("macro.lastSelectedName", lastSelectedMacroName)
+                playMacro(macroToPlay)
             else
                 hs.alert.show("No macros available to play")
             end
@@ -1474,11 +1546,11 @@ function M.setup(cfg)
             showMacroChooser()
         end)
         
-        -- Option + Command + e to open editor
+        -- Option + Command + e to open editor for last selected or most recent macro
         hs.hotkey.bind({"alt", "cmd"}, "e", function()
-            if #macros > 0 then
-                -- Edit the most recently added macro
-                showTimingEditor(macros[#macros])
+            local macroToEdit = getMacroToPlay()
+            if macroToEdit then
+                showTimingEditor(macroToEdit)
             else
                 hs.alert.show("No macros available to edit")
             end
@@ -1488,4 +1560,43 @@ function M.setup(cfg)
     log.i("Macro module initialized")
 end
 
-return M 
+-- Keep return at end of file after helper functions
+
+-- Expose handlers for URL-event bridge (called from init.lua)
+function M._applyEditorUpdate(payload)
+    if not payload or not payload.events or #payload.events == 0 then return end
+    if not activeEditingMacro then return end
+    macro = activeEditingMacro
+    macro.events = payload.events
+    if macro.events[#macro.events] and macro.events[#macro.events].timestamp then
+        macro.totalSeconds = macro.events[#macro.events].timestamp
+        local minutes = math.floor(macro.totalSeconds / 60)
+        local seconds = macro.totalSeconds % 60
+        macro.duration = string.format("%02d:%05.2f", minutes, seconds)
+    end
+    if payload.playbackSpeed then
+        timeScale = payload.playbackSpeed
+    end
+    saveMacros()
+    hs.alert.show("Macro timing updated")
+    if editorUI and editorUI.window then
+        if editorUI.window.close then editorUI.window:close() elseif editorUI.window.delete then editorUI.window:delete() end
+    end
+    editorUI = nil
+    activeEditingMacro = nil
+end
+
+function M._applyEditorTimingUpdate(eventData)
+    if not eventData or not activeEditingMacro then return end
+    macro = activeEditingMacro
+    for i, event in ipairs(eventData) do
+        if macro.events[i] then
+            macro.events[i].timestamp = event.timestamp
+            macro.events[i].delay = event.delay
+            macro.events[i].formattedDelay = event.formattedDelay
+            macro.events[i].formattedTime = event.formattedTime
+        end
+    end
+end
+
+return M

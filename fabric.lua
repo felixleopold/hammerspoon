@@ -272,6 +272,8 @@ Default installation paths are:
     for _, pattern in ipairs(config.fabric.patterns) do
         if pattern.shortcut and pattern.shortcut.mods and #pattern.shortcut.mods > 0 then
             log.i("Setting up fabric pattern shortcut: " .. pattern.id .. " with " .. hs.inspect(pattern.shortcut))
+            -- Register telemetry label for fabric pattern
+            require("telemetry").registerHotkeyLabel(pattern.shortcut.mods, pattern.shortcut.key, "fabric:" .. pattern.id)
             hs.hotkey.bind(pattern.shortcut.mods, pattern.shortcut.key, function()
                 log.i("Executing fabric pattern: " .. pattern.id)
                 executeFabricPattern(pattern.id)

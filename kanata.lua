@@ -1,5 +1,5 @@
 local M = {}
-local log = hs.logger.new('Kanata', 'debug')
+local log = hs.logger.new('Kanata', 'warning')
 
 -- Module state
 local menuBar = nil
@@ -359,6 +359,12 @@ end
 -- Function to setup the kanata integration
 function M.setup(cfg)
     config = cfg
+    -- Configure logging per user config
+    if config and config.debug and config.debug.kanata then
+        log.setLogLevel('debug')
+    else
+        log.setLogLevel('warning')
+    end
     
     if not config.kanata or not config.kanata.enabled then
         log.i("Kanata integration disabled")

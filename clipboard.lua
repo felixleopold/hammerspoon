@@ -7,6 +7,13 @@ local maxHistorySize = 9
 local filesDir = os.getenv("HOME") .. "/.hammerspoon/clipboard_files/"
 local historyFile = os.getenv("HOME") .. "/.hammerspoon/clipboard_history.json"
 
+-- Helper: build a properly formatted file URL from a POSIX path
+local function toFileURL(posixPath)
+    if not posixPath or posixPath == "" then return nil end
+    local absolutePath = hs.fs.pathToAbsolute(posixPath) or posixPath
+    return "file://" .. absolutePath:gsub(" ", "%%20")
+end
+
 -- Configure logger based on debug settings
 function clipboard.configureLogging(config)
     if config and config.debug and config.debug.clipboard ~= nil then
@@ -14,10 +21,10 @@ function clipboard.configureLogging(config)
             log.setLogLevel('debug')
             log.i("Clipboard debug logging enabled")
         else
-            log.setLogLevel('info')
+            log.setLogLevel('warning')
         end
     else
-        log.setLogLevel('info') -- Default to info level
+        log.setLogLevel('warning') -- Default to warning level to stay quiet
     end
 end
 
@@ -436,63 +443,10 @@ function processClipboardChange()
     local types = hs.pasteboard.typesAvailable()
     log.d("Processing clipboard change with types: " .. hs.inspect(types))
     
-    -- First check if it's a file
+    -- First check if it's a file, but do not mutate clipboard contents
     if not checkForFile() then
-        -- If not a file, check if it's text
         local text = hs.pasteboard.readString()
-        if text then
-            -- Check if the text is a file URL
-            if text:match("^file://") then
-                log.i("Converting file URL text to actual file reference")
-                hs.pasteboard.setContents(text) -- Make sure it's set as the current clipboard content
-                if checkForFile() then
-                    return -- Successfully processed as file
-                end
-            end
-            
-            -- Check if the text might actually be a filename that was copied from Finder or another file browser
-            -- Common patterns: file.ext, path/file.ext, or /full/path/file.ext
-            local looksLikeFileName = text:match("^[%w%s%-_%.]+%.[%w]+$") or -- Simple filename with extension
-                                     text:match("^.+/[^/]+%.[%w]+$") -- Path with filename
-            
-            if looksLikeFileName then
-                -- Check if this might be a real file path
-                local possiblePath = text
-                -- If it doesn't start with /, try to make it absolute
-                if not possiblePath:match("^/") then
-                    -- Try checking in common locations
-                    local locations = {
-                        os.getenv("HOME"),
-                        os.getenv("HOME") .. "/Documents",
-                        os.getenv("HOME") .. "/Downloads",
-                        os.getenv("PWD") or os.getenv("HOME")
-                    }
-                    
-                    for _, location in ipairs(locations) do
-                        local testPath = location .. "/" .. possiblePath
-                        if hs.fs.attributes(testPath) then
-                            log.i("Found matching file for text: " .. testPath)
-                            -- We found a real file matching the text, set up a fileURL
-                            local fileURL = "file://" .. testPath:gsub(" ", "%%20")
-                            hs.pasteboard.setContents(fileURL) -- Update clipboard to the file
-                            -- Re-trigger the check to process it as a file
-                            checkForFile()
-                            return
-                        end
-                    end
-                elseif hs.fs.attributes(possiblePath) then
-                    -- Direct path exists
-                    log.i("Direct file path exists: " .. possiblePath)
-                    local fileURL = "file://" .. possiblePath:gsub(" ", "%%20")
-                    hs.pasteboard.setContents(fileURL)
-                    checkForFile()
-                    return
-                end
-            end
-            
-            -- If we got here, it's just regular text
-            addTextToHistory(text)
-        end
+        if text then addTextToHistory(text) end
     end
 end
 
@@ -525,31 +479,32 @@ function pasteItem(index)
         log.d("Pasting text: " .. (item.content and #item.content or 0) .. " characters")
         hs.pasteboard.setContents(item.content)
     elseif item.type == "file" then
-        local filePath = item.path
+        -- Prefer original path if available so we operate on the user's real file
+        local preferredPath = item.originalPath or item.path
+        local fallbackPath = item.path
+        local filePath = hs.fs.attributes(preferredPath) and preferredPath or fallbackPath
+
         if not hs.fs.attributes(filePath) then
-            log.e("File no longer exists: " .. filePath)
+            log.e("File no longer exists: " .. tostring(filePath))
             hs.alert.show("File no longer exists")
-            -- Resume clipboard watcher if it was running
             if wasWatcherRunning then clipboardWatcher:start() end
             return
         end
-        
-        log.d("Pasting file: " .. filePath .. " (type: " .. (item.contentType or "unknown") .. ")")
-        
-        -- Determine how to handle based on content type
-        if isImageFile(item.contentType) then
-            -- Handle image files
+
+        local ext = item.contentType
+        if isImageFile(ext) then
+            -- Paste the actual image object
+            log.d("Pasting image object from file: " .. filePath)
             local image = hs.image.imageFromPath(filePath)
             if image then
                 hs.pasteboard.writeObjects({image})
             else
                 log.e("Failed to load image from " .. filePath)
-                -- Resume clipboard watcher if it was running
                 if wasWatcherRunning then clipboardWatcher:start() end
                 return
             end
-        elseif isCodeFile(item.contentType) or isTextFile(item.contentType) then
-            -- For code and text files, read the content and paste as text
+        elseif isCodeFile(ext) or isTextFile(ext) then
+            -- For code and text files, paste contents as text (preserves existing feature)
             local file = io.open(filePath, "r")
             if file then
                 local content = file:read("*all")
@@ -557,12 +512,24 @@ function pasteItem(index)
                 hs.pasteboard.setContents(content)
             else
                 -- Fallback to file URL
-                local fileURL = "file://" .. filePath:gsub(" ", "%%20")
+                local fileURL = toFileURL(filePath)
+                if not fileURL then
+                    log.e("Failed to build file URL for: " .. tostring(filePath))
+                    if wasWatcherRunning then clipboardWatcher:start() end
+                    return
+                end
+                hs.pasteboard.clearContents()
                 hs.pasteboard.writeFileURL({fileURL})
             end
         else
-            -- For other files, use fileURL
-            local fileURL = "file://" .. filePath:gsub(" ", "%%20")
+            -- For other files, paste as file URL so Finder/file-aware apps treat them as files
+            log.d("Pasting file as file URL: " .. filePath .. " (type: " .. (ext or "unknown") .. ")")
+            local fileURL = toFileURL(filePath)
+            if not fileURL then
+                log.e("Failed to build file URL for: " .. tostring(filePath))
+                if wasWatcherRunning then clipboardWatcher:start() end
+                return
+            end
             hs.pasteboard.clearContents()
             hs.pasteboard.writeFileURL({fileURL})
         end
@@ -578,41 +545,48 @@ function pasteItem(index)
             return
         end
         
-        log.d("Pasting file reference: " .. originalPath .. " (type: " .. (item.contentType or "unknown") .. ", mode: " .. attrib.mode .. ")")
-        
-        -- Special handling for folders
+        local ext = item.contentType
         if item.contentType == "folder" or attrib.mode == "directory" then
-            -- For folders, use the fileURL approach which works better
-            local fileURL = "file://" .. originalPath:gsub(" ", "%%20")
+            -- Folders: paste as file URL
+            local fileURL = toFileURL(originalPath)
             hs.pasteboard.clearContents()
-            hs.pasteboard.writeFileURL({fileURL})
-        elseif isImageFile(item.contentType) then
-            -- For images, load them directly
+            if fileURL then hs.pasteboard.writeFileURL({fileURL}) end
+        elseif isImageFile(ext) then
+            -- Images: paste image object
+            log.d("Pasting image object from file reference: " .. originalPath)
             local image = hs.image.imageFromPath(originalPath)
             if image then
                 hs.pasteboard.writeObjects({image})
             else
-                -- Fallback to file URL
-                local fileURL = "file://" .. originalPath:gsub(" ", "%%20")
+                local fileURL = toFileURL(originalPath)
+                if not fileURL then
+                    log.e("Failed to build file URL for: " .. tostring(originalPath))
+                    if wasWatcherRunning then clipboardWatcher:start() end
+                    return
+                end
+                hs.pasteboard.clearContents()
                 hs.pasteboard.writeFileURL({fileURL})
             end
-        elseif isCodeFile(item.contentType) or isTextFile(item.contentType) then
-            -- For code and text files, read the content and paste as text
+        elseif isCodeFile(ext) or isTextFile(ext) then
+            -- Code/text: paste contents as text
             local file = io.open(originalPath, "r")
             if file then
                 local content = file:read("*all")
                 file:close()
                 hs.pasteboard.setContents(content)
             else
-                -- Fallback to file URL
-                local fileURL = "file://" .. originalPath:gsub(" ", "%%20")
-                hs.pasteboard.writeFileURL({fileURL})
+                local fileURL = toFileURL(originalPath)
+                if fileURL then hs.pasteboard.writeFileURL({fileURL}) end
             end
         else
-            -- Set fileURL for the original file
-            local fileURL = "file://" .. originalPath:gsub(" ", "%%20")
-            
-            -- Use the file URL approach directly
+            -- Default: paste as file URL
+            log.d("Pasting file reference as file URL: " .. originalPath .. " (type: " .. (ext or "unknown") .. ")")
+            local fileURL = toFileURL(originalPath)
+            if not fileURL then
+                log.e("Failed to build file URL for: " .. tostring(originalPath))
+                if wasWatcherRunning then clipboardWatcher:start() end
+                return
+            end
             hs.pasteboard.clearContents()
             hs.pasteboard.writeFileURL({fileURL})
         end
@@ -623,7 +597,8 @@ function pasteItem(index)
         
         for _, fileInfo in ipairs(item.files) do
             if hs.fs.attributes(fileInfo.path) then
-                table.insert(fileURLs, "file://" .. fileInfo.path:gsub(" ", "%%20"))
+                local url = toFileURL(fileInfo.path)
+                if url then table.insert(fileURLs, url) end
             else
                 missingCount = missingCount + 1
             end
@@ -764,6 +739,7 @@ function clipboard.setup(config)
     
     for i, key in ipairs(keys) do
         if i <= maxHistorySize then
+            require("telemetry").registerHotkeyLabel(mods, key, "clipboard:item:" .. tostring(i))
             hs.hotkey.bind(mods, key, function()
                 if #clipboardHistory >= i then
                     pasteItem(i)

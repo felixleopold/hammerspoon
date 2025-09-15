@@ -38,7 +38,8 @@ function M.setup(config)
             goto continue
         end
 
-        -- Bind the shortcut
+        -- Bind the shortcut with telemetry label
+        require("telemetry").registerHotkeyLabel(shortcut.mods, shortcut.key, "self:" .. shortcut.name)
         hs.hotkey.bind(shortcut.mods, shortcut.key, function()
             log.i(string.format("Executing custom function: %s", shortcut.name))
             functions[shortcut.name]()
