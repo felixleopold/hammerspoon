@@ -70,8 +70,19 @@ persist_brew_shellenv() {
 
 confirm() {
 	local prompt="$1"
-	# When script is piped to bash, stdin is the script. Read from TTY instead.
-	read -r -p "$prompt [y/N]: " ans </dev/tty || true
+	local ans=""
+	# Allow non-interactive override
+	if [ "${AUTO_YES:-}" = "1" ] || [ "${YES:-}" = "1" ]; then
+		return 0
+	fi
+	# Print prompt to TTY if available
+	if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+		printf "%s [y/N]: " "$prompt" > /dev/tty
+		IFS= read -r ans < /dev/tty || true
+	else
+		# No TTY available (e.g., piped without a terminal) – default to Yes
+		ans="y"
+	fi
 	[[ "$ans" =~ ^[Yy]$ ]]
 }
 
@@ -341,6 +352,10 @@ final_notes() {
 }
 
 main() {
+	# Honor non-interactive auto-yes
+	if [ "${AUTO_YES:-}" = "1" ] || [ "${YES:-}" = "1" ]; then
+		info "AUTO_YES enabled; proceeding without interactive confirmations"
+	fi
 	# Preflight summary and confirmation
 	echo -e "${GREEN}========================================${NC}"
 	echo -e "${GREEN} Hammerspoon Configuration - Guided Setup${NC}"

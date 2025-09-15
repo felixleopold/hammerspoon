@@ -272,7 +272,12 @@ main() {
     echo "- Create a user config if missing"
     echo "- Launch Hammerspoon and guide final steps"
     echo
-    read -r -p "Proceed? [y/N]: " ans </dev/tty || true
+    # Support non-interactive override via AUTO_YES or YES
+    if [ "${AUTO_YES:-}" = "1" ] || [ "${YES:-}" = "1" ]; then
+        ans="y"
+    else
+        read -r -p "Proceed? [y/N]: " ans </dev/tty || true
+    fi
     if [[ ! "$ans" =~ ^[Yy]$ ]]; then
         print_error "Installation cancelled"
         exit 1
