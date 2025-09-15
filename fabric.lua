@@ -88,35 +88,50 @@ Default installation paths are:
         
         -- Build the fabric command
         local command
-        -- Choose model proactively
-        local chosenModel = pattern.model or config.fabric.defaultModel or "openai/gpt-oss-120b"
+        -- Choose model and vendor; only force model if pattern explicitly sets one
+        local chosenModel = pattern.model
         local chosenVendor = "Groq"
         if pattern.youtube then
             -- For YouTube patterns
-            command = string.format('%s -y "%s" --vendor %s --model %s --stream --pattern %s',
-                fabricPath,
-                clipboardContent:gsub('"', '\\"'),  -- Escape quotes in URL
-                chosenVendor,
-                chosenModel,
-                pattern.id)
+            if chosenModel and chosenModel ~= "" then
+                command = string.format('%s -y "%s" --vendor %s --model %s --stream --pattern %s',
+                    fabricPath,
+                    clipboardContent:gsub('"', '\\"'),
+                    chosenVendor,
+                    chosenModel,
+                    pattern.id)
+            else
+                command = string.format('%s -y "%s" --vendor %s --stream --pattern %s',
+                    fabricPath,
+                    clipboardContent:gsub('"', '\\"'),
+                    chosenVendor,
+                    pattern.id)
+            end
         else
             -- For regular patterns
-            local baseCommand = string.format('echo "%s" | %s --pattern %s --vendor %s --model %s',
-                clipboardContent:gsub('"', '\\"'),
-                fabricPath,
-                pattern.id,
-                chosenVendor,
-                chosenModel)
+            local baseCommand
+            if chosenModel and chosenModel ~= "" then
+                baseCommand = string.format('echo "%s" | %s --pattern %s --vendor %s --model %s',
+                    clipboardContent:gsub('"', '\\"'),
+                    fabricPath,
+                    pattern.id,
+                    chosenVendor,
+                    chosenModel)
+            else
+                baseCommand = string.format('echo "%s" | %s --pattern %s --vendor %s',
+                    clipboardContent:gsub('"', '\\"'),
+                    fabricPath,
+                    pattern.id,
+                    chosenVendor)
+            end
 
             -- Handle pattern variables
             if pattern.variables then
                 for varName, defaultValue in pairs(pattern.variables) do
                     if varName == "instruction" and instruction then
-                        -- Use provided instruction if available
                         baseCommand = baseCommand .. string.format(' -v=%s:"%s"', 
                             varName, instruction:gsub('"', '\\"'))
                     elseif defaultValue and defaultValue ~= "" then
-                        -- Use default value if available
                         baseCommand = baseCommand .. string.format(' -v=%s:"%s"', 
                             varName, defaultValue:gsub('"', '\\"'))
                     end

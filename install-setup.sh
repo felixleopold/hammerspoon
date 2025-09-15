@@ -342,7 +342,7 @@ configure_fabric_model() {
 	local cfgdir="$TARGET_HOME/.config/fabric"
 	"${RUN_AS_USER[@]}" mkdir -p "$cfgdir"
 	local vendor="Groq"
-	local model="llama-3.1-70b-versatile"
+	local model="openai/gpt-oss-120b"
 	local in_model=""
 	need_input "Default model (press Enter to accept $model):"
 	read -r -p "> " in_model </dev/tty || true
