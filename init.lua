@@ -20,6 +20,7 @@ local mousespeedfinder = require("mousespeedfinder")
 local leftRightModifier = require("leftRightModifier")
 local kanata = require("kanata")
 local appGroups = require("appGroups")
+local click = require("click")
 
 -- Disable animation for window movements
 hs.window.animationDuration = 0
@@ -222,6 +223,15 @@ else
     log.i("Mouse Speed Finder disabled in config")
 end
 
+-- Initialize autoclicker if enabled
+log.i("Checking autoclicker config: " .. hs.inspect(config.click))
+if config.click and config.click.enabled then
+    log.i("Initializing autoclicker module")
+    safeSetup(click, "autoclicker")
+else
+    log.i("Autoclicker module disabled in config")
+end
+
 -- Set up hotkey to inspect windows (Cmd + Alt + Shift + I)
 hs.hotkey.bind({"cmd", "alt", "shift"}, "I", inspectWindows)
 
@@ -269,6 +279,27 @@ hs.hotkey.bind({"cmd", "alt", "shift"}, "K", function()
         end
     else
         hs.alert.show("No kanata config found", 3)
+    end
+end)
+
+-- Add diagnostic hotkey for autoclicker (Cmd + Alt + Shift + C)
+hs.hotkey.bind({"cmd", "alt", "shift"}, "C", function()
+    log.i("Autoclicker diagnostic triggered")
+    
+    if config.click and config.click.enabled then
+        local state = click.getState()
+        local message = string.format(
+            "Autoclicker Status:\nMode: %s\nLeft Hotkey: %s\nRight Hotkey: %s\nLeft Timer: %s\nRight Timer: %s",
+            tostring(state.mode or "unknown"),
+            tostring(state.leftHotkeyEnabled),
+            tostring(state.rightHotkeyEnabled),
+            tostring(state.leftTimerRunning),
+            tostring(state.rightTimerRunning)
+        )
+        log.i("Autoclicker state: " .. hs.inspect(state))
+        hs.alert.show(message, 3)
+    else
+        hs.alert.show("Autoclicker disabled in config", 2)
     end
 end)
 

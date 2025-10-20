@@ -30,6 +30,10 @@ local modes = {
     typing = {
         symbol = "●",  -- Filled circle
         tooltip = "Kanata: Typing Mode"
+    },
+    gaming = {
+        symbol = "▲",  -- Triangle
+        tooltip = "Kanata: Gaming Mode"
     }
 }
 
@@ -220,7 +224,7 @@ local function readModeFromFile()
         file:close()
         if content then
             local mode = content:match("^%s*(.-)%s*$") -- Trim whitespace
-            if mode and (mode == "normal" or mode == "vim" or mode == "typing") then
+            if mode and (mode == "normal" or mode == "vim" or mode == "typing" or mode == "gaming") then
                 log.i("Read mode from file: " .. mode)
                 return mode
             else

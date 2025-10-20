@@ -132,6 +132,8 @@ function M.expandConfig(config)
         appGroups = config.appGroups,
         -- Add kanata configuration
         kanata = config.kanata,
+        -- Add click configuration
+        click = config.click,
         -- Add debug configuration
         debug = config.debug
     }

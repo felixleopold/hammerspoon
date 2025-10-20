@@ -1,5 +1,6 @@
 local log = hs.logger.new('Clipboard', 'debug')
 local clipboard = {}
+local stripHashMode = false
 
 -- Store clipboard history
 local clipboardHistory = {}
@@ -446,8 +447,81 @@ function processClipboardChange()
     -- First check if it's a file, but do not mutate clipboard contents
     if not checkForFile() then
         local text = hs.pasteboard.readString()
-        if text then addTextToHistory(text) end
+        if text then
+            if stripHashMode then
+                local cleaned, removed, _ = stripHashComments(text)
+                if cleaned ~= text then
+                    -- Pause watcher to avoid self-trigger
+                    local wasWatcherRunning = false
+                    if clipboardWatcher then
+                        wasWatcherRunning = clipboardWatcher:running()
+                        if wasWatcherRunning then clipboardWatcher:stop() end
+                    end
+                    hs.pasteboard.setContents(cleaned)
+                    -- Resume watcher shortly
+                    hs.timer.doAfter(0.3, function()
+                        if wasWatcherRunning then clipboardWatcher:start() end
+                    end)
+                    addTextToHistory(cleaned)
+                    log.i("Strip-# mode filtered " .. tostring(removed) .. " lines")
+                else
+                    addTextToHistory(text)
+                end
+            else
+                addTextToHistory(text)
+            end
+        end
     end
+end
+
+-- Strip lines starting with '#'
+function stripHashComments(text)
+    if not text or text == "" then return text, 0, 0 end
+    -- Normalize line endings first to be safe
+    text = string.gsub(text, "\r\n", "\n")
+    local keptLines = {}
+    local removed = 0
+    local total = 0
+    for line in string.gmatch(text .. "\n", "(.-)\n") do
+        total = total + 1
+        if line:match("^%s*#") then
+            removed = removed + 1
+        else
+            table.insert(keptLines, line)
+        end
+    end
+    return table.concat(keptLines, "\n"), removed, total
+end
+
+-- Action: remove '#' comment lines from current pasteboard text
+function stripHashCommentsFromPasteboard()
+    local text = hs.pasteboard.readString()
+    if not text or text == "" then
+        hs.alert.show("Clipboard has no text", 1.5)
+        return
+    end
+
+    local cleaned, removed, total = stripHashComments(text)
+    if cleaned == text then
+        hs.alert.show("No '#' comments found", 1.5)
+        return
+    end
+
+    -- Pause watcher to avoid self-trigger
+    local wasWatcherRunning = false
+    if clipboardWatcher then
+        wasWatcherRunning = clipboardWatcher:running()
+        if wasWatcherRunning then clipboardWatcher:stop() end
+    end
+
+    hs.pasteboard.setContents(cleaned)
+
+    -- Resume watcher shortly after to record cleaned text in history
+    hs.timer.doAfter(0.3, function()
+        if wasWatcherRunning then clipboardWatcher:start() end
+    end)
+
+    hs.alert.show(string.format("Removed %d/%d comment lines", removed, total), 1.5)
 end
 
 -- Paste an item from history
@@ -758,6 +832,17 @@ function clipboard.setup(config)
     logClipboardHistory()
     
     log.i("Clipboard module initialized with " .. #clipboardHistory .. " history items")
+
+    -- Bind strip-# mode toggle shortcut
+    local shortcut = (config.clipboard and config.clipboard.stripHashCommentsShortcut) or { mods = {"ctrl", "shift"}, key = "C" }
+    if shortcut and shortcut.mods and shortcut.key then
+        require("telemetry").registerHotkeyLabel(shortcut.mods, shortcut.key, "clipboard:stripHashModeToggle")
+        hs.hotkey.bind(shortcut.mods, shortcut.key, function()
+            stripHashMode = not stripHashMode
+            hs.alert.show("Strip-# mode: " .. (stripHashMode and "ON" or "OFF"))
+        end)
+        log.i("Registered strip-# mode toggle hotkey")
+    end
 end
 
 return clipboard 

@@ -1,8 +1,10 @@
 -- Minecraft window management and shortcuts
 local log = hs.logger.new('minecraft', 'debug')
 
--- Flag to track if a command is being executed
+-- Command execution state management
+local commandQueue = {}
 local isExecutingCommand = false
+local lastCommandTime = 0
 
 -- Function to check if the focused window is Minecraft
 local function isMinecraftWindow(window, config)
@@ -73,25 +75,58 @@ local function isMinecraftWindow(window, config)
     return isMinecraft
 end
 
--- Helper function to send chat command with key protection
+-- Enhanced command execution with queueing and better timing
 local function sendChatCommand(command, autoExecute, config)
-    -- If a command is already being executed, ignore new commands
+    local currentTime = hs.timer.secondsSinceEpoch()
+    
+    -- Get execution settings from config
+    local executionConfig = (config and config.execution) or {}
+    local enableQueue = executionConfig.enableQueue ~= false -- Default to true
+    local minCommandInterval = (executionConfig.minCommandInterval or 100) / 1000 -- Convert to seconds
+    
+    -- Rate limiting: prevent commands too close together
+    if currentTime - lastCommandTime < minCommandInterval then
+        if enableQueue then
+            log.d("Command rate limited, queuing:", command)
+            table.insert(commandQueue, {command = command, autoExecute = autoExecute, config = config})
+        else
+            log.d("Command rate limited, ignoring:", command)
+        end
+        return
+    end
+    
+    -- If a command is already being executed, queue this one
     if isExecutingCommand then
-        log.i("Ignoring command, another command is in progress:", command)
+        if enableQueue then
+            log.d("Command queued:", command)
+            table.insert(commandQueue, {command = command, autoExecute = autoExecute, config = config})
+        else
+            log.d("Command ignored, another in progress:", command)
+        end
         return
     end
     
     -- Set the executing flag
     isExecutingCommand = true
+    lastCommandTime = currentTime
     
-    -- Create a function to reset the flag
+    -- Create a function to reset the flag and process queue
     local function resetExecuting()
         isExecutingCommand = false
         log.d("Command execution flag reset, ready for new commands")
+        
+        -- Process next command in queue if any
+        if #commandQueue > 0 then
+            local nextCommand = table.remove(commandQueue, 1)
+            log.d("Processing queued command:", nextCommand.command)
+            hs.timer.doAfter(0.05, function() -- Small delay between queued commands
+                sendChatCommand(nextCommand.command, nextCommand.autoExecute, nextCommand.config)
+            end)
+        end
     end
     
     -- Get delay settings from config or use defaults
-    local chatOpenDelay = (config and config.delays and config.delays.chatOpen) or 50000
+    local chatOpenDelay = (config and config.delays and config.delays.chatOpen) or 70000
     local commandExecutionDelay = (config and config.delays and config.delays.commandExecution) or 200
     
     log.d("Using delays: chatOpen=" .. chatOpenDelay .. "μs, commandExecution=" .. commandExecutionDelay .. "ms")
@@ -113,27 +148,43 @@ local function sendChatCommand(command, autoExecute, config)
         return
     end
     
+    -- Enhanced chat opening with better timing
     log.d("Sending 't' keystroke to open chat")
-    -- Press T to open chat
     hs.eventtap.keyStroke({}, "t")
     
-    -- Small delay to ensure chat is open
-    log.d("Waiting " .. chatOpenDelay .. "μs for chat to open")
-    hs.timer.usleep(chatOpenDelay)
+    -- Adaptive delay based on command type
+    local adaptiveDelay = chatOpenDelay
+    local adaptiveTiming = executionConfig.adaptiveTiming ~= false -- Default to true
     
-    log.d("Typing command: " .. command)
-    -- Type the command
+    if adaptiveTiming then
+        if string.match(command, "^//") then -- WorldEdit commands might need more time
+            adaptiveDelay = chatOpenDelay * 1.2
+        elseif string.match(command, "^/pa") then -- ProjectArena commands
+            adaptiveDelay = chatOpenDelay * 1.1
+        elseif string.match(command, "^/gaia") then -- Gaia commands
+            adaptiveDelay = chatOpenDelay * 1.15
+        end
+    end
+    
+    log.d("Waiting " .. adaptiveDelay .. "μs for chat to open")
+    hs.timer.usleep(adaptiveDelay)
+    
+    -- Clear any existing text in chat before typing command
+    log.d("Clearing chat and typing command: " .. command)
+    hs.eventtap.keyStroke({"cmd"}, "a") -- Select all
+    hs.timer.usleep(10000) -- 10ms delay
     hs.eventtap.keyStrokes(command)
     
     -- Log the command being sent
     log.i("Executing command:", command, autoExecute and "(auto)" or "(manual)")
     
     if autoExecute then
-        -- For auto-execute commands, add a delay before allowing new commands
+        -- For auto-execute commands, add a delay before sending Enter
         log.d("Auto-executing command with Enter key")
-        hs.timer.usleep(chatOpenDelay)
+        hs.timer.usleep(adaptiveDelay * 0.5) -- Half the chat open delay
         hs.eventtap.keyStroke({}, "return")
-        -- Add a small delay after command execution before allowing new commands
+        
+        -- Add a delay after command execution before allowing new commands
         log.d("Setting timer to reset execution flag after " .. commandExecutionDelay .. "ms")
         hs.timer.doAfter(commandExecutionDelay / 1000, resetExecuting)
     else
@@ -161,32 +212,31 @@ local function initMinecraftShortcuts(config)
         log.setLogLevel('debug')
     end
     
-    log.i("Initializing Minecraft shortcuts with config:", hs.inspect(config.minecraft))
+    -- Lightweight startup logging - avoid expensive hs.inspect
+    log.i("Initializing Minecraft shortcuts")
     
-    -- Add a test function to manually check Minecraft detection
+    -- Optimized test function - only scans Java windows
     local function testMinecraftDetection()
         log.i("Testing Minecraft detection")
-        local allWindows = hs.window.allWindows()
+        local javaWindows = {}
         local foundMinecraft = false
-        local windowDetails = {}
         
-        for i, window in ipairs(allWindows) do
-            local app = window:application()
-            local appName = app and app:name() or "Unknown"
-            
-            -- Log all java windows
-            if appName == "java" then
+        -- Only scan windows from Java applications to reduce overhead
+        local javaApp = hs.application.get("java")
+        if javaApp then
+            local windows = javaApp:allWindows()
+            for i, window in ipairs(windows) do
                 local details = {
                     index = i,
                     title = window:title() or "No Title",
-                    app = appName,
+                    app = "java",
                     role = window:role() or "No Role",
                     subrole = window:subrole() or "No Subrole",
                     id = window:id(),
                     isMinecraft = isMinecraftWindow(window, config)
                 }
                 
-                table.insert(windowDetails, details)
+                table.insert(javaWindows, details)
                 
                 if details.isMinecraft then
                     foundMinecraft = true
@@ -197,10 +247,10 @@ local function initMinecraftShortcuts(config)
         
         -- Create a formatted output
         local output = "Minecraft Detection Results:\n\n"
-        if #windowDetails == 0 then
+        if #javaWindows == 0 then
             output = output .. "No Java windows found.\n"
         else
-            for _, details in ipairs(windowDetails) do
+            for _, details in ipairs(javaWindows) do
                 output = output .. string.format(
                     "%d: %s\n   App: %s\n   Role: %s\n   Subrole: %s\n   ID: %d\n   Is Minecraft: %s\n\n",
                     details.index, details.title, details.app, details.role, details.subrole, details.id,
@@ -212,39 +262,45 @@ local function initMinecraftShortcuts(config)
         -- Show the results in a large alert
         hs.alert.show(output, {textSize=12}, 10)
         
-        -- Also log to console for reference
-        log.i(output)
-        
         return foundMinecraft
     end
     
     -- Add a hotkey to test Minecraft detection
     hs.hotkey.bind({"cmd", "alt", "shift"}, "T", testMinecraftDetection)
     
-    -- Create a window filter for Minecraft with the updated detection function
-    local minecraftFilter = hs.window.filter.new(function(window)
-        return isMinecraftWindow(window, config)
+    -- Add a hotkey to clear command queue and show status
+    hs.hotkey.bind({"cmd", "alt", "shift"}, "Q", function()
+        local queueCount = #commandQueue
+        commandQueue = {}
+        isExecutingCommand = false
+        lastCommandTime = 0
+        
+        local status = string.format("Minecraft Command Status:\nQueue cleared: %d commands\nExecution: %s\nReady for new commands", 
+            queueCount, 
+            isExecutingCommand and "BUSY" or "READY"
+        )
+        hs.alert.show(status, {textSize=12}, 3)
+        log.i("Command queue cleared, status reset")
     end)
     
-    -- This will store our hotkeys
+    -- Lightweight approach: No expensive window filter, use event-driven detection
     local minecraftHotkeys = {}
+    local minecraftActive = false
     
     -- Function to bind Minecraft-specific shortcuts
     local function bindMinecraftShortcuts()
+        if minecraftActive then return end -- Prevent double-binding
+        
+        minecraftActive = true
         log.i("Minecraft shortcuts activated")
-        if _G.showAlert then
-            _G.showAlert("Minecraft shortcuts activated", 2)
-        else
-            hs.alert.show("Minecraft shortcuts activated", 2)
-        end
         
         -- Log all the shortcuts we're about to bind
         log.d("Binding Minecraft shortcuts:")
-        log.d("- ctrl+c: /creative")
-        log.d("- ctrl+x: /survival")
-        log.d("- ctrl+s: /spectator")
-        log.d("- ctrl+l: /pa leave")
-        log.d("- ctrl+alt+[1-9]: /pa Arena[1-9]")
+        log.d("- ctrl+alt+c: /creative")
+        log.d("- ctrl+alt+x: /survival")
+        log.d("- ctrl+alt+s: /spectator")
+        log.d("- ctrl+alt+l: /pa leave")
+        log.d("- ctrl+alt+shift+[1-9]: /pa Arena[1-9]")
         log.d("- ctrl+g: /gaia revert")
         log.d("- ctrl+e: /gaia create")
         log.d("- ctrl+r: /gaia remove")
@@ -258,15 +314,15 @@ local function initMinecraftShortcuts(config)
         log.d("- alt+u: //undo")
         log.d("- alt+y: //redo")
         
-        -- Control + key shortcuts
-        minecraftHotkeys.creative = hs.hotkey.bind({"ctrl"}, "c", function() sendChatCommand("/creative", true, config.minecraft) end)
-        minecraftHotkeys.survival = hs.hotkey.bind({"ctrl"}, "x", function() sendChatCommand("/survival", true, config.minecraft) end)
-        minecraftHotkeys.spectator = hs.hotkey.bind({"ctrl"}, "s", function() sendChatCommand("/spectator", true, config.minecraft) end)
-        minecraftHotkeys.leave = hs.hotkey.bind({"ctrl"}, "l", function() sendChatCommand("/pa leave", true, config.minecraft) end)
+        -- Use Ctrl+Option+key to avoid conflicts with window management and Minecraft crouching
+        minecraftHotkeys.creative = hs.hotkey.bind({"ctrl", "alt"}, "c", function() sendChatCommand("/creative", true, config.minecraft) end)
+        minecraftHotkeys.survival = hs.hotkey.bind({"ctrl", "alt"}, "x", function() sendChatCommand("/survival", true, config.minecraft) end)
+        minecraftHotkeys.spectator = hs.hotkey.bind({"ctrl", "alt"}, "s", function() sendChatCommand("/spectator", true, config.minecraft) end)
+        minecraftHotkeys.leave = hs.hotkey.bind({"ctrl", "alt"}, "l", function() sendChatCommand("/pa leave", true, config.minecraft) end)
         
-        -- Control + Option + number for arenas (1-9)
+        -- Control + Option + Shift + number for arenas (1-9) to avoid conflict with game mode shortcuts
         for i = 1, 9 do
-            minecraftHotkeys["arena"..i] = hs.hotkey.bind({"ctrl", "alt"}, tostring(i), function()
+            minecraftHotkeys["arena"..i] = hs.hotkey.bind({"ctrl", "alt", "shift"}, tostring(i), function()
                 sendChatCommand("/pa Arena"..i.." ", false, config.minecraft)
             end)
         end
@@ -290,57 +346,80 @@ local function initMinecraftShortcuts(config)
     
     -- Function to unbind Minecraft-specific shortcuts
     local function unbindMinecraftShortcuts()
+        if not minecraftActive then return end -- Prevent double-unbinding
+        
+        minecraftActive = false
         for _, hotkey in pairs(minecraftHotkeys) do
             hotkey:disable()
         end
+        
+        
         -- Reset command execution flag when unbinding shortcuts
         isExecutingCommand = false
         log.i("Minecraft shortcuts deactivated")
-        if _G.showAlert then
-            _G.showAlert("Minecraft shortcuts deactivated", 2)
-        else
-            hs.alert.show("Minecraft shortcuts deactivated", 2)
+    end
+    
+    -- Lightweight window focus detection using application events
+    local function checkForMinecraftFocus()
+        local focusedWindow = hs.window.focusedWindow()
+        if not focusedWindow then return end
+        
+        local app = focusedWindow:application()
+        if not app or app:name() ~= "java" then
+            if minecraftActive then
+                log.d("Lost Minecraft focus")
+                unbindMinecraftShortcuts()
+            end
+            return
+        end
+        
+        -- Quick title check for Minecraft
+        local title = focusedWindow:title() or ""
+        if string.match(string.lower(title), "minecraft") then
+            if not minecraftActive then
+                log.i("Minecraft window focused:", title)
+                bindMinecraftShortcuts()
+            end
+        elseif minecraftActive then
+            log.d("Java window focused but not Minecraft:", title)
+            unbindMinecraftShortcuts()
         end
     end
     
-    -- Subscribe to window focus events with debug logging
-    minecraftFilter:subscribe(hs.window.filter.windowFocused, function(window)
-        log.i("Minecraft window focused:", window:title())
-        bindMinecraftShortcuts()
-    end)
-    
-    minecraftFilter:subscribe(hs.window.filter.windowUnfocused, function(window)
-        log.i("Minecraft window unfocused:", window:title())
-        unbindMinecraftShortcuts()
-    end)
-    
-    -- Check if Minecraft is currently focused
-    local focusedWindow = hs.window.focusedWindow()
-    if focusedWindow and isMinecraftWindow(focusedWindow, config) then
-        log.i("Minecraft is already focused at startup")
-        bindMinecraftShortcuts()
-    else
-        log.d("No Minecraft window focused at startup")
-        if focusedWindow then
-            log.d("Current focused window:", focusedWindow:title(), "App:", focusedWindow:application():name())
+    -- Use lightweight application focus events instead of expensive window filter
+    hs.application.watcher.new(function(appName, eventType, app)
+        if eventType == hs.application.watcher.activated then
+            -- Only check when Java app is activated
+            if appName == "java" then
+                hs.timer.doAfter(0.05, checkForMinecraftFocus) -- Small delay to ensure window is ready
+            elseif minecraftActive then
+                -- Another app activated, check if we lost Minecraft focus
+                hs.timer.doAfter(0.05, checkForMinecraftFocus)
+            end
         end
-    end
+    end):start()
     
-    -- Add a manual hotkey to force-check for Minecraft windows
+    -- Initial check after a longer delay to avoid blocking startup
+    hs.timer.doAfter(0.5, checkForMinecraftFocus)
+    
+    -- Optimized manual hotkey - only checks Java windows
     hs.hotkey.bind({"cmd", "alt", "shift"}, "M", function()
         log.i("Manual Minecraft window check triggered")
-        local allWindows = hs.window.allWindows()
+        local javaApp = hs.application.get("java")
         local foundMinecraft = false
         
-        for _, window in ipairs(allWindows) do
-            if isMinecraftWindow(window, config) then
-                foundMinecraft = true
-                log.i("Found Minecraft window:", window:title())
-                if window ~= hs.window.focusedWindow() then
-                    log.i("Focusing Minecraft window")
-                    window:focus()
+        if javaApp then
+            local windows = javaApp:allWindows()
+            for _, window in ipairs(windows) do
+                if isMinecraftWindow(window, config) then
+                    foundMinecraft = true
+                    log.i("Found Minecraft window:", window:title())
+                    if window ~= hs.window.focusedWindow() then
+                        log.i("Focusing Minecraft window")
+                        window:focus()
+                    end
+                    break
                 end
-                break
             end
         end
         

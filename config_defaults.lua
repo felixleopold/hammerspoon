@@ -144,6 +144,7 @@ local defaults = {
 		general = {
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "R", action = "reloadHammerspoonConfig" }, -- Reload Hammerspoon configuration
+			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = ",", action = "openDotfilesConfig" }, -- Open dotfiles repo in editor
 			{ mods = { "cmd" }, key = ".", action = "openInTerminal" }, -- Open current Finder path in terminal
 			{ mods = { "cmd" }, key = ";", action = "openInEditor" }, -- Open current Finder path in editor
 		},
@@ -225,6 +226,9 @@ local defaults = {
 		
 		-- Kanata integration
 		kanata = false, -- Set to true to enable detailed logging for Kanata integration
+		
+		-- Autoclicker integration
+		click = false, -- Set to true to enable detailed logging for autoclicker
 	},
 
 	--[[-----------------------------------------
@@ -322,7 +326,14 @@ local defaults = {
 				name = "Fact Check",
 				desc = "Verify the accuracy of information",
 				trigger = "pattern",
-				key = "F",
+				key = "A",
+			},
+			{
+				id = "continue",
+				name = "Continue",
+				desc = "Continue the pattern",
+				trigger = "pattern",
+				key = "C",
 			},
 		},
 	},
@@ -335,7 +346,7 @@ local defaults = {
 	kanata = {
 		enabled = true, -- Set to false to disable Kanata features
 		debug = false, -- Set to true to enable detailed logging for Kanata features
-		defaultMode = "normal", -- Default mode on startup (normal, vim, typing)
+		defaultMode = "normal", -- Default mode on startup (normal, vim, typing, gaming)
 		statusFile = "~/.config/kanata/hammerspoon_status", -- File to read/write current mode
 		kanataLayerCommand = nil, -- Command to execute when changing layers from menu bar (e.g., "~/.bin/kanata-layer")
 	},
@@ -373,6 +384,8 @@ local defaults = {
             mods = { "ctrl", "shift" }, -- Modifiers for clipboard shortcuts
             keys = { "1", "2", "3", "4", "5", "6", "7", "8", "9" }, -- Keys for clipboard items
         },
+        -- Hotkey for removing lines starting with '#'
+        stripHashCommentsShortcut = { mods = { "ctrl", "shift" }, key = "C" },
     },
 
     --[[-----------------------------------------
@@ -427,6 +440,21 @@ local defaults = {
             report = { mods = { "cmd", "alt", "shift" }, key = "Y" }, -- Show recent stats
         },
     },
+
+    --[[-----------------------------------------
+    Autoclicker Module
+    Provides autoclicking functionality that only works in Kanata gaming mode.
+    Set enabled = false to disable all autoclicker features.
+    ------------------------------------------]]
+	click = {
+		enabled = false, -- Set to true to enable autoclicker features
+		leftEnabled = true, -- Set to true to enable left click autoclicking
+		rightEnabled = true, -- Set to true to enable right click autoclicking
+		leftCPS = 15, -- Left mouse clicks per second
+		leftVariance = 1, -- Variance in CPS for left clicks (±1)
+		rightCPS = 20, -- Right mouse clicks per second
+		rightVariance = 2, -- Variance in CPS for right clicks (±2)
+	},
 
 	--[[-----------------------------------------
 	Telemetry (Hotkey Usage Tracking)

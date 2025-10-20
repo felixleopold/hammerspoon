@@ -394,6 +394,19 @@ function M.setup(config)
                             editor = editor
                         })
                     end
+				elseif shortcut.action == "openDotfilesConfig" then
+					log.i("Triggered: Open Dotfiles in editor")
+					local path = config.folders.dotfiles
+					local editor = config.applications.Editor
+					if path and editor then
+						log.d(string.format("Opening Dotfiles: path=%s, editor=%s", path, editor))
+						openInEditor(path, editor)
+					else
+						log.e("Missing configuration for Dotfiles editor shortcut", {
+							path = path,
+							editor = editor
+						})
+					end
                 elseif shortcut.action == "copyBrowserUrl" then
                     local frontApp = hs.application.frontmostApplication()
                     local frontAppName = frontApp and frontApp:name()
