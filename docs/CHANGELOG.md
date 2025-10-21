@@ -45,6 +45,8 @@
 
 ### Fixed
 
+- **Minecraft Kanata Integration**: Fixed the Minecraft Kanata integration to reliably switch to gaming mode.
+
 - **Macros**: chooser → editor handoff reliability
     
 

@@ -58,6 +58,9 @@ local defaults = {
 		Finder = "Finder", -- File manager
 		WhatsApp = "WhatsApp", -- Messaging
 		Settings = "System Settings", -- System preferences
+		-- Minecraft = "java", -- Minecraft game itself (uncomment if you have Minecraft)
+		-- MCLaunch = "Minecraft Launcher", -- Minecraft Launcher (uncomment if you have Minecraft)
+		-- Discord = "Discord", -- Discord messaging app (uncomment if you have Discord)
 	},
 
 	--[[-----------------------------------------
@@ -117,12 +120,15 @@ local defaults = {
 			{ app = "Finder", key = "F" }, -- Finder
 			{ app = "WhatsApp", key = "W" }, -- WhatsApp
 			{ app = "Settings", key = "P" }, -- System Settings
+			-- { app = "Minecraft", key = "G" }, -- Minecraft game (uncomment if you have Minecraft)
 		},
-
+		
 		-- Second-layer application shortcuts (ctrl + alt + cmd + shift + key)
 		apps2 = {
 			-- { app = "Browser", key = "B" }, -- Example second layer
 			-- { app = "Editor", key = "E" }, -- Example second layer
+			-- { app = "Minecraft", key = "M" }, -- Minecraft game
+			-- { app = "Discord", key = "D" }, -- Discord
 		},
 
 		-- Application group shortcuts (ctrl + alt + cmd + key)
@@ -237,12 +243,9 @@ local defaults = {
     Set enabled = false to disable all Minecraft features
     ------------------------------------------]]
 	minecraft = {
-		enabled = false, -- Set to false to disable Minecraft features
+		enabled = true, -- Set to false to disable Minecraft features
 		debug = false, -- Set to true to enable detailed logging for Minecraft features
-		delays = {
-			chatOpen = 50000, -- Delay after pressing T (in microseconds)
-			commandExecution = 200, -- Delay after command execution (in milliseconds)
-		},
+		kanataSwitching = true, -- Set to true to automatically switch to gaming mode when Minecraft is focused
 		detection = {
 			appNames = {"java"}, -- Application names to consider as Minecraft
 			titlePatterns = {"minecraft", "Minecraft"}, -- Patterns to look for in window titles

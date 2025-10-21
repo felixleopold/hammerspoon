@@ -196,13 +196,8 @@ else
     log.i("Clipboard module disabled in config")
 end
 
--- Only initialize Minecraft if enabled in config
 if config and config.minecraft and config.minecraft.enabled then
-    log.i("Initializing Minecraft module")
-    local success, err = pcall(function() minecraft(config) end)
-    if not success then
-        log.e("Failed to initialize Minecraft module: " .. tostring(err))
-    end
+    safeSetup(minecraft, "minecraft")
 else
     log.i("Minecraft module disabled in config")
 end

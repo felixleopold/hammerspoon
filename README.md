@@ -410,53 +410,15 @@ The indicator automatically updates when the status file changes, making it perf
 
 ## Advanced Configuration
 
+For detailed information on the framework's architecture, module development, and advanced configuration, please see the [Developer Guide](gemini.md).
+
 ### Adding Custom Shortcuts
 
-1. Add your shortcut to `config_user.lua` in the `self` section:
-```lua
-self = {
-    shortcuts = {
-        {
-            name = "myCustomFunction",
-            desc = "What this shortcut does",
-            mods = { "cmd", "alt", "shift" },
-            key = "K",
-        },
-    },
-}
-```
-
-2. Add the corresponding function in `self.lua`:
-```lua
-function functions.myCustomFunction()
-    log.i("Executing my custom function")
-    -- Your code here
-    hs.alert.show("Custom function executed!")
-end
-```
+To add your own custom shortcuts, you can use the `self.lua` module. Define your functions in `self.lua` and your shortcuts in `config_user.lua`. For a complete guide, refer to the [Developer Guide](gemini.md).
 
 ### Extending the Framework
 
-To add new functionality:
-
-1. Create a new module file (e.g., `mymodule.lua`)
-2. Follow the module pattern:
-```lua
-local M = {}
-local log = hs.logger.new('MyModule', 'debug')
-
-function M.setup(config)
-    -- Your initialization code
-end
-
-return M
-```
-
-3. Add your module to `init.lua`:
-```lua
-local mymodule = require("mymodule")
-mymodule.setup(config)
-```
+The framework is designed to be modular. You can add your own Lua modules to extend its functionality. See the [Developer Guide](gemini.md) for a step-by-step tutorial on creating new modules.
 
 ## Updating
 
@@ -584,6 +546,14 @@ cp ~/config_user.lua.backup ~/.hammerspoon/config_user.lua
    - Hammerspoon version
    - Error messages from console
    - Steps to reproduce the problem
+
+## For Developers
+
+This framework is built with modularity and extensibility in mind. If you want to contribute or customize it further, please read the [Developer Guide](gemini.md), which covers:
+- The project's architecture and module structure.
+- The configuration system (`config_defaults.lua`, `config_user.lua`, `setup.lua`).
+- How to add new modules and custom shortcuts.
+- Debugging and logging best practices.
 
 ## See Also
 

@@ -64,6 +64,9 @@ local defaults = {
 		-- Finder = "Finder", -- File manager
 		-- WhatsApp = "WhatsApp", -- Messaging
 		-- Settings = "System Settings", -- System preferences
+		-- Minecraft = "java", -- Minecraft game itself
+		-- MCLaunch = "Minecraft Launcher", -- Minecraft Launcher
+		-- Discord = "Discord", -- Discord messaging app
 	},
 
 	--[[-----------------------------------------
@@ -98,12 +101,15 @@ local defaults = {
 			-- { app = "Finder", key = "F" }, -- Finder
 			-- { app = "WhatsApp", key = "W" }, -- WhatsApp
 			-- { app = "Settings", key = "P" }, -- System Settings
+			-- { app = "Minecraft", key = "G" }, -- Minecraft game
 		},
 
 		-- Second-layer application shortcuts (ctrl + alt + cmd + shift + key)
 		apps2 = {
 			-- { app = "Browser", key = "B" }, -- Example second layer
 			-- { app = "Editor", key = "E" },
+			-- { app = "Minecraft", key = "M" }, -- Minecraft game
+			-- { app = "Discord", key = "D" }, -- Discord
 		},
 
 		-- Folder shortcuts (cmd + shift + key)
@@ -197,6 +203,10 @@ local defaults = {
 		
 		-- -- Minecraft integration
 		-- minecraft = false, -- Set to true to enable detailed logging for Minecraft integration
+		-- -- Kanata integration
+		-- kanata = false, -- Set to true to enable detailed logging for Kanata integration
+		-- -- Autoclicker integration
+		-- click = false, -- Set to true to enable detailed logging for autoclicker
 	},
 
 	--[[-----------------------------------------
@@ -205,12 +215,9 @@ local defaults = {
     Set enabled = false to disable all Minecraft features
     ------------------------------------------]]
 	minecraft = {
-		enabled = false, -- Set to false to disable Minecraft features
+		enabled = true, -- Set to false to disable Minecraft features
 		-- debug = false, -- Set to true to enable detailed logging for Minecraft features
-		-- delays = {
-		-- 	chatOpen = 50000, -- Delay after pressing T (in microseconds)
-		-- 	commandExecution = 200, -- Delay after command execution (in milliseconds)
-		-- },
+		-- kanataSwitching = true, -- Set to true to automatically switch to gaming mode when Minecraft is focused
 		-- detection = {
 		-- 	appNames = {"java"}, -- Application names to consider as Minecraft
 		-- 	titlePatterns = {"minecraft", "Minecraft"}, -- Patterns to look for in window titles
@@ -297,6 +304,19 @@ local defaults = {
 			-- 	key = "F",
 			-- },
 		},
+	},
+
+	--[[-----------------------------------------
+    Kanata Integration
+    Configure Kanata mode indicator and status file monitoring
+    Set enabled = false to disable all Kanata features
+    ------------------------------------------]]
+	kanata = {
+		-- enabled = true, -- Set to false to disable Kanata features
+		-- debug = false, -- Set to true to enable detailed logging for Kanata features
+		-- defaultMode = "normal", -- Default mode on startup (normal, vim, typing, gaming)
+		-- statusFile = "~/.config/kanata/hammerspoon_status", -- File to read/write current mode
+		-- kanataLayerCommand = nil, -- Command to execute when changing layers from menu bar (e.g., "~/.bin/kanata-layer")
 	},
 
 	--[[-----------------------------------------
@@ -387,6 +407,21 @@ local defaults = {
 	        --     report = { mods = { "cmd", "alt", "shift" }, key = "Y" },
 	        -- },
 	    },
+
+		--[[-----------------------------------------
+	    Autoclicker Module
+	    Provides autoclicking functionality that only works in Kanata gaming mode.
+	    Set enabled = false to disable all autoclicker features.
+	    ------------------------------------------]]
+		click = {
+			-- enabled = false, -- Set to true to enable autoclicker features
+			-- leftEnabled = true, -- Set to true to enable left click autoclicking
+			-- rightEnabled = false, -- Set to true to enable right click autoclicking
+			-- leftCPS = 14, -- Left mouse clicks per second
+			-- leftVariance = 4, -- Variance in CPS for left clicks (±1)
+			-- rightCPS = 17, -- Right mouse clicks per second
+			-- rightVariance = 3, -- Variance in CPS for right clicks (±2)
+		},
 
 	    --[[-----------------------------------------
 	    Telemetry (Hotkey Usage Tracking)
