@@ -351,7 +351,7 @@ local defaults = {
 		debug = false, -- Set to true to enable detailed logging for Kanata features
 		defaultMode = "normal", -- Default mode on startup (normal, vim, typing, gaming)
 		statusFile = "~/.config/kanata/hammerspoon_status", -- File to read/write current mode
-		kanataLayerCommand = nil, -- Command to execute when changing layers from menu bar (e.g., "~/.bin/kanata-layer")
+		kanataLayerCommand = "/Users/felixmrak/.bin/kanata-layer", -- Command to execute when changing layers from menu bar (e.g., "~/.bin/kanata-layer")
 	},
 
 	--[[-----------------------------------------

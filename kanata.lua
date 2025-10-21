@@ -120,37 +120,33 @@ local function updateMenuBar()
     log.i("Updated menu bar to mode: " .. currentMode)
 end
 
--- Function to execute kanata-layer command
 local function executeKanataLayer(mode)
-    if not config or not config.kanata or not config.kanata.kanataLayerCommand then
-        log.d("No kanata-layer command configured, skipping")
-        return
-    end
-    
-    local baseCommand = config.kanata.kanataLayerCommand
-    
-    -- Try to resolve the full path if it's not absolute
     local command
-    if baseCommand:match("^/") then
-        -- Already absolute path
-        command = baseCommand .. " " .. mode
+    if mode == "gaming" then
+        command = string.format('echo \'{"ChangeLayer": {"new": "gaming-mode"}}\' | nc -w 1 localhost 7878')
     else
-        -- Try to find the command in PATH
-        local whichResult = hs.execute("which " .. baseCommand)
-        if whichResult and whichResult ~= "" then
-            local fullPath = whichResult:gsub("%s+", "") -- Remove whitespace
-            command = fullPath .. " " .. mode
-            log.i("Resolved command path: " .. fullPath)
-        else
-            -- Fallback to the original command (might be in PATH when executed)
+        if not config or not config.kanata or not config.kanata.kanataLayerCommand then
+            log.d("No kanata-layer command configured, skipping")
+            return
+        end
+        local baseCommand = config.kanata.kanataLayerCommand
+        if baseCommand:match("^/") then
             command = baseCommand .. " " .. mode
-            log.w("Could not resolve full path for: " .. baseCommand)
+        else
+            local whichResult = hs.execute("which " .. baseCommand)
+            if whichResult and whichResult ~= "" then
+                local fullPath = whichResult:gsub("%%s+", "")
+                command = fullPath .. " " .. mode
+                log.i("Resolved command path: " .. fullPath)
+            else
+                command = baseCommand .. " " .. mode
+                log.w("Could not resolve full path for: " .. baseCommand)
+            end
         end
     end
-    
+
     log.i("Executing kanata-layer command: " .. command)
-    
-    -- Execute the command with proper environment
+
     hs.task.new("/bin/bash", function(exitCode, stdOut, stdErr)
         if exitCode == 0 then
             log.i("kanata-layer command executed successfully")

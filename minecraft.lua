@@ -8,13 +8,13 @@ local previousKanataMode = nil
 -- Function to check if the focused window is Minecraft
 local function isMinecraftWindow(window, config)
     if not window then return false end
-    
+
     local app = window:application()
     if not app then return false end
-    
+
     -- Get the application name
     local appName = app:name()
-    
+
     -- Get configuration or use defaults
     local mcConfig = config and config.minecraft or {}
     local debug = mcConfig.debug or false
@@ -22,16 +22,16 @@ local function isMinecraftWindow(window, config)
         appNames = {"java"},
         titlePatterns = {"minecraft", "Minecraft"}
     }
-    
+
     -- Log window details if debug is enabled
     if debug then
-        log.d(string.format("Checking window: App=%s, Title=%s, Role=%s, Subrole=%s", 
-            appName, 
-            window:title() or "nil", 
-            window:role() or "nil", 
+        log.d(string.format("Checking window: App=%s, Title=%s, Role=%s, Subrole=%s",
+            appName,
+            window:title() or "nil",
+            window:role() or "nil",
             window:subrole() or "nil"))
     end
-    
+
     -- Check if app name matches any in the configured list
     local appNameMatches = false
     for _, name in ipairs(detection.appNames) do
@@ -40,37 +40,35 @@ local function isMinecraftWindow(window, config)
             break
         end
     end
-    
+
     if not appNameMatches then
         if debug then log.d("App name doesn't match Minecraft criteria") end
         return false
     end
-    
+
     -- Check if window title contains any of the configured patterns
     local titleMatches = false
     local windowTitle = window:title() or ""
-    for _, pattern in ipairs(detection.titlePatterns) do
-        if string.match(string.lower(windowTitle), string.lower(pattern)) then
-            titleMatches = true
-            break
-        end
+    local titlePattern = table.concat(detection.titlePatterns, "|")
+    if string.match(string.lower(windowTitle), titlePattern) then
+        titleMatches = true
     end
-    
+
     -- Accept standard window types
     local roleOk = window:role() == "AXWindow" or window:role() == "AXApplication"
     local subroleOk = window:subrole() == "AXStandardWindow" or window:subrole() == "AXUnknown"
-    
+
     local isMinecraft = appNameMatches and titleMatches and roleOk and subroleOk
-    
+
     if debug then
         log.d(string.format("Window check results: appMatch=%s, titleMatch=%s, roleOk=%s, subroleOk=%s, isMinecraft=%s",
             tostring(appNameMatches), tostring(titleMatches), tostring(roleOk), tostring(subroleOk), tostring(isMinecraft)))
     end
-    
+
     if isMinecraft then
         log.i("Minecraft window detected:", window:title())
     end
-           
+
     return isMinecraft
 end
 
@@ -159,7 +157,7 @@ function M.setup(config)
 
     
     -- Subscribe to window focus events to detect Minecraft focus changes
-    local windowFilter = hs.window.filter.new()
+    local windowFilter = hs.window.filter.new("java")
     windowFilter:subscribe(hs.window.filter.windowFocused, function(window, appName)
         if not window then return end
 
