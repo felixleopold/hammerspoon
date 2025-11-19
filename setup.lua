@@ -96,6 +96,7 @@ function M.expandConfig(config)
     log.i("Starting config expansion")
     local expanded = {
         applications = config.applications,
+        defaultEditor = config.defaultEditor,
         folders = config.folders,
         triggers = config.triggers,
         windowManagement = config.windowManagement,

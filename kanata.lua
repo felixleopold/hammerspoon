@@ -197,16 +197,12 @@ local function setMode(mode, fromMenuBar)
     if fromMenuBar then
         executeKanataLayer(mode)
     end
-    
-    -- Refresh menu to update checkmarks (only when changed from menu bar)
-    if fromMenuBar and menuBar then
-        hs.timer.doAfter(0.2, function()
-            if not menuUpdateInProgress then
-                menuBar:setMenu(createMenu)
-                log.d("Menu refreshed after mode change from menu bar")
-            end
-        end)
-    end
+
+    -- NOTE: A call to menuBar:setMenu(createMenu) was removed from here.
+    -- It was intended to refresh the checkmark in the menu immediately after selection,
+    -- but it caused the menubar item to become unresponsive. The menu is generated
+    -- dynamically each time it's opened, so the checkmark will be correct on the
+    -- next interaction, which is an acceptable trade-off for stability.
     
     return true
 end
@@ -249,10 +245,10 @@ local function createMenu()
             title = modeConfig.tooltip,
             fn = function() 
                 log.i("Mode change requested from menu bar: " .. modeName)
-                -- Prevent menu updates during user interaction
-                hs.timer.doAfter(0.05, function()
-                    setMode(modeName, true) -- fromMenuBar = true
-                end)
+                -- The timer here was intended to prevent race conditions but might be
+                -- causing the menu to become unresponsive. Calling setMode directly
+                -- is simpler and may be more stable.
+                setMode(modeName, true) -- fromMenuBar = true
             end,
             checked = (menuCurrentMode == modeName)
         })
@@ -265,15 +261,13 @@ local function createMenu()
     table.insert(menu, {
         title = "Refresh from File",
         fn = function()
-            hs.timer.doAfter(0.05, function()
-                local fileMode = readModeFromFile()
-                if fileMode then
-                    setMode(fileMode, false) -- fromMenuBar = false (this is a file refresh)
-                    hs.alert.show("Kanata mode refreshed: " .. fileMode)
-                else
-                    hs.alert.show("No valid mode found in status file")
-                end
-            end)
+            local fileMode = readModeFromFile()
+            if fileMode then
+                setMode(fileMode, false) -- fromMenuBar = false (this is a file refresh)
+                hs.alert.show("Kanata mode refreshed: " .. fileMode)
+            else
+                hs.alert.show("No valid mode found in status file")
+            end
         end
     })
     

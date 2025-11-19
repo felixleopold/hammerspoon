@@ -449,8 +449,8 @@ function processClipboardChange()
         local text = hs.pasteboard.readString()
         if text then
             if stripHashMode then
-                local cleaned, removed, _ = stripHashComments(text)
-                if cleaned ~= text then
+                local cleaned, removed, _, wasModified = stripHashComments(text)
+                if wasModified then
                     -- Pause watcher to avoid self-trigger
                     local wasWatcherRunning = false
                     if clipboardWatcher then
@@ -463,7 +463,7 @@ function processClipboardChange()
                         if wasWatcherRunning then clipboardWatcher:start() end
                     end)
                     addTextToHistory(cleaned)
-                    log.i("Strip-# mode filtered " .. tostring(removed) .. " lines")
+                    log.i("Strip-# mode filtered " .. tostring(removed) .. " comments")
                 else
                     addTextToHistory(text)
                 end
@@ -474,7 +474,10 @@ function processClipboardChange()
     end
 end
 
--- Strip lines starting with '#'
+-- Strip comments starting with '#'
+-- Removes:
+-- 1. Lines that start with '#' (full comment lines)
+-- 2. Trailing comments after non-whitespace content (e.g., "command # comment")
 function stripHashComments(text)
     if not text or text == "" then return text, 0, 0 end
     -- Normalize line endings first to be safe
@@ -482,15 +485,28 @@ function stripHashComments(text)
     local keptLines = {}
     local removed = 0
     local total = 0
+    local modified = false
     for line in string.gmatch(text .. "\n", "(.-)\n") do
         total = total + 1
+        local cleanedLine = line
+        
+        -- Check if line starts with '#' (full comment line)
         if line:match("^%s*#") then
             removed = removed + 1
+            modified = true
         else
-            table.insert(keptLines, line)
+            -- Check for trailing comment (everything after first '#' with optional preceding space)
+            local beforeComment = line:match("^([^#]*)%s+#.*")
+            if beforeComment then
+                -- Trim trailing whitespace from the kept part
+                cleanedLine = beforeComment:match("^(.*%S)") or beforeComment:match("^%s*$") or ""
+                removed = removed + 1
+                modified = true
+            end
+            table.insert(keptLines, cleanedLine)
         end
     end
-    return table.concat(keptLines, "\n"), removed, total
+    return table.concat(keptLines, "\n"), removed, total, modified
 end
 
 -- Action: remove '#' comment lines from current pasteboard text
@@ -501,8 +517,8 @@ function stripHashCommentsFromPasteboard()
         return
     end
 
-    local cleaned, removed, total = stripHashComments(text)
-    if cleaned == text then
+    local cleaned, removed, total, wasModified = stripHashComments(text)
+    if not wasModified or cleaned == text then
         hs.alert.show("No '#' comments found", 1.5)
         return
     end
@@ -521,7 +537,7 @@ function stripHashCommentsFromPasteboard()
         if wasWatcherRunning then clipboardWatcher:start() end
     end)
 
-    hs.alert.show(string.format("Removed %d/%d comment lines", removed, total), 1.5)
+    hs.alert.show(string.format("Removed %d comments", removed), 1.5)
 end
 
 -- Paste an item from history

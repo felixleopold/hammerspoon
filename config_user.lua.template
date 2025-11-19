@@ -32,6 +32,8 @@ local defaults = {
     Common Modifier Combinations
     Used throughout the configuration for consistent shortcuts
     ------------------------------------------]]
+	-- defaultEditor = "Editor", -- Set to "Editor" or "Editor2"
+
 	triggers = {
 		-- app = { "ctrl", "alt", "cmd"}, -- For launching applications (⌘⌃⌥)
 		-- app2 = { "ctrl", "alt", "cmd", "shift" }, -- Second layer for apps (⌘⌃⌥⇧)
@@ -215,12 +217,16 @@ local defaults = {
     Set enabled = false to disable all Minecraft features
     ------------------------------------------]]
 	minecraft = {
-		enabled = true, -- Set to false to disable Minecraft features
+		enabled = false, -- Set to false to disable Minecraft features
 		-- debug = false, -- Set to true to enable detailed logging for Minecraft features
-		-- kanataSwitching = true, -- Set to true to automatically switch to gaming mode when Minecraft is focused
+		-- kanataSwitching = false, -- Set to true to automatically switch to gaming mode when Minecraft is focused
 		-- detection = {
 		-- 	appNames = {"java"}, -- Application names to consider as Minecraft
 		-- 	titlePatterns = {"minecraft", "Minecraft"}, -- Patterns to look for in window titles
+		-- },
+		-- periodicClick = {
+		-- 	enabled = false, -- Set to true to enable periodic clicking when Minecraft is focused
+		-- 	interval = 145, -- Click interval in seconds (2 minutes 25 seconds = 145)
 		-- },
 	},
 

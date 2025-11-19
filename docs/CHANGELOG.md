@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.9.0] - 2025-11-19
+
+### Added
+
+- **Antigravity Integration**
+    - Added support for Antigravity editor (`agy`)
+    - New shortcut `cmd + '` to open current Finder folder in Antigravity
+    - Updated `application.lua` to support direct executable paths for editors
+
+- **Default Editor Configuration**
+    - Added `defaultEditor` setting to `config_user.lua` (defaults to "Editor")
+    - System shortcuts (open config, open in editor) now respect `defaultEditor` setting
+
 ## [1.8.1] - 2025-01-27
 
 ### Improved

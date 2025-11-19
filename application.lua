@@ -247,44 +247,49 @@ function M.setup(config)
     end
 
     -- Helper function to open folder in editor
-    local function openInEditor(path, editorName)
-        if not path or not editorName then 
-            log.e("Missing required parameters:", {path = path, editor = editorName})
+    local function openInEditor(path, editorConfig)
+        if not path or not editorConfig then 
+            log.e("Missing required parameters:", {path = path, editor = editorConfig})
             return 
         end
         
         path = expandPath(path)
-        log.i(string.format("Opening %s in %s", path, editorName))
         
-        -- Try to find existing editor window with this path
-        local editor = hs.application.get(editorName)
-        if editor then
-            log.d("Found existing editor instance")
-            local existingWindow = findWindowWithPath(editor, path)
-            if existingWindow then
-                log.i("Found existing window with path, focusing it")
-                existingWindow:focus()
-                return
-            else
-                log.d("No existing window found with path")
-            end
-        else
-            log.d("No existing editor instance found")
+        -- Resolve editor configuration
+        local editorName = editorConfig
+        local editorPath = nil
+        
+        if type(editorConfig) == "table" then
+            editorName = editorConfig.name or "Unknown Editor"
+            editorPath = editorConfig.path
         end
         
-        -- Launch or focus editor and open the path
-        log.i("Launching editor and opening path")
-        hs.application.launchOrFocus(editorName)
-        hs.timer.doAfter(0.1, function()
-            local command = string.format('/usr/bin/open -a "%s" "%s"', editorName, path)
-            log.d("Executing command: " .. command)
-            local output, status = hs.execute(command)
-            if status then
-                log.i("Successfully opened folder in editor")
+        log.i(string.format("Opening %s in %s", path, editorName))
+        
+        -- Determine the command to run
+        local command = nil
+        if editorPath then
+            if editorPath:match("%.app$") then
+                command = string.format('/usr/bin/open -a "%s" "%s"', editorPath, path)
             else
-                log.e("Failed to open folder in editor: " .. (output or "unknown error"))
+                -- Binary or script
+                command = string.format('"%s" "%s"', editorPath, path)
             end
-        end)
+        else
+            -- Standard app name
+            command = string.format('/usr/bin/open -a "%s" "%s"', editorName, path)
+        end
+        
+        log.i("Opening editor with command: " .. command)
+        
+        -- Execute the command
+        local output, status = hs.execute(command)
+        if status then
+            log.i("Successfully opened folder in editor")
+        else
+            log.e("Failed to open folder in editor: " .. (output or "unknown error"))
+            hs.alert.show("❌ Failed to open editor", 2)
+        end
     end
 
     -- Set up application shortcuts (primary layer)
@@ -371,9 +376,12 @@ function M.setup(config)
                 if shortcut.action == "openHammerspoonConfig" then
                     log.i("Triggered: Open Hammerspoon config in editor")
                     local path = config.folders.hammerspoon
-                    local editor = config.applications.Editor
+                    -- Use defaultEditor if set, otherwise fallback to Editor
+                    local editorKey = config.defaultEditor or "Editor"
+                    local editor = config.applications[editorKey] or config.applications.Editor
+                    
                     if path and editor then
-                        log.d(string.format("Opening Hammerspoon config: path=%s, editor=%s", path, editor))
+                        log.d(string.format("Opening Hammerspoon config: path=%s", path))
                         openInEditor(path, editor)
                     else
                         log.e("Missing configuration for Hammerspoon editor shortcut", {
@@ -384,9 +392,12 @@ function M.setup(config)
                 elseif shortcut.action == "openKanataConfig" then
                     log.i("Triggered: Open Kanata config in editor")
                     local path = config.folders.kanata
-                    local editor = config.applications.Editor
+                    -- Use defaultEditor if set, otherwise fallback to Editor
+                    local editorKey = config.defaultEditor or "Editor"
+                    local editor = config.applications[editorKey] or config.applications.Editor
+                    
                     if path and editor then
-                        log.d(string.format("Opening Kanata config: path=%s, editor=%s", path, editor))
+                        log.d(string.format("Opening Kanata config: path=%s", path))
                         openInEditor(path, editor)
                     else
                         log.e("Missing configuration for Kanata editor shortcut", {
@@ -397,9 +408,12 @@ function M.setup(config)
 				elseif shortcut.action == "openDotfilesConfig" then
 					log.i("Triggered: Open Dotfiles in editor")
 					local path = config.folders.dotfiles
-					local editor = config.applications.Editor
+                    -- Use defaultEditor if set, otherwise fallback to Editor
+                    local editorKey = config.defaultEditor or "Editor"
+                    local editor = config.applications[editorKey] or config.applications.Editor
+                    
 					if path and editor then
-						log.d(string.format("Opening Dotfiles: path=%s, editor=%s", path, editor))
+						log.d(string.format("Opening Dotfiles: path=%s", path))
 						openInEditor(path, editor)
 					else
 						log.e("Missing configuration for Dotfiles editor shortcut", {
@@ -683,17 +697,22 @@ function M.setup(config)
                         tell application "Finder"
                             set theFolder to POSIX path of (folder of front window as alias)
                         end tell
-                        
-                        do shell script "/usr/bin/open -a ]] .. config.applications.Editor .. [[ " & quoted form of theFolder
-                        return true
                     ]]
                     
-                    local ok, result = hs.osascript.applescript(script)
-                    if not ok then
-                        hs.alert.show("❌ Failed to open editor window", 2)
-                        log.e("Failed to open editor: " .. (result or "unknown error"))
+                    local ok, folderPath = hs.osascript.applescript(script)
+                    if not ok or not folderPath then
+                        hs.alert.show("❌ Failed to get Finder folder", 2)
+                        return
+                    end
+                    
+                    -- Use defaultEditor if set, otherwise fallback to Editor
+                    local editorKey = config.defaultEditor or "Editor"
+                    local editor = config.applications[editorKey] or config.applications.Editor
+                    
+                    if editor then
+                        openInEditor(folderPath, editor)
                     else
-                        log.i("Successfully opened editor in folder")
+                         hs.alert.show("❌ No editor configured", 2)
                     end
                 elseif shortcut.action == "reloadHammerspoonConfig" then
                     log.i("Triggered: Reload Hammerspoon configuration")
@@ -709,23 +728,21 @@ function M.setup(config)
                         return
                     end
                     
-                    -- Check if the secondary editor is configured and exists
-                    local editorName = config.applications.Editor2
-                    if not editorName then
+                    -- Check if the secondary editor is configured
+                    local editorKey = config.applications.Editor2
+                    if not editorKey then
                         log.e("Secondary editor is not configured")
                         hs.alert.show("❌ Secondary editor is not configured", 2)
                         return
                     end
-                    
-                    -- First check if the editor exists
-                    local editorExists = hs.execute('ls -l /Applications/ | grep -i "' .. editorName .. '"')
-                    if editorExists == "" then
-                        log.e("Secondary editor '" .. editorName .. "' does not seem to be installed")
-                        hs.alert.show("❌ Secondary editor not found: " .. editorName, 2)
-                        return
-                    end
-                    
-                    -- Get the current folder first to isolate if that's where the error is
+
+                    -- Resolve editor configuration
+                    -- Check if there is a specific config for this editor key
+                    local appConfig = config.applications[editorKey]
+                    local command = nil
+                    local editorName = editorKey
+
+                    -- Get the current folder first
                     local getFolderScript = [[
                         tell application "Finder"
                             try
@@ -744,24 +761,35 @@ function M.setup(config)
                         return
                     end
                     
-                    log.i("Got Finder folder: " .. folderResult)
-                    
-                    -- Now try to open the editor with the folder
-                    local openScript = [[
-                        try
-                            do shell script "/usr/bin/open -a \"]] .. editorName .. [[\" \"]] .. folderResult .. [[\""
-                            return true
-                        on error errMsg
-                            return "ERROR: " & errMsg
-                        end try
-                    ]]
-                    
-                    local ok, result = hs.osascript.applescript(openScript)
-                    if not ok or not result or tostring(result):match("^ERROR:") then
-                        hs.alert.show("❌ Failed to open secondary editor window", 2)
-                        log.e("Failed to open secondary editor: " .. tostring(result or "unknown error"))
+                    -- Determine the command to run
+                    if appConfig and type(appConfig) == "table" and appConfig.path then
+                        -- We have a specific path
+                        local path = appConfig.path
+                        if path:match("%.app$") then
+                            -- It's a .app bundle, use open -a
+                            command = string.format('/usr/bin/open -a "%s" "%s"', path, folderResult)
+                        else
+                            -- It's likely a binary or script (like agy), execute directly
+                            command = string.format('"%s" "%s"', path, folderResult)
+                        end
+                        log.i("Using configured path for editor: " .. path)
+                    elseif appConfig and type(appConfig) == "table" and appConfig.name then
+                        -- We have a name but no path, use open -a with name
+                        command = string.format('/usr/bin/open -a "%s" "%s"', appConfig.name, folderResult)
                     else
+                        -- Fallback to using the key as the name
+                        command = string.format('/usr/bin/open -a "%s" "%s"', editorKey, folderResult)
+                    end
+                    
+                    log.i("Opening editor with command: " .. command)
+                    
+                    -- Execute the command
+                    local output, status = hs.execute(command)
+                    if status then
                         log.i("Successfully opened secondary editor in folder")
+                    else
+                        hs.alert.show("❌ Failed to open secondary editor", 2)
+                        log.e("Failed to open secondary editor: " .. (output or "unknown error"))
                     end
                 elseif shortcut.action == "openInKitty" then
                     -- Only proceed if Finder is the frontmost application

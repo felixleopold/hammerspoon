@@ -161,7 +161,13 @@ After installation, you should customize the configuration for your system:
    open ~/.hammerspoon/config_user.lua
    ```
 
-2. **Update Application Definitions**:
+2. **Configure Default Editor** (Optional):
+   You can choose which editor handles system shortcuts (like opening config files):
+   ```lua
+   defaultEditor = "Editor", -- "Editor" (default) or "Editor2"
+   ```
+
+3. **Update Application Definitions**:
    Edit the `applications` section in `config_user.lua` to match the applications you have installed:
 
    ```lua
@@ -178,6 +184,10 @@ After installation, you should customize the configuration for your system:
        name = "Emacs.app",
        bundleID = "org.gnu.Emacs",
        path = "/Applications/Emacs.app" -- Full path if installed in a non-standard location
+   },
+   Antigravity = {
+       name = "Antigravity",
+       path = "/Users/username/.antigravity/antigravity/bin/agy" -- Direct executable path supported
    },
    ```
 
