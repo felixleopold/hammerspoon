@@ -705,9 +705,8 @@ function M.setup(config)
                         return
                     end
                     
-                    -- Use defaultEditor if set, otherwise fallback to Editor
-                    local editorKey = config.defaultEditor or "Editor"
-                    local editor = config.applications[editorKey] or config.applications.Editor
+                    -- Use Editor explicitly for this shortcut (cmd + ;)
+                    local editor = config.applications.Editor
                     
                     if editor then
                         openInEditor(folderPath, editor)

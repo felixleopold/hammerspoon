@@ -169,7 +169,7 @@ Default installation paths are:
             if output and output ~= "" then
                 -- Success with output
                 log.i("Got output: " .. output)  -- Debug log
-                hs.pasteboard.setContents(output)
+                hs.pasteboard.setContents((output:gsub("%s+$", "")))
                 log.i("Successfully processed text with pattern: " .. pattern.id)
                 
                 -- Show success alert
