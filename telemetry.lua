@@ -10,6 +10,9 @@ local token = nil
 local includeAppName = false
 local labelMap = {}
 local eventsFilePath = nil
+local stateFilePath = nil
+local syncTimer = nil
+local SYNC_INTERVAL = 300 -- 5 minutes
 
 -- Originals for unpatching
 local originalHotkeyBind = nil
@@ -56,20 +59,73 @@ local function appendEventToFile(event)
 	fh:close()
 end
 
--- Try sending to server (best-effort, non-blocking)
-local function sendEvent(event)
-	if not serverUrl or serverUrl == "" then return end
+-- Read the last synced line number from state file
+local function getLastSyncedLine()
+	if not stateFilePath then return 0 end
+	local f = io.open(stateFilePath, "r")
+	if not f then return 0 end
+	local content = f:read("*a")
+	f:close()
+	local state = hs.json.decode(content)
+	return (state and state.lastLine) or 0
+end
+
+-- Update the last synced line number in state file
+local function updateLastSyncedLine(lineCount)
+	if not stateFilePath then return end
+	local state = { lastLine = lineCount }
+	local f = io.open(stateFilePath, "w")
+	if f then
+		f:write(hs.json.encode(state))
+		f:close()
+	end
+end
+
+-- Sync events to server
+local function syncEvents()
+	if not isEnabled or not serverUrl or serverUrl == "" then return end
+	if not eventsFilePath then return end
+
+	local lastLine = getLastSyncedLine()
+	local events = {}
+	local currentLine = 0
+	local newLastLine = lastLine
+
+	-- Read events file
+	local f = io.open(eventsFilePath, "r")
+	if not f then return end
+
+	for line in f:lines() do
+		currentLine = currentLine + 1
+		if currentLine > lastLine then
+			local event = hs.json.decode(line)
+			if event then
+				table.insert(events, event)
+			end
+			newLastLine = currentLine
+		end
+	end
+	f:close()
+
+	if #events == 0 then return end
+
+	-- Send batch
 	local headers = { ["Content-Type"] = "application/json" }
 	if token and token ~= "" then
 		headers["X-Hspo-Token"] = token
 	end
-	local body = jsonEncode(event) or "{}"
+	
+	local body = jsonEncode(events)
+	if not body then return end
+
+	log.i(string.format("Syncing %d events...", #events))
+
 	hs.http.asyncPost(serverUrl, body, headers, function(code, _, _)
-		-- Keep quiet unless debug enabled
 		if code and code >= 200 and code < 300 then
-			if log.getLogLevel() == "debug" then log.d("Telemetry sent OK: " .. tostring(code)) end
+			if log.getLogLevel() == "debug" then log.d("Telemetry batch sent OK: " .. tostring(code)) end
+			updateLastSyncedLine(newLastLine)
 		else
-			if log.getLogLevel() == "debug" then log.d("Telemetry send failed: " .. tostring(code)) end
+			log.w("Telemetry batch send failed: " .. tostring(code))
 		end
 	end)
 end
@@ -96,7 +152,7 @@ local function recordHotkey(mods, key)
 		version = (require("version").current)
 	}
 	appendEventToFile(event)
-	sendEvent(event)
+	-- sendEvent(event) -- Removed in favor of async batch sync
 end
 
 -- Patch hs.hotkey.bind to wrap pressed callback
@@ -177,6 +233,18 @@ function M.setup(config)
 		if fh then fh:close() end
 	end)
 
+	-- Prepare state file
+	local defaultStatePath = expandPath("~/.hammerspoon/telemetry_state.json")
+	stateFilePath = cfg.stateFile or defaultStatePath
+	stateFilePath = expandPath(stateFilePath)
+
+	-- Start sync timer
+	if syncTimer then syncTimer:stop() end
+	syncTimer = hs.timer.doEvery(SYNC_INTERVAL, syncEvents)
+	
+	-- Initial sync
+	hs.timer.doAfter(1, syncEvents)
+
 	-- Apply patches
 	patchHotkeyBind()
 	patchLeftRightBind()
@@ -185,6 +253,10 @@ end
 
 function M.stop()
 	unpatch()
+	if syncTimer then
+		syncTimer:stop()
+		syncTimer = nil
+	end
 	isEnabled = false
 	log.i("Telemetry disabled")
 end

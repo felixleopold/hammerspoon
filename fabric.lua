@@ -88,42 +88,29 @@ Default installation paths are:
         
         -- Build the fabric command
         local command
-        -- Choose model and vendor; only force model if pattern explicitly sets one
-        local chosenModel = pattern.model
-        local chosenVendor = "Groq"
+        -- Choose model and vendor
+        -- local chosenVendor = "Groq" -- No longer needed
+        
+        -- Use the modelToUse calculated earlier (line 28) or default to a specific one
+        local modelName = pattern.model or config.fabric.defaultModel or "openai/gpt-oss-120b"
+        
+        -- Fabric expects just the model name, not Vendor|Model
+        local fullModel = modelName
+
         if pattern.youtube then
             -- For YouTube patterns
-            if chosenModel and chosenModel ~= "" then
-                command = string.format('%s -y "%s" --vendor %s --model %s --stream --pattern %s',
-                    fabricPath,
-                    clipboardContent:gsub('"', '\\"'),
-                    chosenVendor,
-                    chosenModel,
-                    pattern.id)
-            else
-                command = string.format('%s -y "%s" --vendor %s --stream --pattern %s',
-                    fabricPath,
-                    clipboardContent:gsub('"', '\\"'),
-                    chosenVendor,
-                    pattern.id)
-            end
+            command = string.format('%s -y "%s" --model "%s" --stream --pattern %s',
+                fabricPath,
+                clipboardContent:gsub('"', '\\"'),
+                fullModel,
+                pattern.id)
         else
             -- For regular patterns
-            local baseCommand
-            if chosenModel and chosenModel ~= "" then
-                baseCommand = string.format('echo "%s" | %s --pattern %s --vendor %s --model %s',
-                    clipboardContent:gsub('"', '\\"'),
-                    fabricPath,
-                    pattern.id,
-                    chosenVendor,
-                    chosenModel)
-            else
-                baseCommand = string.format('echo "%s" | %s --pattern %s --vendor %s',
-                    clipboardContent:gsub('"', '\\"'),
-                    fabricPath,
-                    pattern.id,
-                    chosenVendor)
-            end
+            local baseCommand = string.format('echo "%s" | %s --pattern %s --model "%s"',
+                clipboardContent:gsub('"', '\\"'),
+                fabricPath,
+                pattern.id,
+                fullModel)
 
             -- Handle pattern variables
             if pattern.variables then
@@ -168,8 +155,11 @@ Default installation paths are:
         if status then
             if output and output ~= "" then
                 -- Success with output
+                -- Trim whitespace (newlines) from start and end
+                output = output:gsub("^%s*(.-)%s*$", "%1")
+                
                 log.i("Got output: " .. output)  -- Debug log
-                hs.pasteboard.setContents((output:gsub("%s+$", "")))
+                hs.pasteboard.setContents(output)
                 log.i("Successfully processed text with pattern: " .. pattern.id)
                 
                 -- Show success alert
@@ -343,6 +333,121 @@ Default installation paths are:
     end)
 
     log.i("Fabric integration setup complete")
+
+    -- Version check logic
+    local MINIMUM_FABRIC_VERSION = "1.4.334"
+
+    local function parseVersion(versionStr)
+        local major, minor, patch = versionStr:match("v?(%d+)%.(%d+)%.(%d+)")
+        if not major then return nil end
+        return {tonumber(major), tonumber(minor), tonumber(patch)}
+    end
+
+    local function compareVersions(v1, v2)
+        if not v1 or not v2 then return 0 end
+        if v1[1] ~= v2[1] then return v1[1] - v2[1] end
+        if v1[2] ~= v2[2] then return v1[2] - v2[2] end
+        return v1[3] - v2[3]
+    end
+
+    local function checkFabricVersion(fabricPath)
+        log.i("Checking fabric version...")
+        local output, status = hs.execute(fabricPath .. " --version")
+        
+        if not status or not output then
+            log.w("Failed to check fabric version")
+            return
+        end
+
+        local currentVersionStr = output:gsub("%s+", "")
+        local currentVersion = parseVersion(currentVersionStr)
+
+        if not currentVersion then
+            log.w("Failed to parse current fabric version: " .. currentVersionStr)
+            return
+        end
+
+        -- Fetch latest version from GitHub
+        hs.http.asyncGet("https://api.github.com/repos/danielmiessler/fabric/releases/latest", {}, function(status, body, headers)
+            if status ~= 200 then
+                log.w("Failed to fetch latest fabric version from GitHub: " .. status)
+                return
+            end
+
+            local release = hs.json.decode(body)
+            if not release or not release.tag_name then
+                log.w("Failed to parse GitHub release info")
+                return
+            end
+
+            local latestVersionStr = release.tag_name
+            local latestVersion = parseVersion(latestVersionStr)
+
+            if not latestVersion then
+                log.w("Failed to parse latest fabric version: " .. latestVersionStr)
+                return
+            end
+
+            if compareVersions(currentVersion, latestVersion) < 0 then
+                log.w("Fabric version outdated: " .. currentVersionStr .. " < " .. latestVersionStr)
+                
+                local upgradeCmd = ""
+                if fabricPath:find("/go/") then
+                    upgradeCmd = "go install github.com/danielmiessler/fabric/cmd/fabric@latest"
+                elseif fabricPath:find("homebrew") or fabricPath:find("/usr/local") or fabricPath:find("/opt/homebrew") then
+                    upgradeCmd = "brew upgrade fabric-ai"
+                else
+                    -- Default to Go if unknown
+                    upgradeCmd = "go install github.com/danielmiessler/fabric/cmd/fabric@latest"
+                end
+
+                hs.alert.show("Fabric update available!\nCurrent: " .. currentVersionStr .. "\nLatest: " .. latestVersionStr, 5)
+                
+                local response = hs.dialog.blockAlert("Fabric Update Available", 
+                    "A new version of fabric is available.\n\nCurrent: " .. currentVersionStr .. "\nLatest: " .. latestVersionStr .. "\n\nWould you like to update now?",
+                    "Update Now", "Copy Command", "Ignore")
+                
+                if response == "Update Now" then
+                    hs.alert.show("Updating fabric... This may take a moment.")
+                    -- Run in a timer to allow the alert to show before blocking
+                    hs.timer.doAfter(0.5, function()
+                        local output, status = hs.execute(upgradeCmd)
+                        if status then
+                            hs.alert.show("Fabric updated successfully to " .. latestVersionStr)
+                            log.i("Fabric updated successfully")
+                        else
+                            hs.alert.show("Fabric update failed. Check console for details.")
+                            log.e("Fabric update failed: " .. (output or "unknown error"))
+                        end
+                    end)
+                elseif response == "Copy Command" then
+                    hs.pasteboard.setContents(upgradeCmd)
+                    hs.alert.show("Upgrade command copied to clipboard")
+                end
+            else
+                log.i("Fabric version is up to date: " .. currentVersionStr)
+            end
+        end)
+    end
+
+    -- Run version check after 30 seconds
+    hs.timer.doAfter(30, function()
+        -- Find fabric executable again if not found earlier (or reuse logic if we refactor, but for now re-finding is safe/cheap)
+        local fabricPath = ""
+        if config.fabric.fabricPath then
+            fabricPath = config.fabric.fabricPath:gsub("^~", os.getenv("HOME"))
+        end
+        if fabricPath == "" or not hs.fs.attributes(fabricPath) then
+            fabricPath = hs.execute("which fabric-ai"):gsub("%s+", "")
+        end
+        if fabricPath == "" then
+            fabricPath = hs.execute("which fabric"):gsub("%s+", "")
+        end
+        
+        if fabricPath ~= "" then
+            checkFabricVersion(fabricPath)
+        end
+    end)
 end
 
 return M

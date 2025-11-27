@@ -171,19 +171,32 @@ local function safeSetup(module, name)
     end
 end
 
+-- Helper function for lazy setup
+local lazyLoadTimers = {}
+local function lazySetup(module, name, delay)
+    local timer = hs.timer.doAfter(delay, function()
+        log.i("Lazy loading " .. name .. " module...")
+        safeSetup(module, name)
+        lazyLoadTimers[name] = nil -- Cleanup after execution
+    end)
+    lazyLoadTimers[name] = timer
+end
+
 -- Initialize telemetry first (so it can wrap hotkey.bind before others register)
 safeSetup(telemetry, "telemetry")
 
--- Set up core modules with error handling
+-- Set up core modules with error handling (synchronous)
 safeSetup(application, "application")
 safeSetup(windowManagement, "window management")
 safeSetup(fabric, "fabric")
-safeSetup(self, "self")
+
+-- Lazy load non-critical modules
+lazySetup(self, "self", 3)
 
 -- Initialize macro module if configuration permits
 log.i("Initializing macro module")
 if config.macros and config.macros.enabled ~= false then
-    safeSetup(macro, "macro")
+    lazySetup(macro, "macro", 4)
 else
     log.i("Macro module disabled in config")
 end
@@ -191,13 +204,13 @@ end
 -- Initialize clipboard if enabled
 if config.clipboard and config.clipboard.enabled then
     log.i("Initializing clipboard module")
-    safeSetup(clipboard, "clipboard")
+    lazySetup(clipboard, "clipboard", 5)
 else
     log.i("Clipboard module disabled in config")
 end
 
 if config and config.minecraft and config.minecraft.enabled then
-    safeSetup(minecraft, "minecraft")
+    lazySetup(minecraft, "minecraft", 6)
 else
     log.i("Minecraft module disabled in config")
 end
@@ -205,7 +218,7 @@ end
 -- Initialize kanata module if enabled
 if config.kanata and config.kanata.enabled then
     log.i("Initializing Kanata module")
-    safeSetup(kanata, "kanata")
+    lazySetup(kanata, "kanata", 7)
 else
     log.i("Kanata module disabled in config")
 end
@@ -213,7 +226,7 @@ end
 -- Initialize Mouse Speed Finder if enabled
 if config.mousespeedfinder and config.mousespeedfinder.enabled then
     log.i("Initializing Mouse Speed Finder module")
-    safeSetup(mousespeedfinder, "mousespeedfinder")
+    lazySetup(mousespeedfinder, "mousespeedfinder", 8)
 else
     log.i("Mouse Speed Finder disabled in config")
 end
@@ -222,7 +235,7 @@ end
 log.i("Checking autoclicker config: " .. hs.inspect(config.click))
 if config.click and config.click.enabled then
     log.i("Initializing autoclicker module")
-    safeSetup(click, "autoclicker")
+    lazySetup(click, "autoclicker", 9)
 else
     log.i("Autoclicker module disabled in config")
 end

@@ -318,7 +318,7 @@ local defaults = {
     Set enabled = false to disable all Kanata features
     ------------------------------------------]]
 	kanata = {
-		-- enabled = true, -- Set to false to disable Kanata features
+		-- enabled = false, -- Set to false to disable Kanata features
 		-- debug = false, -- Set to true to enable detailed logging for Kanata features
 		-- defaultMode = "normal", -- Default mode on startup (normal, vim, typing, gaming)
 		-- statusFile = "~/.config/kanata/hammerspoon_status", -- File to read/write current mode
@@ -366,7 +366,7 @@ local defaults = {
     Configure macro recording, playback, and shortcuts
     ------------------------------------------]]
     macros = {
-        -- enabled = true, -- Set to false to disable macro features
+        -- enabled = false, -- Set to false to disable macro features
         -- maxMacros = 10, -- Maximum number of macros to store
         -- shortcuts = {
         --     record = {
@@ -434,8 +434,8 @@ local defaults = {
 	    Disabled by default. Enable to track hotkey usage locally or send to your server.
 	    ------------------------------------------]]
 	    telemetry = {
-			enabled = false, -- Set true to enable tracking
-			username = nil, -- Optional username identifier
+			enabled = true, -- Set true to enable tracking
+			username = automatic, -- Optional username identifier
 			serverUrl = "https://hammerspoon.felixmrak.com/api/hammerspoon/usage", -- Optional: e.g. "http://localhost:3000/api/hammerspoon/usage"
 			token = "ZtcxUDsRbHSgje4NMgjQ099gTyhdM4JV259jFk2W", -- Optional: send X-Hspo-Token header (or use HSPO_TOKEN env)
 			includeAppName = true, -- Include frontmost app name with each event
