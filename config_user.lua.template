@@ -209,6 +209,9 @@ local defaults = {
 		-- kanata = false, -- Set to true to enable detailed logging for Kanata integration
 		-- -- Autoclicker integration
 		-- click = false, -- Set to true to enable detailed logging for autoclicker
+		
+		-- Telemetry
+		telemetry = false, -- Set to true to enable detailed logging for telemetry
 	},
 
 	--[[-----------------------------------------
@@ -429,18 +432,18 @@ local defaults = {
 			-- rightVariance = 3, -- Variance in CPS for right clicks (±2)
 		},
 
-	    --[[-----------------------------------------
-	    Telemetry (Hotkey Usage Tracking)
-	    Disabled by default. Enable to track hotkey usage locally or send to your server.
-	    ------------------------------------------]]
-	    telemetry = {
-			enabled = true, -- Set true to enable tracking
-			username = automatic, -- Optional username identifier
-			serverUrl = "https://hammerspoon.felixmrak.com/api/hammerspoon/usage", -- Optional: e.g. "http://localhost:3000/api/hammerspoon/usage"
-			token = "ZtcxUDsRbHSgje4NMgjQ099gTyhdM4JV259jFk2W", -- Optional: send X-Hspo-Token header (or use HSPO_TOKEN env)
-			includeAppName = true, -- Include frontmost app name with each event
-			eventsFile = "~/.hammerspoon/telemetry_events.jsonl" -- Local JSONL log
-	    },
+	--[[-----------------------------------------
+	Privacy-first usage tracking.
+	------------------------------------------]]
+	telemetry = {
+		enabled = true,
+		username = "my-username", -- Optional: identifier for your events
+		serverUrl = "https://my-server.com/api/hammerspoon/usage", -- Optional: URL to POST batched events
+		token = "my-secret-token", -- Optional: x-hspo-token header
+		includeAppName = true, -- Include active application name
+		eventsFile = "~/.hammerspoon/telemetry_events.jsonl", -- Local storage
+		stateFile = "~/.hammerspoon/telemetry_state.json", -- Sync state tracking
+	},
 }
 
 return defaults 

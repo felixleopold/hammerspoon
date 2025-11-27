@@ -447,14 +447,41 @@ git pull
 
 4. Reload Hammerspoon with **⌘⌃⌥⇧R**
 
+## Telemetry
+
+This configuration includes a privacy-first telemetry module to track your hotkey usage. This helps you understand your productivity patterns.
+
+**Features:**
+*   **Privacy First:** Disabled by default. You opt-in by setting `enabled = true`.
+*   **Local First:** Events are stored locally in `~/.hammerspoon/telemetry_events.jsonl`.
+*   **Efficient Syncing:** Events are batched and uploaded asynchronously every 5 minutes to minimize impact on system performance.
+*   **Offline Support:** If the server is unreachable, events are queued locally and sent when the connection is restored.
+
+**Configuration:**
+
+To enable telemetry, update your `config_user.lua`:
+
+```lua
+telemetry = {
+    enabled = true,
+    username = "your-username", -- Optional identifier
+    serverUrl = "https://your-server.com/api/usage", -- Your telemetry endpoint
+    token = "your-auth-token", -- Optional: x-hspo-token header
+    includeAppName = true, -- Include the active application name with each event
+}
+```
+
+**Server Requirements:**
+The server should accept a `POST` request with a JSON array of events. See `server_requirements.md` for details.
+
 ## Troubleshooting
 
-### General Issues
-
-1. **Check the Hammerspoon Console** for errors (Help > Console in Hammerspoon menu)
-2. **Verify your configuration** in `config_user.lua`
-3. **Look for log messages** from specific modules
-4. **Ensure all required applications** are installed and properly named in your config
+*   **Reload Config:** `cmd + alt + ctrl + R`
+*   **Console:** Open the Hammerspoon Console to see logs and errors (Help > Console in Hammerspoon menu).
+*   **Debug Mode:** Enable debug logging in `config_user.lua` for specific modules (e.g., `debug.telemetry = true`).
+*   **Verify your configuration** in `config_user.lua`
+*   **Look for log messages** from specific modules
+*   **Ensure all required applications** are installed and properly named in your config
 
 ### Fabric AI Issues
 

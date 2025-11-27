@@ -12,7 +12,8 @@ local labelMap = {}
 local eventsFilePath = nil
 local stateFilePath = nil
 local syncTimer = nil
-local SYNC_INTERVAL = 300 -- 5 minutes
+local SYNC_INTERVAL = 120 -- 2 minutes
+local BATCH_SIZE = 50 -- Max events per batch to avoid 413 errors
 
 -- Originals for unpatching
 local originalHotkeyBind = nil
@@ -87,9 +88,11 @@ local function syncEvents()
 	if not eventsFilePath then return end
 
 	local lastLine = getLastSyncedLine()
+	
 	local events = {}
 	local currentLine = 0
 	local newLastLine = lastLine
+	local hasMore = false
 
 	-- Read events file
 	local f = io.open(eventsFilePath, "r")
@@ -103,16 +106,32 @@ local function syncEvents()
 				table.insert(events, event)
 			end
 			newLastLine = currentLine
+			if #events >= BATCH_SIZE then
+				hasMore = true
+				break
+			end
 		end
 	end
 	f:close()
+	
+	-- Detect if file was rotated or deleted externally
+	if currentLine < lastLine then
+		if log.getLogLevel() == "debug" then log.d("Log rotation detected (file shrank). Resetting sync state.") end
+		updateLastSyncedLine(0)
+		-- Retry immediately to sync the new content
+		hs.timer.doAfter(0.1, syncEvents)
+		return
+	end
 
 	if #events == 0 then return end
 
 	-- Send batch
-	local headers = { ["Content-Type"] = "application/json" }
+	local headers = {
+		["Content-Type"] = "application/json",
+		["User-Agent"] = "Hammerspoon/1.0"
+	}
 	if token and token ~= "" then
-		headers["X-Hspo-Token"] = token
+		headers["x-hspo-token"] = token
 	end
 	
 	local body = jsonEncode(events)
@@ -124,6 +143,27 @@ local function syncEvents()
 		if code and code >= 200 and code < 300 then
 			if log.getLogLevel() == "debug" then log.d("Telemetry batch sent OK: " .. tostring(code)) end
 			updateLastSyncedLine(newLastLine)
+			
+			-- Check if we can cleanup the file
+			local f = io.open(eventsFilePath, "r")
+			if f then
+				local lineCount = 0
+				for _ in f:lines() do lineCount = lineCount + 1 end
+				f:close()
+				
+				if newLastLine >= lineCount then
+					if log.getLogLevel() == "debug" then log.d("All events synced, truncating telemetry file") end
+					local fh = io.open(eventsFilePath, "w")
+					if fh then fh:close() end
+					updateLastSyncedLine(0)
+					hasMore = false -- No more events since we cleared it
+				end
+			end
+
+			-- If we have more events, schedule another sync soon to drain the queue
+			if hasMore then
+				hs.timer.doAfter(2, syncEvents)
+			end
 		else
 			log.w("Telemetry batch send failed: " .. tostring(code))
 		end
@@ -216,10 +256,10 @@ function M.setup(config)
 	includeAppName = cfg.includeAppName == true
 
 	-- Logging
-	if config and config.debug and config.debug.configLoading then
+	if config and config.debug and config.debug.telemetry then
 		log.setLogLevel('debug')
 	else
-		log.setLogLevel('warning')
+		log.setLogLevel('info') -- Default to info so we see "Telemetry enabled"
 	end
 
 	-- Prepare events file
@@ -260,6 +300,8 @@ function M.stop()
 	isEnabled = false
 	log.i("Telemetry disabled")
 end
+
+M.syncEvents = syncEvents
 
 return M
 

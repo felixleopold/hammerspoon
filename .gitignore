@@ -5,6 +5,7 @@ macros.json
 config_user.lua
 Spoons/
 telemetry_events.jsonl
+telemetry_state.json
 
 # Backups and temp files
 *.backup.*
