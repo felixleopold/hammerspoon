@@ -193,6 +193,14 @@ local defaults = {
 	},
 
 	--[[-----------------------------------------
+    Application Management Settings
+    Configure application launching behavior
+    ------------------------------------------]]
+	appManagement = {
+		hideOnRepress = false, -- Set to true to hide app when pressing its shortcut while it's focused
+	},
+
+	--[[-----------------------------------------
     Window Management Settings
     Configure window behavior and animations
     ------------------------------------------]]

@@ -31,6 +31,10 @@ function M.setup(config)
     
     log.d("Loaded configuration: " .. hs.inspect(config))
 
+    -- Get hide-on-repress setting from config
+    local hideOnRepress = config.appManagement and config.appManagement.hideOnRepress or false
+    log.i("Hide on repress enabled: " .. tostring(hideOnRepress))
+
     -- Helper function to launch or focus applications
     local function launchOrFocus(appName)
         log.i("Attempting to launch or focus: " .. hs.inspect(appName))
@@ -42,6 +46,27 @@ function M.setup(config)
         else
             -- Convert string to standard format for consistent handling
             appConfig = { name = appName }
+        end
+        
+        -- Check if the app is already focused and hide-on-repress is enabled
+        if hideOnRepress then
+            local focusedApp = hs.application.frontmostApplication()
+            if focusedApp then
+                local focusedName = focusedApp:name()
+                local targetName = appConfig.name
+                
+                log.d("Checking hide-on-repress: focused=" .. tostring(focusedName) .. ", target=" .. tostring(targetName))
+                
+                -- Check if the focused app matches the requested app
+                if focusedName and targetName and (
+                   focusedName == targetName or 
+                   focusedName:lower() == targetName:lower()) then
+                    -- App is already focused, hide it
+                    log.i("App is already focused, hiding: " .. focusedName)
+                    focusedApp:hide()
+                    return
+                end
+            end
         end
         
         -- Special handling for Finder
@@ -1138,6 +1163,44 @@ function M.setup(config)
     end
 
     log.i("Application shortcuts setup complete")
+end
+
+-- Function to launch or focus an application, with optional hide-on-repress
+function M.launchOrFocus(appName, config)
+    config = config or {}
+    local hideOnRepress = config.appManagement and config.appManagement.hideOnRepress or false
+    
+    -- Get the actual app name from config if it's an alias
+    local actualAppName = appName
+    if config.applications and config.applications[appName] then
+        local appConfig = config.applications[appName]
+        actualAppName = type(appConfig) == "table" and appConfig.name or appConfig
+    end
+    
+    log.d("launchOrFocus called for: " .. tostring(actualAppName) .. ", hideOnRepress: " .. tostring(hideOnRepress))
+    
+    -- Get the currently focused application
+    local focusedApp = hs.application.frontmostApplication()
+    
+    if focusedApp and hideOnRepress then
+        local focusedName = focusedApp:name()
+        log.d("Currently focused app: " .. tostring(focusedName))
+        
+        -- Check if the focused app matches the requested app
+        if focusedName and actualAppName and (
+           focusedName == actualAppName or 
+           focusedName:lower() == actualAppName:lower()) then
+            -- App is already focused, hide it
+            log.d("App is focused, hiding: " .. focusedName)
+            focusedApp:hide()
+            return true
+        end
+    end
+    
+    -- App is not focused, launch or focus it
+    log.d("Launching/focusing: " .. tostring(actualAppName))
+    hs.application.launchOrFocus(actualAppName)
+    return false
 end
 
 return M

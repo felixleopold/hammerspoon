@@ -100,6 +100,7 @@ function M.expandConfig(config)
         folders = config.folders,
         triggers = config.triggers,
         windowManagement = config.windowManagement,
+        appManagement = config.appManagement,
         fabric = {
             defaultModel = config.fabric.defaultModel,
             patterns = {},
@@ -122,8 +123,6 @@ function M.expandConfig(config)
         -- Include Minecraft configuration
         minecraft = config.minecraft,
         -- Add clipboard configuration
-        clipboard = config.clipboard,
-        -- Add macro configuration
         macros = config.macros,
         -- Add mouse speed finder configuration
         mousespeedfinder = config.mousespeedfinder,
