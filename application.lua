@@ -6,7 +6,7 @@ local telemetry = require("telemetry")
 
 -- State variable for Finder repress logic
 local finderRepressCount = 0
-local GRID_GAP = 10 -- Gap between windows in pixels
+local GRID_GAP = 0 -- Gap between windows in pixels
 
 function M.setup(config)
     log.i("Setting up application shortcuts")
