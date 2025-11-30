@@ -123,6 +123,7 @@ function M.expandConfig(config)
         -- Include Minecraft configuration
         minecraft = config.minecraft,
         -- Add clipboard configuration
+        clipboard = config.clipboard,
         macros = config.macros,
         -- Add mouse speed finder configuration
         mousespeedfinder = config.mousespeedfinder,

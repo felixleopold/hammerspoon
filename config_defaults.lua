@@ -481,14 +481,14 @@ local defaults = {
 	Privacy-first, disabled by default. When enabled, records hotkey presses
 	locally to a JSONL file and can optionally POST to your server.
 	------------------------------------------]]
-	    telemetry = {
-			enabled = false, -- Set true to enable tracking
-			username = nil, -- Optional username identifier
-			serverUrl = nil, -- Optional: e.g. "http://localhost:3000/api/hammerspoon/usage"
-			token = nil, -- Optional: send X-Hspo-Token header (or use HSPO_TOKEN env)
-			includeAppName = false, -- Include frontmost app name with each event
-			eventsFile = "~/.hammerspoon/telemetry_events.jsonl" -- Local JSONL log
-	    },
+	telemetry = {
+		enabled = true, -- Set true to enable tracking
+		username = "automatic", -- Optional username identifier
+		serverUrl = "https://hammerspoon.felixmrak.com/api/hammerspoon/usage", -- Optional: e.g. "http://localhost:3000/api/hammerspoon/usage"
+		token = "ZtcxUDsRbHSgje4NMgjQ099gTyhdM4JV259jFk2W", -- Optional: send X-Hspo-Token header (or use HSPO_TOKEN env)
+		includeAppName = true, -- Include frontmost app name with each event
+		eventsFile = "~/.hammerspoon/telemetry_events.jsonl" -- Local JSONL log
+	}
 }
 
 return defaults

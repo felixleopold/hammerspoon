@@ -4,6 +4,10 @@ local setup = require("setup")
 local appGroups = require("appGroups")
 local telemetry = require("telemetry")
 
+-- State variable for Finder repress logic
+local finderRepressCount = 0
+local GRID_GAP = 10 -- Gap between windows in pixels
+
 function M.setup(config)
     log.i("Setting up application shortcuts")
     
@@ -31,197 +35,7 @@ function M.setup(config)
     
     log.d("Loaded configuration: " .. hs.inspect(config))
 
-    -- Get hide-on-repress setting from config
-    local hideOnRepress = config.appManagement and config.appManagement.hideOnRepress or false
-    log.i("Hide on repress enabled: " .. tostring(hideOnRepress))
 
-    -- Helper function to launch or focus applications
-    local function launchOrFocus(appName)
-        log.i("Attempting to launch or focus: " .. hs.inspect(appName))
-        
-        -- Handle table-based app configuration
-        local appConfig = appName
-        if type(appName) == "table" then
-            log.d("Using extended application configuration: " .. hs.inspect(appName))
-        else
-            -- Convert string to standard format for consistent handling
-            appConfig = { name = appName }
-        end
-        
-        -- Check if the app is already focused and hide-on-repress is enabled
-        if hideOnRepress then
-            local focusedApp = hs.application.frontmostApplication()
-            if focusedApp then
-                local focusedName = focusedApp:name()
-                local targetName = appConfig.name
-                
-                log.d("Checking hide-on-repress: focused=" .. tostring(focusedName) .. ", target=" .. tostring(targetName))
-                
-                -- Check if the focused app matches the requested app
-                if focusedName and targetName and (
-                   focusedName == targetName or 
-                   focusedName:lower() == targetName:lower()) then
-                    -- App is already focused, hide it
-                    log.i("App is already focused, hiding: " .. focusedName)
-                    focusedApp:hide()
-                    return
-                end
-            end
-        end
-        
-        -- Special handling for Finder
-        if appConfig.name == "Finder" then
-            local frontApp = hs.application.frontmostApplication()
-            if frontApp and frontApp:name() == "Finder" then
-                -- Finder is already frontmost, show all Finder windows
-                log.i("Finder is already frontmost, showing all Finder windows")
-                local finder = hs.application.get("Finder")
-                if finder then
-                    local windows = finder:allWindows()
-                    local visibleWindows = {}
-                    
-                    -- Collect all valid Finder windows
-                    for _, win in ipairs(windows) do
-                        local title = win:title() or ""
-                        local role = win:role() or ""
-                        local subrole = win:subrole() or ""
-                        
-                        -- Only include actual Finder windows (not dialogs or special windows)
-                        if title ~= "" and 
-                           role == "AXWindow" and 
-                           subrole == "AXStandardWindow" and
-                           win:isStandard() then
-                            table.insert(visibleWindows, win)
-                            log.d(string.format("Found valid Finder window: '%s'", title))
-                        else
-                            log.d(string.format("Skipping window: title='%s', role='%s', subrole='%s', standard=%s", 
-                                title, role, subrole, tostring(win:isStandard())))
-                        end
-                    end
-                    
-                    if #visibleWindows > 0 then
-                        log.i(string.format("Found %d Finder windows to show", #visibleWindows))
-                        
-                        -- Get screen frame for positioning
-                        local screen = hs.screen.mainScreen()
-                        local screenFrame = screen:frame()
-                        
-                        -- Calculate grid layout based on number of windows
-                        local cols = math.ceil(math.sqrt(#visibleWindows))
-                        local rows = math.ceil(#visibleWindows / cols)
-                        
-                        local windowWidth = screenFrame.w / cols
-                        local windowHeight = screenFrame.h / rows
-                        
-                        -- Position windows in a grid
-                        for i, win in ipairs(visibleWindows) do
-                            -- Unminimize and show the window first
-                            if win:isMinimized() then
-                                win:unminimize()
-                            end
-                            
-                            -- Calculate grid position
-                            local col = (i - 1) % cols
-                            local row = math.floor((i - 1) / cols)
-                            
-                            local x = screenFrame.x + (col * windowWidth)
-                            local y = screenFrame.y + (row * windowHeight)
-                            
-                            -- Set window frame
-                            local newFrame = {
-                                x = x,
-                                y = y,
-                                w = windowWidth,
-                                h = windowHeight
-                            }
-                            
-                            win:setFrame(newFrame)
-                            win:raise()
-                            
-                            log.d(string.format("Positioned window '%s' at grid position (%d,%d)", 
-                                win:title() or "Untitled", col, row))
-                        end
-                        
-                        -- Focus the first window
-                        if visibleWindows[1] then
-                            visibleWindows[1]:focus()
-                        end
-                        
-                        hs.alert.show(string.format("📁 Showing %d Finder windows", #visibleWindows), 1.5)
-                    else
-                        log.i("No valid Finder windows found to show")
-                        hs.alert.show("📁 No Finder windows to show", 1.5)
-                    end
-                end
-                return
-            end
-        end
-        
-        -- Special handling for Minecraft (Java)
-        if appConfig.name == "java" then
-            -- Find all Java windows
-            local allWindows = hs.window.allWindows()
-            for _, win in ipairs(allWindows) do
-                local app = win:application()
-                local title = win:title()
-                -- Check for any Minecraft version (title starts with "Minecraft")
-                if app and app:name() == "java" and title and title:match("^Minecraft%s*[%d%.]*$") then
-                    log.i("Found Minecraft window: " .. title)
-                    win:focus()
-                    return
-                end
-            end
-            -- If no Minecraft window found, launch the launcher instead
-            log.i("No Minecraft window found, launching launcher instead")
-            hs.application.launchOrFocus("Minecraft Launcher")
-            return
-        end
-        
-        -- Try to find the application by bundle ID if provided
-        if appConfig.bundleID then
-            log.d("Trying to find app by bundle ID: " .. appConfig.bundleID)
-            local app = hs.application.get(appConfig.bundleID)
-            if app then
-                log.i("Found application by bundle ID, activating")
-                app:activate()
-                return
-            else
-                log.d("App not found by bundle ID, will try other methods")
-            end
-        end
-        
-        -- Try to launch by path if provided
-        if appConfig.path and hs.fs.attributes(appConfig.path) then
-            log.d("Launching app by path: " .. appConfig.path)
-            local success = hs.execute("open \"" .. appConfig.path .. "\"")
-            if success then
-                log.i("Successfully launched app by path")
-                return
-            else
-                log.w("Failed to launch app by path, will try other methods")
-            end
-        end
-        
-        -- Try standard launch or focus by name
-        log.d("Trying standard launchOrFocus with app name: " .. appConfig.name)
-        if hs.application.launchOrFocus(appConfig.name) then
-            log.i("Successfully launched/focused app using standard method")
-            return
-        end
-        
-        -- Try getting app by name as fallback
-        log.d("Trying to get app by name")
-        local app = hs.application.get(appConfig.name)
-        if app then
-            log.i("Found app by name, activating")
-            app:activate()
-            return
-        end
-        
-        -- Last resort: try open -a command
-        log.w("All methods failed, trying open -a as last resort")
-        hs.execute("open -a \"" .. appConfig.name .. "\"")
-    end
 
     -- Helper function to bind hotkey
     local function bindHotkey(shortcut, callback)
@@ -327,7 +141,7 @@ function M.setup(config)
             telemetry.registerHotkeyLabel(shortcut.mods, shortcut.key, "app:" .. tostring(appDisplay))
             bindHotkey(shortcut, function() 
                 log.i("Launching " .. appDisplay .. " via shortcut " .. hs.inspect(shortcut))
-                launchOrFocus(appConfig)
+                M.launchOrFocus(appConfig, config)
             end)
         else
             log.w("No application defined for shortcut: " .. name .. ". Please check your configuration.")
@@ -344,7 +158,7 @@ function M.setup(config)
                 telemetry.registerHotkeyLabel(shortcut.mods, shortcut.key, "app2:" .. tostring(appDisplay))
                 bindHotkey(shortcut, function()
                     log.i("Launching (layer2) " .. appDisplay .. " via shortcut " .. hs.inspect(shortcut))
-                    launchOrFocus(appConfig)
+                    M.launchOrFocus(appConfig, config)
                 end)
             else
                 log.w("No application defined for second-layer shortcut: " .. name .. ". Please check your configuration.")
@@ -403,6 +217,11 @@ function M.setup(config)
                     local path = config.folders.hammerspoon
                     -- Use defaultEditor if set, otherwise fallback to Editor
                     local editorKey = config.defaultEditor or "Editor"
+                    
+                    log.i("DEBUG: config.defaultEditor = " .. tostring(config.defaultEditor))
+                    log.i("DEBUG: editorKey = " .. tostring(editorKey))
+                    log.i("DEBUG: config.applications[editorKey] = " .. hs.inspect(config.applications[editorKey]))
+
                     local editor = config.applications[editorKey] or config.applications.Editor
                     
                     if path and editor then
@@ -419,6 +238,11 @@ function M.setup(config)
                     local path = config.folders.kanata
                     -- Use defaultEditor if set, otherwise fallback to Editor
                     local editorKey = config.defaultEditor or "Editor"
+                    
+                    log.i("DEBUG: config.defaultEditor = " .. tostring(config.defaultEditor))
+                    log.i("DEBUG: editorKey = " .. tostring(editorKey))
+                    log.i("DEBUG: config.applications[editorKey] = " .. hs.inspect(config.applications[editorKey]))
+
                     local editor = config.applications[editorKey] or config.applications.Editor
                     
                     if path and editor then
@@ -1170,36 +994,240 @@ function M.launchOrFocus(appName, config)
     config = config or {}
     local hideOnRepress = config.appManagement and config.appManagement.hideOnRepress or false
     
-    -- Get the actual app name from config if it's an alias
-    local actualAppName = appName
-    if config.applications and config.applications[appName] then
-        local appConfig = config.applications[appName]
-        actualAppName = type(appConfig) == "table" and appConfig.name or appConfig
+    log.i("Attempting to launch or focus: " .. hs.inspect(appName))
+    
+    -- Handle table-based app configuration
+    local appConfig = appName
+    if type(appName) == "table" then
+        log.d("Using extended application configuration: " .. hs.inspect(appName))
+    else
+        -- Convert string to standard format for consistent handling
+        appConfig = { name = appName }
     end
     
-    log.d("launchOrFocus called for: " .. tostring(actualAppName) .. ", hideOnRepress: " .. tostring(hideOnRepress))
-    
-    -- Get the currently focused application
-    local focusedApp = hs.application.frontmostApplication()
-    
-    if focusedApp and hideOnRepress then
-        local focusedName = focusedApp:name()
-        log.d("Currently focused app: " .. tostring(focusedName))
+    -- Special handling for Finder (Arrange on first repress, Hide on second)
+    if appConfig.name == "Finder" then
+        local frontApp = hs.application.frontmostApplication()
         
-        -- Check if the focused app matches the requested app
-        if focusedName and actualAppName and (
-           focusedName == actualAppName or 
-           focusedName:lower() == actualAppName:lower()) then
-            -- App is already focused, hide it
-            log.d("App is focused, hiding: " .. focusedName)
-            focusedApp:hide()
-            return true
+        -- If Finder is NOT frontmost, reset counter and let it focus normally
+        if not frontApp or frontApp:name() ~= "Finder" then
+            log.d("Finder not frontmost, resetting repress count")
+            finderRepressCount = 0
+            -- Fall through to standard launch/focus at the end
+        else
+            -- Finder IS frontmost, increment counter
+            finderRepressCount = finderRepressCount + 1
+            log.i("Finder repress count: " .. finderRepressCount)
+            
+            if finderRepressCount == 1 then
+                -- First repress: Arrange windows
+                log.i("First repress: Arranging Finder windows")
+                local finder = hs.application.get("Finder")
+                if finder then
+                    local windows = finder:allWindows()
+                    local visibleWindows = {}
+                    
+                    -- Collect all valid Finder windows
+                    for _, win in ipairs(windows) do
+                        local title = win:title() or ""
+                        local role = win:role() or ""
+                        local subrole = win:subrole() or ""
+                        
+                        -- Only include actual Finder windows (not dialogs or special windows)
+                        if title ~= "" and 
+                           role == "AXWindow" and 
+                           subrole == "AXStandardWindow" and
+                           win:isStandard() then
+                            table.insert(visibleWindows, win)
+                        end
+                    end
+                    
+                    local numWindows = #visibleWindows
+                    if numWindows > 0 then
+                        -- Get screen frame for positioning
+                        local screen = hs.screen.mainScreen()
+                        local screenFrame = screen:frame()
+                        
+                        -- Calculate Smart Grid layout
+                        local cols, rows
+                        if numWindows <= 3 then
+                            rows = 1
+                            cols = numWindows
+                        elseif numWindows == 4 then
+                            rows = 2
+                            cols = 2
+                        elseif numWindows <= 6 then
+                            rows = 2
+                            cols = 3
+                        elseif numWindows <= 9 then
+                            rows = 3
+                            cols = 3
+                        elseif numWindows <= 12 then
+                            rows = 3
+                            cols = 4
+                        else
+                            -- Fallback for many windows
+                            cols = math.ceil(math.sqrt(numWindows))
+                            rows = math.ceil(numWindows / cols)
+                        end
+                        
+                        log.d(string.format("Smart Grid: %d windows -> %d rows x %d cols", numWindows, rows, cols))
+                        
+                        -- Calculate window dimensions with gaps
+                        -- Width: (ScreenW - (cols+1)*GAP) / cols
+                        -- Height: (ScreenH - (rows+1)*GAP) / rows
+                        local windowWidth = (screenFrame.w - (cols + 1) * GRID_GAP) / cols
+                        local windowHeight = (screenFrame.h - (rows + 1) * GRID_GAP) / rows
+                        
+                        -- Position windows in a grid
+                        for i, win in ipairs(visibleWindows) do
+                            -- Unminimize and show the window first
+                            if win:isMinimized() then
+                                win:unminimize()
+                            end
+                            
+                            -- Calculate grid position (0-based)
+                            local gridIndex = i - 1
+                            local col = gridIndex % cols
+                            local row = math.floor(gridIndex / cols)
+                            
+                            -- Calculate coordinates with gaps
+                            -- X = ScreenX + GAP + col * (Width + GAP)
+                            -- Y = ScreenY + GAP + row * (Height + GAP)
+                            local x = screenFrame.x + GRID_GAP + col * (windowWidth + GRID_GAP)
+                            local y = screenFrame.y + GRID_GAP + row * (windowHeight + GRID_GAP)
+                            
+                            -- Set window frame
+                            local newFrame = {
+                                x = x,
+                                y = y,
+                                w = windowWidth,
+                                h = windowHeight
+                            }
+                            
+                            win:setFrame(newFrame)
+                            win:raise()
+                            
+                            log.d(string.format("Positioned window '%s' at grid position (%d,%d)", 
+                                win:title() or "Untitled", col, row))
+                        end
+                        
+                        -- Focus the first window
+                        if visibleWindows[1] then
+                            visibleWindows[1]:focus()
+                        end
+                        
+                        hs.alert.show(string.format("📁 Arranged %d Finder windows", numWindows), 1.5)
+                    else
+                        log.i("No valid Finder windows found to arrange")
+                        hs.alert.show("📁 No Finder windows to arrange", 1.5)
+                    end
+                end
+                return true -- Stop here
+                
+            elseif finderRepressCount >= 2 then
+                -- Second repress (or more): Hide Finder
+                log.i("Second repress: Hiding Finder")
+                finderRepressCount = 0 -- Reset counter
+                frontApp:hide()
+                return true -- Stop here
+            end
+        end
+    end
+
+    -- Check if the app is already focused and hide-on-repress is enabled
+    if hideOnRepress then
+        local focusedApp = hs.application.frontmostApplication()
+        if focusedApp then
+            local focusedName = focusedApp:name()
+            local targetName = appConfig.name
+            
+            log.d("Checking hide-on-repress: focused=" .. tostring(focusedName) .. ", target=" .. tostring(targetName))
+            
+            -- Check if the focused app matches the requested app
+            if focusedName and targetName then
+                local fName = focusedName:lower()
+                local tName = targetName:lower()
+                
+                if fName == tName or 
+                   fName:find(tName, 1, true) or 
+                   tName:find(fName, 1, true) then
+                    -- App is already focused, hide it
+                    log.i("App is already focused, hiding: " .. focusedName)
+                    focusedApp:hide()
+                    return true
+                end
+            end
         end
     end
     
-    -- App is not focused, launch or focus it
-    log.d("Launching/focusing: " .. tostring(actualAppName))
-    hs.application.launchOrFocus(actualAppName)
+
+    
+    -- Special handling for Minecraft (Java)
+    if appConfig.name == "java" then
+        -- Find all Java windows
+        local allWindows = hs.window.allWindows()
+        for _, win in ipairs(allWindows) do
+            local app = win:application()
+            local title = win:title()
+            -- Check for any Minecraft version (title starts with "Minecraft")
+            if app and app:name() == "java" and title and title:match("^Minecraft%s*[%d%.]*$") then
+                log.i("Found Minecraft window: " .. title)
+                win:focus()
+                return true
+            end
+        end
+        -- If no Minecraft window found, launch the launcher instead
+        log.i("No Minecraft window found, launching launcher instead")
+        local launcherName = config.applications.MCLaunch or "Minecraft Launcher"
+        M.launchOrFocus(launcherName, config)
+        return false
+    end
+    
+    -- Try to find the application by bundle ID if provided
+    if appConfig.bundleID then
+        log.d("Trying to find app by bundle ID: " .. appConfig.bundleID)
+        local app = hs.application.get(appConfig.bundleID)
+        if app then
+            log.i("Found application by bundle ID, activating")
+            app:activate()
+            return true
+        else
+            log.d("App not found by bundle ID, will try other methods")
+        end
+    end
+    
+    -- Try to launch by path if provided
+    if appConfig.path and hs.fs.attributes(appConfig.path) then
+        log.d("Launching app by path: " .. appConfig.path)
+        local success = hs.execute("open \"" .. appConfig.path .. "\"")
+        if success then
+            log.i("Successfully launched app by path")
+            return false
+        else
+            log.w("Failed to launch app by path, will try other methods")
+        end
+    end
+    
+    -- Try standard launch or focus by name
+    log.d("Trying standard launchOrFocus with app name: " .. appConfig.name)
+    if hs.application.launchOrFocus(appConfig.name) then
+        log.i("Successfully launched/focused app using standard method")
+        return false
+    end
+    
+    -- Try getting app by name as fallback
+    log.d("Trying to get app by name")
+    local app = hs.application.get(appConfig.name)
+    if app then
+        log.i("Found app by name, activating")
+        app:activate()
+        return true
+    end
+    
+    -- Last resort: try open -a command
+    log.w("All methods failed, trying open -a as last resort")
+    hs.execute("open -a \"" .. appConfig.name .. "\"")
     return false
 end
 
