@@ -153,6 +153,7 @@ local defaults = {
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = "R", action = "reloadHammerspoonConfig" }, -- Reload Hammerspoon configuration
 			{ mods = { "ctrl", "alt", "cmd", "shift" }, key = ",", action = "openDotfilesConfig" }, -- Open dotfiles repo in editor
+			{ mods = { "cmd", "alt" }, key = "L", action = "createSymlink" }, -- Create symbolic links from clipboard paths to current Finder location
 			{ mods = { "cmd" }, key = ".", action = "openInTerminal" }, -- Open current Finder path in terminal
 			{ mods = { "cmd" }, key = ";", action = "openInEditor" }, -- Open current Finder path in editor
 		},
@@ -347,6 +348,13 @@ local defaults = {
 				desc = "Verify the accuracy of information",
 				trigger = "pattern",
 				key = "A",
+			},
+			{
+				id = "refine_prompt",
+				name = "Refine Prompt",
+				desc = "Refine prompt for robustness",
+				trigger = "pattern",
+				key = "P",
 			},
 			{
 				id = "continue",

@@ -1,5 +1,53 @@
 # Changelog
 
+## [2.0.0] - 2026-02-27
+
+### Added
+
+- **URL App Support**
+    - App shortcuts now accept URLs (e.g. `name = "https://example.com"`) — opens them directly via `hs.urlevent.openURL`
+    - Works in both `application.launchOrFocus` and `appGroups` cycling
+
+- **openInTerminal Finder Action**
+    - New general shortcut action `openInTerminal` (default `cmd + .`)
+    - Opens the current Finder window's folder in Terminal or iTerm2 (auto-detected from `config.applications.Terminal`)
+
+- **Clipboard: Paste Last Downloaded File**
+    - New `clipboard_last_downloaded_file` config block with configurable shortcut
+    - Hotkey copies the newest file in `~/Downloads` (skipping hidden files / partial downloads) to the pasteboard as a file reference and auto-pastes it
+    - Gracefully stops/restarts clipboard watcher around the operation to avoid false history entries
+
+- **Clipboard: Robust History Storage**
+    - Falls back to `/tmp/hammerspoon_clipboard_history.json` if the primary history path is unavailable or a directory
+    - `ensureHistoryDirectoryExists` auto-creates the parent directory on first write
+
+- **Refine Prompt Fabric Pattern**
+    - New pattern `refine_prompt` — improves a raw prompt's grammar/clarity and appends a standard error-checking safety clause
+
+- **Sync Fabric Patterns Script**
+    - `sync-fabric-patterns.sh` syncs `fabric-patterns/` to `~/.config/fabric/patterns/` via `rsync`
+
+- **createSymlink Finder Action**
+    - New general shortcut action `createSymlink` (`cmd + alt + L`) — creates symbolic links from clipboard-copied paths into the current Finder folder
+
+### Improved
+
+- **resolveAppConfig Helper** (`application.lua`)
+    - Centralised helper resolves app keys, table configs, and bare name strings consistently
+    - `openInEditor` and folder-in-editor shortcuts now all route through this helper
+
+- **Binary vs .app Launch Detection**
+    - `launchOrFocus` now detects whether a configured path ends in `.app` — uses `open` for app bundles and executes the binary directly (backgrounded) for scripts like `agy`
+
+- **deepMerge Array Fix** (`setup.lua`)
+    - Arrays (tables with `#t > 0`) are now replaced wholesale instead of being merged index-by-index, preventing corrupted shortcut/pattern lists when user config overrides a default array
+
+### Docs
+
+- CHANGELOG updated
+
+---
+
 ## [1.9.0] - 2025-11-19
 
 ### Added

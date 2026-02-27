@@ -85,8 +85,36 @@ function M.setup(config)
         return nil
     end
 
+    -- Helper function to resolve application configuration
+    -- Returns name, path, and bundleID
+    local function resolveAppConfig(config, appKeyOrConfig)
+        if not appKeyOrConfig then return nil, nil, nil end
+
+        local appConfig = appKeyOrConfig
+        
+        -- If it's a string key, look it up in config.applications
+        if type(appKeyOrConfig) == "string" then
+            -- Check if it's a key in applications table
+            if config.applications[appKeyOrConfig] then
+                appConfig = config.applications[appKeyOrConfig]
+            else
+                -- It might be a direct app name string
+                return appKeyOrConfig, nil, nil
+            end
+        end
+
+        -- Now handle the resolved config
+        if type(appConfig) == "table" then
+            return appConfig.name, appConfig.path, appConfig.bundleID
+        elseif type(appConfig) == "string" then
+            return appConfig, nil, nil
+        end
+
+        return nil, nil, nil
+    end
+
     -- Helper function to open folder in editor
-    local function openInEditor(path, editorConfig)
+    local function openInEditor(path, editorConfig, config)
         if not path or not editorConfig then 
             log.e("Missing required parameters:", {path = path, editor = editorConfig})
             return 
@@ -95,13 +123,8 @@ function M.setup(config)
         path = expandPath(path)
         
         -- Resolve editor configuration
-        local editorName = editorConfig
-        local editorPath = nil
-        
-        if type(editorConfig) == "table" then
-            editorName = editorConfig.name or "Unknown Editor"
-            editorPath = editorConfig.path
-        end
+        local editorName, editorPath = resolveAppConfig(config, editorConfig)
+        editorName = editorName or "Unknown Editor"
         
         log.i(string.format("Opening %s in %s", path, editorName))
         
@@ -226,7 +249,7 @@ function M.setup(config)
                     
                     if path and editor then
                         log.d(string.format("Opening Hammerspoon config: path=%s", path))
-                        openInEditor(path, editor)
+                        openInEditor(path, editor, config)
                     else
                         log.e("Missing configuration for Hammerspoon editor shortcut", {
                             path = path,
@@ -247,7 +270,7 @@ function M.setup(config)
                     
                     if path and editor then
                         log.d(string.format("Opening Kanata config: path=%s", path))
-                        openInEditor(path, editor)
+                        openInEditor(path, editor, config)
                     else
                         log.e("Missing configuration for Kanata editor shortcut", {
                             path = path,
@@ -263,7 +286,7 @@ function M.setup(config)
                     
 					if path and editor then
 						log.d(string.format("Opening Dotfiles: path=%s", path))
-						openInEditor(path, editor)
+						openInEditor(path, editor, config)
 					else
 						log.e("Missing configuration for Dotfiles editor shortcut", {
 							path = path,
@@ -554,11 +577,12 @@ function M.setup(config)
                         return
                     end
                     
-                    -- Use Editor explicitly for this shortcut (cmd + ;)
-                    local editor = config.applications.Editor
+                    -- Use defaultEditor if set, otherwise fallback to Editor
+                    local editorKey = config.defaultEditor or "Editor"
+                    local editor = config.applications[editorKey] or config.applications.Editor
                     
                     if editor then
-                        openInEditor(folderPath, editor)
+                        openInEditor(folderPath, editor, config)
                     else
                          hs.alert.show("❌ No editor configured", 2)
                     end
@@ -632,12 +656,6 @@ function M.setup(config)
                         return
                     end
 
-                    -- Resolve editor configuration
-                    -- Check if there is a specific config for this editor key
-                    local appConfig = config.applications[editorKey]
-                    local command = nil
-                    local editorName = editorKey
-
                     -- Get the current folder first
                     local getFolderScript = [[
                         tell application "Finder"
@@ -657,36 +675,8 @@ function M.setup(config)
                         return
                     end
                     
-                    -- Determine the command to run
-                    if appConfig and type(appConfig) == "table" and appConfig.path then
-                        -- We have a specific path
-                        local path = appConfig.path
-                        if path:match("%.app$") then
-                            -- It's a .app bundle, use open -a
-                            command = string.format('/usr/bin/open -a "%s" "%s"', path, folderResult)
-                        else
-                            -- It's likely a binary or script (like agy), execute directly
-                            command = string.format('"%s" "%s"', path, folderResult)
-                        end
-                        log.i("Using configured path for editor: " .. path)
-                    elseif appConfig and type(appConfig) == "table" and appConfig.name then
-                        -- We have a name but no path, use open -a with name
-                        command = string.format('/usr/bin/open -a "%s" "%s"', appConfig.name, folderResult)
-                    else
-                        -- Fallback to using the key as the name
-                        command = string.format('/usr/bin/open -a "%s" "%s"', editorKey, folderResult)
-                    end
-                    
-                    log.i("Opening editor with command: " .. command)
-                    
-                    -- Execute the command
-                    local output, status = hs.execute(command)
-                    if status then
-                        log.i("Successfully opened secondary editor in folder")
-                    else
-                        hs.alert.show("❌ Failed to open secondary editor", 2)
-                        log.e("Failed to open secondary editor: " .. (output or "unknown error"))
-                    end
+                    -- Use openInEditor helper which now handles config resolution
+                    openInEditor(folderResult, editorKey, config)
                 elseif shortcut.action == "openInKitty" then
                     -- Only proceed if Finder is the frontmost application
                     local frontApp = hs.application.frontmostApplication()
@@ -1255,7 +1245,17 @@ function M.launchOrFocus(appName, config)
     -- Try to launch by path if provided
     if appConfig.path and hs.fs.attributes(appConfig.path) then
         log.d("Launching app by path: " .. appConfig.path)
-        local success = hs.execute("open \"" .. appConfig.path .. "\"")
+        local command
+        if appConfig.path:match("%.app$") then
+            -- It's an app bundle, use open
+            command = "open \"" .. appConfig.path .. "\""
+        else
+            -- It's a binary or script, execute directly in background
+            command = "\"" .. appConfig.path .. "\" &"
+        end
+        
+        log.d("Executing launch command: " .. command)
+        local success = hs.execute(command)
         if success then
             log.i("Successfully launched app by path")
             return false

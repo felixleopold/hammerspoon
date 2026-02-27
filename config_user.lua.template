@@ -128,6 +128,7 @@ local defaults = {
 			-- { mods = { "ctrl" }, key = "C", action = "copyBrowserUrl" }, -- Copy URL from browser (ctrl+C)
 			-- { mods = { "ctrl", "alt", "cmd", "shift" }, key = "S", action = "openHammerspoonConfig" }, -- Open Hammerspoon config in editor
 			-- { mods = { "ctrl", "alt", "cmd", "shift" }, key = "R", action = "reloadHammerspoonConfig" }, -- Reload Hammerspoon configuration
+			-- { mods = { "cmd", "alt" }, key = "L", action = "createSymlink" }, -- Create symbolic links from clipboard paths to current Finder location
 			-- { mods = { "cmd" }, key = ".", action = "openInTerminal" }, -- Open current Finder path in terminal
 			-- { mods = { "cmd" }, key = ";", action = "openInEditor" }, -- Open current Finder path in editor
 		},

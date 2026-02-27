@@ -13,8 +13,15 @@ function M.deepMerge(target, source)
     
     for k, v in pairs(source) do
         if type(v) == 'table' and type(target[k]) == 'table' then
-            -- If both values are tables, merge them recursively
-            target[k] = M.deepMerge(target[k], v)
+            -- Check if it's a list (array-like)
+            -- We assume if it has numeric keys 1..n (checked via #v > 0), it's a list
+            -- This prevents merging lists index-by-index which corrupts data
+            if #v > 0 then
+                target[k] = v
+            else
+                -- If both values are tables (maps), merge them recursively
+                target[k] = M.deepMerge(target[k], v)
+            end
         else
             -- Otherwise just overwrite with source value
             target[k] = v
