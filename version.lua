@@ -1,6 +1,6 @@
 local M = {}
 
-M.current = "1.8.2"
+M.current = "2.0.0"
 
 return M
 
