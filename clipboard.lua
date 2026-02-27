@@ -1,15 +1,147 @@
 local log = hs.logger.new('Clipboard', 'debug')
 local clipboard = {}
 local stripHashMode = false
+local clipboardWatcher = nil
+local lastDownloadedReadyToPaste = false
 
 -- Store clipboard history
 local clipboardHistory = {}
 local maxHistorySize = 9
 local filesDir = os.getenv("HOME") .. "/.hammerspoon/clipboard_files/"
 local historyFile = os.getenv("HOME") .. "/.hammerspoon/clipboard_history.json"
+local fallbackHistoryFile = "/tmp/hammerspoon_clipboard_history.json"
+local toFileURL
+
+local function escapeAppleScriptString(value)
+    if not value then return "" end
+    return value:gsub("\\", "\\\\"):gsub('"', '\\"')
+end
+
+local function setClipboardToFilePath(filePath)
+    local escapedPath = escapeAppleScriptString(filePath)
+    local script = 'set the clipboard to (POSIX file "' .. escapedPath .. '")'
+    local ok = hs.osascript.applescript(script)
+    if ok then
+        return true
+    end
+
+    local fileURL = toFileURL(filePath)
+    if not fileURL then
+        return false
+    end
+
+    hs.pasteboard.clearContents()
+    hs.pasteboard.setContents(fileURL)
+    return true
+end
+
+local function expandPath(path)
+    if not path or path == "" then return path end
+    if path:sub(1, 1) == "~" then
+        return os.getenv("HOME") .. path:sub(2)
+    end
+    return path
+end
+
+local function normalizeMods(mods)
+    if type(mods) ~= "table" then return mods end
+    local normalized = {}
+    for _, mod in ipairs(mods) do
+        if mod == "opt" or mod == "option" then
+            table.insert(normalized, "alt")
+        else
+            table.insert(normalized, mod)
+        end
+    end
+    return normalized
+end
+
+local function findLastDownloadedFile(downloadsFolder)
+    local folder = expandPath(downloadsFolder or "~/Downloads")
+    local folderAttrib = hs.fs.attributes(folder)
+    if not folderAttrib or folderAttrib.mode ~= "directory" then
+        return nil, "Downloads folder not found: " .. tostring(folder)
+    end
+
+    local newestPath = nil
+    local newestModified = 0
+
+    for fileName in hs.fs.dir(folder) do
+        if fileName ~= "." and fileName ~= ".." then
+            local fullPath = folder .. "/" .. fileName
+            local attrib = hs.fs.attributes(fullPath)
+            if attrib and attrib.mode == "file" then
+                local lowerName = fileName:lower()
+                local isHiddenFile = fileName:sub(1, 1) == "."
+                local isTempDownload =
+                    lowerName:match("%.crdownload$") or
+                    lowerName:match("%.download$") or
+                    lowerName:match("%.part$")
+
+                if not isHiddenFile and not isTempDownload then
+                    local modified = attrib.modification or 0
+                    if modified > newestModified then
+                        newestModified = modified
+                        newestPath = fullPath
+                    end
+                end
+            end
+        end
+    end
+
+    if not newestPath then
+        return nil, "No files found in downloads folder"
+    end
+
+    return newestPath
+end
+
+local function pasteLastDownloadedFile(config, skipAutoPaste)
+    local filePath, err = findLastDownloadedFile(config and config.downloadsFolder)
+    if not filePath then
+        log.w(err)
+        hs.alert.show("No downloaded file found", 1.5)
+        return
+    end
+
+    local wasWatcherRunning = false
+    if clipboardWatcher then
+        wasWatcherRunning = clipboardWatcher:running()
+        if wasWatcherRunning then clipboardWatcher:stop() end
+    end
+
+    local success = setClipboardToFilePath(filePath)
+    if not success then
+        log.e("Failed to write downloaded file to pasteboard")
+        hs.alert.show("Failed to paste downloaded file", 1.5)
+        if wasWatcherRunning then clipboardWatcher:start() end
+        return
+    end
+
+    if skipAutoPaste then
+        hs.timer.doAfter(0.2, function()
+            if wasWatcherRunning then clipboardWatcher:start() end
+        end)
+        lastDownloadedReadyToPaste = true
+        log.i("Prepared last downloaded file for paste: " .. filePath)
+        return
+    end
+
+    hs.timer.doAfter(0.12, function()
+        hs.eventtap.keyStroke({"cmd"}, "v")
+    end)
+
+    hs.timer.doAfter(0.55, function()
+        if wasWatcherRunning then clipboardWatcher:start() end
+    end)
+
+    lastDownloadedReadyToPaste = false
+
+    log.i("Pasted last downloaded file: " .. filePath)
+end
 
 -- Helper: build a properly formatted file URL from a POSIX path
-local function toFileURL(posixPath)
+toFileURL = function(posixPath)
     if not posixPath or posixPath == "" then return nil end
     local absolutePath = hs.fs.pathToAbsolute(posixPath) or posixPath
     return "file://" .. absolutePath:gsub(" ", "%%20")
@@ -38,13 +170,38 @@ function ensureFilesDirectoryExists()
     end
 end
 
+-- Ensure the history file directory exists
+local function ensureHistoryDirectoryExists()
+    local historyDir = historyFile:match("(.+)/[^/]+$")
+    if not historyDir or historyDir == "" then
+        return true
+    end
+
+    local attrib = hs.fs.attributes(historyDir)
+    if attrib and attrib.mode == "directory" then
+        return true
+    end
+
+    hs.execute("mkdir -p " .. historyDir)
+    local check = hs.fs.attributes(historyDir)
+    return check and check.mode == "directory"
+end
+
 -- Load clipboard history from disk
 function loadHistory()
     local success, data = pcall(function()
         local file = io.open(historyFile, "r")
         if not file then
-            log.i("No clipboard history file found, starting fresh")
-            return {}
+            local fallback = io.open(fallbackHistoryFile, "r")
+            if not fallback then
+                log.i("No clipboard history file found, starting fresh")
+                return {}
+            end
+
+            historyFile = fallbackHistoryFile
+            local fallbackContent = fallback:read("*all")
+            fallback:close()
+            return hs.json.decode(fallbackContent) or {}
         end
         local content = file:read("*all")
         file:close()
@@ -63,13 +220,34 @@ end
 -- Save clipboard history to disk
 function saveHistory()
     local success, err = pcall(function()
-        local file = io.open(historyFile, "w")
-        if not file then
-            error("Could not open history file for writing")
+        local targetPath = historyFile
+        local targetAttr = hs.fs.attributes(targetPath)
+
+        if targetAttr and targetAttr.mode == "directory" then
+            targetPath = fallbackHistoryFile
+        elseif targetPath == historyFile and not ensureHistoryDirectoryExists() then
+            targetPath = fallbackHistoryFile
         end
+
         local content = hs.json.encode(clipboardHistory)
+
+        local file = io.open(targetPath, "w")
+        if not file and targetPath ~= fallbackHistoryFile then
+            targetPath = fallbackHistoryFile
+            file = io.open(targetPath, "w")
+        end
+
+        if not file then
+            error("Could not open history file for writing: " .. historyFile .. " (fallback also failed: " .. fallbackHistoryFile .. ")")
+        end
+
         file:write(content)
         file:close()
+
+        if targetPath ~= historyFile then
+            log.w("Switching clipboard history file to fallback path: " .. targetPath)
+            historyFile = targetPath
+        end
     end)
 
     if not success then
@@ -858,6 +1036,32 @@ function clipboard.setup(config)
             hs.alert.show("Strip-# mode: " .. (stripHashMode and "ON" or "OFF"))
         end)
         log.i("Registered strip-# mode toggle hotkey")
+    end
+
+    local lastDownloadedCfg = config.clipboard_last_downloaded_file
+    if lastDownloadedCfg and lastDownloadedCfg.enabled then
+        local shortcutCfg = lastDownloadedCfg.shortcut
+        if shortcutCfg and shortcutCfg.mods and shortcutCfg.key then
+            local modsNormalized = normalizeMods(shortcutCfg.mods)
+            require("telemetry").registerHotkeyLabel(modsNormalized, shortcutCfg.key, "clipboard:lastDownloadedFile")
+            hs.hotkey.bind(modsNormalized, shortcutCfg.key,
+                function()
+                    lastDownloadedReadyToPaste = false
+                    pasteLastDownloadedFile(lastDownloadedCfg, true)
+                end,
+                function()
+                    if lastDownloadedReadyToPaste then
+                        hs.timer.doAfter(0.12, function()
+                            hs.eventtap.keyStroke({"cmd"}, "v")
+                        end)
+                        lastDownloadedReadyToPaste = false
+                    end
+                end
+            )
+            log.i("Registered last-downloaded-file shortcut")
+        else
+            log.w("clipboard_last_downloaded_file is enabled but shortcut is not configured")
+        end
     end
 end
 

@@ -562,6 +562,54 @@ function M.setup(config)
                     else
                          hs.alert.show("❌ No editor configured", 2)
                     end
+                elseif shortcut.action == "openInTerminal" then
+                    -- Only proceed if Finder is the frontmost application
+                    local frontApp = hs.application.frontmostApplication()
+                    if not frontApp or frontApp:name() ~= "Finder" then
+                        log.w("Not in Finder, ignoring openInTerminal shortcut")
+                        return
+                    end
+
+                    -- Use AppleScript to get the current Finder folder path
+                    local script = [[
+                        tell application "Finder"
+                            set theFolder to POSIX path of (folder of front window as alias)
+                        end tell
+                    ]]
+
+                    local ok, folderPath = hs.osascript.applescript(script)
+                    if not ok or not folderPath then
+                        hs.alert.show("❌ Failed to get Finder folder", 2)
+                        return
+                    end
+
+                    -- Determine which terminal app to use
+                    local terminalApp = config.applications.Terminal or "Terminal"
+                    local terminalName = type(terminalApp) == "table" and terminalApp.name or terminalApp
+
+                    log.i("Opening terminal at: " .. folderPath .. " using " .. terminalName)
+
+                    if terminalName == "iTerm" or terminalName == "iTerm2" then
+                        hs.osascript.applescript(string.format([[
+                            tell application "iTerm"
+                                activate
+                                tell current window
+                                    create tab with default profile
+                                    tell current session
+                                        write text "cd '%s'"
+                                    end tell
+                                end tell
+                            end tell
+                        ]], folderPath:gsub("'", "'\\''")))
+                    else
+                        -- Default: macOS Terminal.app
+                        hs.osascript.applescript(string.format([[
+                            tell application "Terminal"
+                                activate
+                                do script "cd '%s'"
+                            end tell
+                        ]], folderPath:gsub("'", "'\\''")))
+                    end
                 elseif shortcut.action == "reloadHammerspoonConfig" then
                     log.i("Triggered: Reload Hammerspoon configuration")
                     hs.alert.show("Reloading Hammerspoon configuration...", 1)
@@ -1004,7 +1052,14 @@ function M.launchOrFocus(appName, config)
         -- Convert string to standard format for consistent handling
         appConfig = { name = appName }
     end
-    
+
+    -- Handle URL-based applications
+    if type(appConfig.name) == "string" and appConfig.name:match("^https?://") then
+        log.i("Opening URL: " .. appConfig.name)
+        hs.urlevent.openURL(appConfig.name)
+        return true
+    end
+
     -- Special handling for Finder (Arrange on first repress, Hide on second)
     if appConfig.name == "Finder" then
         local frontApp = hs.application.frontmostApplication()

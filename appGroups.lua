@@ -118,7 +118,14 @@ local function launchOrFocus(appConfig)
         -- Convert string to standard format for consistent handling
         actualConfig = { name = appConfig }
     end
-    
+
+    -- Handle URL-based applications
+    if type(actualConfig.name) == "string" and actualConfig.name:match("^https?://") then
+        log.i("Opening URL: " .. actualConfig.name)
+        hs.urlevent.openURL(actualConfig.name)
+        return true
+    end
+
     -- Special handling for Minecraft (Java)
     if actualConfig.name == "java" then
         -- Find all Java windows
